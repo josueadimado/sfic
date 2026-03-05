@@ -1,6 +1,7 @@
 import csv
 import json
 import os
+from decimal import Decimal, ROUND_UP
 
 import stripe
 from django.conf import settings
@@ -51,6 +52,8 @@ from .services import (
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 DEFAULT_VENUE_ADDRESS = "Freedom Revival Center, 1200 Main St, Dallas, TX 75202, USA"
+STRIPE_FEE_PERCENT = Decimal("0.029")
+STRIPE_FEE_FIXED_CENTS = Decimal("30")
 
 
 def _payload_get(payload: dict, *keys: str, default: str = "") -> str:
@@ -90,6 +93,20 @@ def _map_donation_status(raw_status: str) -> str:
     if status in {"canceled", "cancelled", "void"}:
         return DonationStatus.CANCELED
     return DonationStatus.PENDING
+
+
+def _gross_up_amount_for_processing_fee(base_amount_cents: int) -> tuple[int, int]:
+    """
+    Return (total_charge_cents, processing_fee_cents).
+    Formula assumes standard Stripe card pricing: 2.9% + 30 cents.
+    """
+    if base_amount_cents <= 0:
+        return 0, 0
+    base = Decimal(base_amount_cents)
+    gross = (base + STRIPE_FEE_FIXED_CENTS) / (Decimal("1") - STRIPE_FEE_PERCENT)
+    total_charge = int(gross.to_integral_value(rounding=ROUND_UP))
+    fee = max(total_charge - base_amount_cents, 0)
+    return total_charge, fee
 
 
 def _build_checkout_session(registration: Registration, session: Session) -> stripe.checkout.Session:
@@ -345,6 +362,7 @@ def create_donation_checkout(request: HttpRequest) -> HttpResponse:
         values = {
             "amount": request.POST.get("amount", ""),
             "frequency": request.POST.get("frequency", DonationFrequency.ONE_TIME),
+            "cover_processing_fee": request.POST.get("cover_processing_fee", ""),
             "is_anonymous": request.POST.get("is_anonymous", ""),
             "full_name": request.POST.get("full_name", ""),
             "email": request.POST.get("email", ""),
@@ -357,6 +375,7 @@ def create_donation_checkout(request: HttpRequest) -> HttpResponse:
         values = {
             "amount": request.POST.get("amount", ""),
             "frequency": request.POST.get("frequency", DonationFrequency.ONE_TIME),
+            "cover_processing_fee": request.POST.get("cover_processing_fee", ""),
             "is_anonymous": request.POST.get("is_anonymous", ""),
             "full_name": request.POST.get("full_name", ""),
             "email": request.POST.get("email", ""),
@@ -364,7 +383,12 @@ def create_donation_checkout(request: HttpRequest) -> HttpResponse:
         }
         return render(request, "intensive/donate.html", _donation_context(values))
 
-    amount_cents = int(form.cleaned_data["amount"] * 100)
+    base_amount_cents = int(form.cleaned_data["amount"] * 100)
+    cover_processing_fee = form.cleaned_data.get("cover_processing_fee", False)
+    amount_cents = base_amount_cents
+    processing_fee_cents = 0
+    if cover_processing_fee:
+        amount_cents, processing_fee_cents = _gross_up_amount_for_processing_fee(base_amount_cents)
     is_anonymous = form.cleaned_data.get("is_anonymous", False)
     donation = Donation.objects.create(
         provider="STRIPE",
@@ -376,7 +400,17 @@ def create_donation_checkout(request: HttpRequest) -> HttpResponse:
         amount=amount_cents,
         currency="USD",
         status=DonationStatus.PENDING,
-        note="Donation checkout created.",
+        note=(
+            f"Donation checkout created. Donor covers processing fee: {processing_fee_cents / 100:.2f} USD."
+            if cover_processing_fee
+            else "Donation checkout created."
+        ),
+        raw_payload={
+            "base_amount_cents": base_amount_cents,
+            "cover_processing_fee": bool(cover_processing_fee),
+            "processing_fee_cents": processing_fee_cents,
+            "checkout_amount_cents": amount_cents,
+        },
     )
     checkout_session = _build_donation_checkout_session(donation)
     donation.provider_ref = checkout_session.id

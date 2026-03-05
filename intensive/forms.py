@@ -75,6 +75,7 @@ class DonationForm(forms.Form):
         help_text="Enter amount in USD.",
     )
     frequency = forms.ChoiceField(choices=DonationFrequency.choices, initial=DonationFrequency.ONE_TIME)
+    cover_processing_fee = forms.BooleanField(required=False)
     is_anonymous = forms.BooleanField(required=False)
     full_name = forms.CharField(max_length=160, required=False)
     email = forms.EmailField(max_length=254, required=False)
