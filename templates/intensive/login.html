@@ -1,0 +1,41 @@
+{% extends "intensive/base.html" %}
+
+{% block title %}Dashboard Login{% endblock %}
+
+{% block body %}
+<main class="simple-page login-page">
+    <div class="container login-layout">
+        <section class="login-brand-panel">
+            <p class="eyebrow">Set Free In Christ</p>
+            <h2>Admin Control Center</h2>
+            <p>
+                Manage training sessions, schedule entries, and registrations from one secure dashboard.
+            </p>
+        </section>
+
+        <section class="login-card">
+            <h1>Sign In</h1>
+            <p class="admin-subtitle">Enter your admin credentials to continue.</p>
+            {% if form.non_field_errors %}
+                <div class="alerts">
+                    {% for error in form.non_field_errors %}
+                        <p class="alert">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <form method="post" class="admin-form-grid login-form">
+                {% csrf_token %}
+                <p>
+                    <label for="{{ form.username.id_for_label }}">Username</label>
+                    {{ form.username }}
+                </p>
+                <p>
+                    <label for="{{ form.password.id_for_label }}">Password</label>
+                    {{ form.password }}
+                </p>
+                <button class="btn btn-accent login-submit" type="submit">Sign In</button>
+            </form>
+        </section>
+    </div>
+</main>
+{% endblock %}

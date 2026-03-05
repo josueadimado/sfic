@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reservation Confirmed</title>
+</head>
+<body style="margin:0; padding:0; background:#f3f6f5; font-family:Arial, sans-serif; color:#15302b;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f3f6f5; padding:24px 12px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px; background:#ffffff; border:1px solid #dce5e1; border-radius:16px; overflow:hidden;">
+                    <tr>
+                        <td style="background:#154a43; padding:22px 24px;">
+                            <p style="margin:0; color:#dbff06; font-size:12px; letter-spacing:1.2px; text-transform:uppercase; font-weight:700;">Set Free In Christ</p>
+                            <h1 style="margin:8px 0 0; color:#ffffff; font-size:28px; line-height:1.1;">Reservation Confirmed</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:24px;">
+                            <p style="margin:0 0 14px; font-size:18px; line-height:1.45;">
+                                Hello {{ registration.full_name }},
+                            </p>
+                            <p style="margin:0 0 16px; font-size:16px; line-height:1.55;">
+                                Your registration for the <strong>{{ session.title }}</strong> session is confirmed and your payment was successful.
+                            </p>
+
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f8fbfa; border:1px solid #dce5e1; border-radius:12px;">
+                                <tr><td style="padding:14px 16px; font-size:15px; line-height:1.7;">
+                                    <strong>Session:</strong> {{ session.title }}<br>
+                                    <strong>Location:</strong> {{ session.location }}<br>
+                                    <strong>City/Country:</strong> {{ registration.city }}, {{ registration.country }}<br>
+                                    <strong>Dates:</strong> {{ session.start_date }} to {{ session.end_date }}<br>
+                                    <strong>Amount Paid:</strong> {{ amount_paid }}<br>
+                                    <strong>Status:</strong> {{ registration.status }}
+                                </td></tr>
+                            </table>
+
+                            <p style="margin:18px 0 0; font-size:15px; line-height:1.55;">
+                                We look forward to seeing you at the intensive.
+                            </p>
+                            <p style="margin:16px 0 0;">
+                                <a href="{{ site_base_url }}" style="display:inline-block; background:#dbff06; color:#15302b; text-decoration:none; font-weight:700; font-size:14px; letter-spacing:.3px; padding:11px 16px; border-radius:999px;">Visit Website</a>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:0 24px 20px; color:#5e726d; font-size:13px; line-height:1.5;">
+                            This email was sent to {{ registration.email }} because you completed registration on our website.
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

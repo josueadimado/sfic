@@ -1,0 +1,619 @@
+{% extends "intensive/base.html" %}
+{% load static %}
+
+{% block title %}3 Day Freedom Intensive{% endblock %}
+{% block head %}
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/intl-tel-input@23.8.0/build/css/intlTelInput.css"
+    >
+{% endblock %}
+
+{% block body %}
+<header class="topbar">
+    <div class="container topbar-inner">
+        <div class="topbar-main">
+            <div class="brand">
+                <img src="{% static 'images/logo set free in christ.svg' %}" alt="Set Free In Christ logo" class="brand-logo">
+            </div>
+            <div class="topbar-social" aria-label="Social media links">
+                <a class="social-instagram" href="https://www.instagram.com/" target="_blank" rel="noreferrer" aria-label="Instagram">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="3.5" y="3.5" width="17" height="17" rx="5"></rect>
+                        <circle cx="12" cy="12" r="4"></circle>
+                        <circle cx="17.4" cy="6.6" r="1"></circle>
+                    </svg>
+                </a>
+                <a class="social-facebook" href="https://www.facebook.com/" target="_blank" rel="noreferrer" aria-label="Facebook">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M13.2 20v-7h2.4l.4-2.8h-2.8V8.5c0-.8.3-1.4 1.5-1.4h1.4V4.6c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4.1v1.6H7.5V13H10v7h3.2Z"></path>
+                    </svg>
+                </a>
+                <a class="social-youtube" href="https://www.youtube.com/" target="_blank" rel="noreferrer" aria-label="YouTube">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <rect class="yt-box" x="3.5" y="6" width="17" height="12" rx="3.2"></rect>
+                        <path class="yt-play" d="M10 9.4v5.2l4.7-2.6L10 9.4Z"></path>
+                    </svg>
+                </a>
+            </div>
+            <button type="button" class="topbar-menu-toggle" data-mobile-menu-toggle aria-label="Open menu">☰</button>
+        </div>
+        <nav class="nav-links topbar-menu" aria-label="Main navigation">
+            <button type="button" class="topbar-menu-close" data-mobile-menu-close aria-label="Close menu">✕</button>
+            <a href="#about">About</a>
+            <a href="#schedule">Schedule</a>
+            <a href="#speakers">Speakers</a>
+            <a href="#register" class="topbar-register-btn">Register</a>
+        </nav>
+    </div>
+    <div class="mobile-menu-backdrop" data-mobile-menu-backdrop aria-hidden="true"></div>
+</header>
+
+<main>
+    <section class="hero">
+        <div class="container hero-content hero-grid">
+            <div class="hero-left">
+                <p class="eyebrow">3 DAY FREEDOM INTENSIVE</p>
+                <h1 class="hero-title">
+                    BREAK FREE AND
+                    <span>STEP INTO FREEDOM</span>
+                </h1>
+            </div>
+            <div class="hero-right">
+                <p class="hero-copy lead">
+                    Break free from what’s holding you back and step into the freedom you were created for.
+                </p>
+                <p class="hero-copy">
+                    In just three powerful days, this intensive training will guide you through biblical teaching,
+                    spiritual insight, and practical tools designed to help you experience lasting freedom.
+                </p>
+                <p class="hero-copy">
+                    Reserve your seat today and begin your journey to freedom.
+                </p>
+                <div class="hero-meta">
+                    <p class="hero-meta-item">
+                        <svg class="location-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"></path>
+                            <circle cx="12" cy="10" r="2.5"></circle>
+                        </svg>
+                        In-person location: {{ venue_address }}
+                    </p>
+                </div>
+                <a class="btn btn-accent" href="#register">RESERVE YOUR SEAT</a>
+            </div>
+        </div>
+    </section>
+
+    <section id="about" class="strip about-section">
+        <div class="container grid-two about-grid">
+            <div class="about-left">
+                <h2>A HUB FOR FREEDOM, GROWTH, AND HEALING</h2>
+            </div>
+            <div class="about-right">
+                <div class="countdown-wrap" aria-live="polite">
+                    <p class="countdown-label">COUNTDOWN TO MARCH 26, 2026</p>
+                    <div class="countdown-grid" id="countdown" data-target-date="2026-03-26T00:00:00">
+                        <div class="countdown-item">
+                            <span id="cd-days">00</span>
+                            <small>Days</small>
+                        </div>
+                        <div class="countdown-item">
+                            <span id="cd-hours">00</span>
+                            <small>Hours</small>
+                        </div>
+                        <div class="countdown-item">
+                            <span id="cd-minutes">00</span>
+                            <small>Minutes</small>
+                        </div>
+                        <div class="countdown-item">
+                            <span id="cd-seconds">00</span>
+                            <small>Seconds</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="experience" class="section white">
+        <div class="container grid-two experience-grid">
+            <div>
+                <h2 class="experience-heading">WHAT YOU WILL EXPERIENCE</h2>
+                <p class="experience-intro">
+                    During the Freedom Intensive, participants will receive powerful teaching and practical insights
+                    designed to lead to real transformation.
+                </p>
+                <div class="experience-list">
+                    <article class="experience-item">
+                        <h3>Biblical Teaching</h3>
+                        <p>
+                            Deep, scripture-based teaching on spiritual freedom and the authority believers have in Christ.
+                        </p>
+                    </article>
+                    <article class="experience-item">
+                        <h3>Practical Application</h3>
+                        <p>
+                            Participants will learn practical tools and biblical principles that can be applied in everyday
+                            life and ministry.
+                        </p>
+                    </article>
+                    <article class="experience-item">
+                        <h3>Spiritual Breakthrough</h3>
+                        <p>
+                            Many participants experience personal healing and freedom from long-standing spiritual struggles.
+                        </p>
+                    </article>
+                    <article class="experience-item">
+                        <h3>Community and Support</h3>
+                        <p>
+                            Engage with other believers who are also seeking deeper spiritual growth and transformation.
+                        </p>
+                    </article>
+                </div>
+            </div>
+            <div class="card-image"></div>
+        </div>
+    </section>
+
+    <section id="included" class="section white">
+        <div class="container">
+            <div class="facilities-wrap">
+                <h2 class="included-heading">WHAT'S INCLUDED</h2>
+                <div>
+                    <p class="included-intro">
+                        When you register for the 3 Day Freedom Intensive, you will receive:
+                    </p>
+                    <ul class="included-list">
+                        <li>Three full days of transformational teaching</li>
+                        <li>Comprehensive training materials</li>
+                        <li>Video lessons and downloadable resources</li>
+                        <li>Personal note-taking and progress tracking</li>
+                        <li>Lifetime access to the training content</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="schedule" class="section dark schedule-section">
+        <div class="container">
+            <h2>TRAINING SCHEDULE</h2>
+            <p class="schedule-intro">
+                The Freedom Intensive is a 21-hour Didasko education and training seminar delivered over three days.
+            </p>
+            <div class="schedule-grid">
+                {% for item in schedule_items %}
+                    <article>
+                        <h3>{{ item.day_name }}</h3>
+                        <p>{{ item.start_time|time:"g:i A" }} - {{ item.end_time|time:"g:i A" }}</p>
+                        <p class="lunch-line">
+                            Lunch Break: {{ item.lunch_start|time:"g:i A" }} - {{ item.lunch_end|time:"g:i A" }}
+                        </p>
+                    </article>
+                {% empty %}
+                    <article>
+                        <h3>Wednesday</h3>
+                        <p>8:30 AM - 5:30 PM</p>
+                        <p class="lunch-line">Lunch Break: 12:30 PM - 1:30 PM</p>
+                    </article>
+                    <article>
+                        <h3>Thursday</h3>
+                        <p>8:30 AM - 5:30 PM</p>
+                        <p class="lunch-line">Lunch Break: 12:30 PM - 1:30 PM</p>
+                    </article>
+                    <article>
+                        <h3>Friday</h3>
+                        <p>8:00 AM - 5:00 PM</p>
+                        <p class="lunch-line">Lunch Break: 12:00 PM - 12:30 PM</p>
+                    </article>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    {# Hidden for now until real media content is ready. #}
+
+    <section id="sessions" class="section white">
+        <div class="container">
+            <h2>AVAILABLE TRAINING SESSIONS</h2>
+            <p class="sessions-intro">
+                Choose the date that works best for you, then reserve your seat below. Each session has limited seats
+                so every participant can receive focused support and practical guidance.
+            </p>
+            <div class="session-grid">
+                {% for session in sessions %}
+                    <article class="session-card">
+                        <div class="session-card-head">
+                            <h3>{{ session.title }}</h3>
+                            {% if session.seats_left <= 10 %}
+                                <span class="session-badge low">Few Seats Left</span>
+                            {% else %}
+                                <span class="session-badge open">Open</span>
+                            {% endif %}
+                        </div>
+                        <p class="session-location">
+                            <svg class="location-icon small" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"></path>
+                                <circle cx="12" cy="10" r="2.5"></circle>
+                            </svg>
+                            {{ session.location }}
+                        </p>
+                        <p class="session-date">{{ session.start_date|date:"F j" }} - {{ session.end_date|date:"F j, Y" }}</p>
+                        <p class="meta">{{ session.seats_left }} seats left of {{ session.capacity }}</p>
+                        <p class="price">{{ session.display_price }}</p>
+                        <a href="#register" class="btn btn-accent session-cta" data-select-session="{{ session.id }}">Reserve This Session</a>
+                    </article>
+                {% empty %}
+                    <p>No active sessions yet. Add one in admin.</p>
+                {% endfor %}
+            </div>
+            <p class="sessions-footnote">
+                Seats are limited for each session to maintain a focused and impactful training environment.
+            </p>
+        </div>
+    </section>
+
+    <section id="speakers" class="section white speakers-section">
+        <div class="container">
+            <h2>MEET THE SPEAKERS</h2>
+            <p class="speakers-intro">
+                Our speakers and facilitators bring biblical depth, practical wisdom, and ministry experience to guide
+                every participant through this intensive journey.
+            </p>
+            {% if speakers_session %}
+                <p class="speakers-note">Featured speakers for {{ speakers_session.title }}</p>
+            {% endif %}
+            <div class="speakers-grid">
+                {% for speaker in speakers %}
+                    <article class="speaker-card">
+                        <div class="speaker-photo-wrap">
+                            {% if speaker.photo_image %}
+                                <img class="speaker-photo" src="{{ speaker.photo_image.url }}" alt="{{ speaker.full_name }}">
+                            {% elif speaker.photo_url %}
+                                <img class="speaker-photo" src="{{ speaker.photo_url }}" alt="{{ speaker.full_name }}">
+                            {% else %}
+                                <div class="speaker-avatar">{{ speaker.full_name|slice:":2"|upper }}</div>
+                            {% endif %}
+                            {% if speaker.country_code %}
+                                <img
+                                    class="speaker-flag"
+                                    src="https://flagcdn.com/24x18/{{ speaker.country_code|lower }}.png"
+                                    alt="{{ speaker.country_label|default:'Country flag' }}"
+                                >
+                            {% endif %}
+                        </div>
+                        <h3>{{ speaker.full_name }}</h3>
+                        <p class="speaker-role">{{ speaker.role_title }}</p>
+                        {% if speaker.role_subtitle %}
+                            <p class="speaker-subtitle">{{ speaker.role_subtitle }}</p>
+                        {% endif %}
+                        {% if speaker.read_more_url %}
+                            <a class="speaker-link" href="{{ speaker.read_more_url }}" target="_blank" rel="noreferrer">Read More</a>
+                        {% endif %}
+                    </article>
+                {% empty %}
+                    <article class="speaker-card">
+                        <div class="speaker-avatar">SF</div>
+                        <h3>Speaker profile coming soon</h3>
+                        <p>Add speaker profiles from the admin panel.</p>
+                    </article>
+                {% endfor %}
+            </div>
+            <a class="btn btn-accent" href="#register">JOIN THE NEXT SESSION</a>
+        </div>
+    </section>
+
+    <section id="register" class="section register">
+        <div class="container">
+            <h2>REGISTER Now</h2>
+            {% if messages %}
+                <div class="alerts">
+                    {% for message in messages %}
+                        <p class="alert">{{ message }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <form method="post" action="{% url 'create_checkout' %}" class="register-form">
+                {% csrf_token %}
+                <label for="full_name">Full Name</label>
+                <input
+                    id="full_name"
+                    name="full_name"
+                    type="text"
+                    value="{{ reg_form.full_name|default:'' }}"
+                    autocomplete="name"
+                    placeholder="Enter your full name"
+                    required
+                >
+
+                <label for="email">Email</label>
+                <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value="{{ reg_form.email|default:'' }}"
+                    autocomplete="email"
+                    placeholder="you@example.com"
+                    required
+                >
+
+                <label for="phone">Phone</label>
+                <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    value="{{ reg_form.phone|default:'' }}"
+                    inputmode="tel"
+                    autocomplete="tel"
+                    required
+                >
+
+                <label for="city">City</label>
+                <input
+                    id="city"
+                    name="city"
+                    type="text"
+                    value="{{ reg_form.city|default:'' }}"
+                    autocomplete="address-level2"
+                    placeholder="e.g. Dallas"
+                    required
+                >
+
+                <label for="country">Country</label>
+                <select
+                    id="country"
+                    name="country"
+                    required
+                >
+                    <option value="" data-flag="" {% if not reg_form.country %}selected{% endif %}>Select country...</option>
+                    {% for value, label, code in country_options %}
+                        <option value="{{ value }}" data-flag="{{ code }}" {% if reg_form.country == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <p class="country-preview" id="country-preview">
+                    <span id="country-name-preview">No country selected yet</span>
+                </p>
+
+                <label for="church">Church/Organization (optional)</label>
+                <input
+                    id="church"
+                    name="church"
+                    type="text"
+                    value="{{ reg_form.church|default:'' }}"
+                    autocomplete="organization"
+                    placeholder="e.g. Set Free Church"
+                >
+
+                <label for="session_id">Choose Session</label>
+                <select id="session_id" name="session_id" required>
+                    <option value="">Select session...</option>
+                    {% for session in sessions %}
+                        <option
+                            value="{{ session.id }}"
+                            data-price="{{ session.price }}"
+                            data-currency="{{ session.currency|upper }}"
+                            {% if reg_form.session_id == session.id|stringformat:"s" %}selected{% endif %}
+                        >
+                            {{ session.title }} | {{ session.start_date }} - {{ session.end_date }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <p class="payment-preview is-empty" id="payment-preview">Select a session to see your payment amount.</p>
+
+                <button type="submit" class="btn btn-accent">PAY & RESERVE SEAT</button>
+            </form>
+        </div>
+    </section>
+</main>
+
+<footer class="footer">
+    <div class="container footer-legal">
+        <p>Copyright &copy; {% now "Y" %} Set Free In Christ. All rights reserved.</p>
+        <div class="footer-links">
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms &amp; Conditions</a>
+            <a href="#">Legal Notice</a>
+        </div>
+    </div>
+</footer>
+
+<script>
+    (function () {
+        const container = document.getElementById("countdown");
+        if (!container) return;
+
+        const targetDate = new Date(container.dataset.targetDate);
+        const daysEl = document.getElementById("cd-days");
+        const hoursEl = document.getElementById("cd-hours");
+        const minutesEl = document.getElementById("cd-minutes");
+        const secondsEl = document.getElementById("cd-seconds");
+
+        function pad(value) {
+            return String(value).padStart(2, "0");
+        }
+
+        function tick() {
+            const now = new Date();
+            const diff = targetDate - now;
+
+            if (diff <= 0) {
+                daysEl.textContent = "00";
+                hoursEl.textContent = "00";
+                minutesEl.textContent = "00";
+                secondsEl.textContent = "00";
+                return;
+            }
+
+            const totalSeconds = Math.floor(diff / 1000);
+            const days = Math.floor(totalSeconds / 86400);
+            const hours = Math.floor((totalSeconds % 86400) / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+
+            daysEl.textContent = pad(days);
+            hoursEl.textContent = pad(hours);
+            minutesEl.textContent = pad(minutes);
+            secondsEl.textContent = pad(seconds);
+        }
+
+        tick();
+        setInterval(tick, 1000);
+    })();
+
+    (function () {
+        const body = document.body;
+        const menu = document.querySelector(".topbar-menu");
+        const openBtn = document.querySelector("[data-mobile-menu-toggle]");
+        const closeBtn = document.querySelector("[data-mobile-menu-close]");
+        const backdrop = document.querySelector("[data-mobile-menu-backdrop]");
+        if (!menu || !openBtn || !closeBtn || !backdrop) return;
+
+        function closeMenu() {
+            body.classList.remove("mobile-menu-open");
+        }
+
+        openBtn.addEventListener("click", () => {
+            body.classList.add("mobile-menu-open");
+        });
+        closeBtn.addEventListener("click", closeMenu);
+        backdrop.addEventListener("click", closeMenu);
+
+        menu.querySelectorAll("a").forEach((link) => {
+            link.addEventListener("click", closeMenu);
+        });
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                closeMenu();
+            }
+        });
+    })();
+
+    (function () {
+        const registerSelect = document.getElementById("session_id");
+        const paymentPreview = document.getElementById("payment-preview");
+        if (!registerSelect) return;
+
+        function updatePaymentPreview() {
+            if (!paymentPreview) return;
+            const selected = registerSelect.options[registerSelect.selectedIndex];
+            const priceRaw = selected ? selected.getAttribute("data-price") : "";
+            const currency = selected ? selected.getAttribute("data-currency") : "";
+            if (!priceRaw || !currency) {
+                paymentPreview.classList.add("is-empty");
+                paymentPreview.textContent = "Select a session to see your payment amount.";
+                return;
+            }
+            const amount = Number(priceRaw) / 100;
+            const formatted = `${amount.toFixed(2)} ${currency}`;
+            paymentPreview.classList.remove("is-empty");
+            paymentPreview.textContent = `Amount to Pay: ${formatted}`;
+        }
+
+        document.querySelectorAll("[data-select-session]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const sessionId = button.getAttribute("data-select-session");
+                if (sessionId) {
+                    registerSelect.value = sessionId;
+                    updatePaymentPreview();
+                }
+            });
+        });
+
+        registerSelect.addEventListener("change", updatePaymentPreview);
+        updatePaymentPreview();
+    })();
+
+    (function () {
+        const phoneInput = document.getElementById("phone");
+        const countrySelect = document.getElementById("country");
+        if (!phoneInput) return;
+
+        function initIntlPhone() {
+            if (!window.intlTelInput) return;
+
+            const iti = window.intlTelInput(phoneInput, {
+                initialCountry: "us",
+                separateDialCode: true,
+                preferredCountries: ["us", "gb", "ca", "ng", "za"],
+                autoPlaceholder: "aggressive",
+                placeholderNumberType: "MOBILE",
+                formatOnDisplay: true,
+                utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@23.8.0/build/js/utils.js",
+            });
+
+            if (countrySelect) {
+                if (!countrySelect.value) {
+                    const defaultOption = countrySelect.querySelector('option[data-flag="us"]');
+                    if (defaultOption) {
+                        countrySelect.value = defaultOption.value;
+                    }
+                }
+
+                function syncSelectFromPhone() {
+                    const selected = iti.getSelectedCountryData();
+                    if (!selected || !selected.iso2) return;
+                    const target = countrySelect.querySelector(`option[data-flag="${selected.iso2}"]`);
+                    if (target) {
+                        countrySelect.value = target.value;
+                    }
+                }
+
+                function syncPhoneFromSelect() {
+                    const option = countrySelect.options[countrySelect.selectedIndex];
+                    const iso2 = option ? option.getAttribute("data-flag") : "";
+                    if (iso2) {
+                        iti.setCountry(iso2);
+                    }
+                }
+
+                phoneInput.addEventListener("countrychange", syncSelectFromPhone);
+                countrySelect.addEventListener("change", syncPhoneFromSelect);
+                syncPhoneFromSelect();
+            }
+
+            const form = phoneInput.closest("form");
+            if (form) {
+                form.addEventListener("submit", () => {
+                    const number = iti.getNumber();
+                    if (number) {
+                        phoneInput.value = number;
+                    }
+                });
+            }
+        }
+
+        if (window.intlTelInput) {
+            initIntlPhone();
+        } else {
+            const script = document.createElement("script");
+            script.src = "https://cdn.jsdelivr.net/npm/intl-tel-input@23.8.0/build/js/intlTelInput.min.js";
+            script.onload = initIntlPhone;
+            document.body.appendChild(script);
+        }
+    })();
+
+    (function () {
+        const countrySelect = document.getElementById("country");
+        const previewWrap = document.getElementById("country-preview");
+        const previewName = document.getElementById("country-name-preview");
+        if (!countrySelect || !previewWrap || !previewName) return;
+
+        function updateCountryPreview() {
+            const selected = countrySelect.options[countrySelect.selectedIndex];
+            const name = selected ? selected.value : "";
+            const label = selected ? selected.textContent : "";
+            if (!name) {
+                previewWrap.classList.add("is-empty");
+                previewName.textContent = "No country selected yet";
+                return;
+            }
+            previewWrap.classList.remove("is-empty");
+            previewName.textContent = label;
+        }
+
+        countrySelect.addEventListener("change", updateCountryPreview);
+        updateCountryPreview();
+    })();
+</script>
+{% endblock %}

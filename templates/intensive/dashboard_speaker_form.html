@@ -1,0 +1,65 @@
+{% extends "intensive/base.html" %}
+
+{% block title %}{% if edit_obj %}Edit Speaker{% else %}Create Speaker{% endif %}{% endblock %}
+
+{% block body %}
+<main class="admin-layout-page">
+    <aside class="admin-sidebar">
+        <div class="admin-sidebar-head">
+            <p class="eyebrow">Set Free In Christ</p>
+            <h2>Admin Panel</h2>
+        </div>
+        <nav class="admin-menu">
+            <a href="{% url 'dashboard' %}" class="{% if admin_page == 'registrations' %}is-active{% endif %}"><span class="menu-icon icon-registrations" aria-hidden="true"></span>Registrations</a>
+            <a href="{% url 'dashboard_transactions' %}" class="{% if admin_page == 'transactions' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Transactions</a>
+            <a href="{% url 'dashboard_sessions' %}" class="{% if admin_page == 'sessions' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Training Sessions</a>
+            <a href="{% url 'dashboard_schedule' %}" class="{% if admin_page == 'schedule' %}is-active{% endif %}"><span class="menu-icon icon-schedule" aria-hidden="true"></span>Training Schedule</a>
+            <a href="{% url 'dashboard_speakers' %}" class="{% if admin_page == 'speakers' %}is-active{% endif %}"><span class="menu-icon icon-speakers" aria-hidden="true"></span>Speakers</a>
+            <a href="{% url 'dashboard_site_settings' %}" class="{% if admin_page == 'settings' %}is-active{% endif %}"><span class="menu-icon icon-settings" aria-hidden="true"></span>Site Settings</a>
+        </nav>
+        <div class="admin-sidebar-foot">
+            <a class="btn btn-outline btn-with-icon" href="{% url 'home' %}" target="_blank" rel="noreferrer">View Site <span class="btn-icon" aria-hidden="true">&#8599;</span></a>
+            <a class="btn btn-outline btn-with-icon" href="{% url 'logout' %}">Logout <span class="btn-icon" aria-hidden="true">&#10132;</span></a>
+        </div>
+    </aside>
+
+    <section class="admin-main">
+        <button type="button" class="sidebar-toggle" data-sidebar-toggle aria-label="Close sidebar menu" title="Close menu">✕</button>
+        <h1>{% if edit_obj %}Edit Speaker{% else %}Create Speaker{% endif %}</h1>
+        <p class="admin-subtitle">
+            {% if edit_obj %}
+                Update this speaker profile and save changes.
+            {% else %}
+                Add a new speaker profile for the homepage speaker section.
+            {% endif %}
+        </p>
+        {% if messages %}
+            <div class="alerts">
+                {% for message in messages %}
+                    <p class="alert">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data" class="admin-form-grid" style="max-width: 820px;">
+            {% csrf_token %}
+            {% if edit_obj and edit_obj.photo_image %}
+                <div class="admin-speaker-preview">
+                    <p class="admin-speaker-preview-label">Current image</p>
+                    <img src="{{ edit_obj.photo_image.url }}" alt="{{ edit_obj.full_name }}" class="admin-speaker-preview-image">
+                </div>
+            {% elif edit_obj and edit_obj.photo_url %}
+                <div class="admin-speaker-preview">
+                    <p class="admin-speaker-preview-label">Current image</p>
+                    <img src="{{ edit_obj.photo_url }}" alt="{{ edit_obj.full_name }}" class="admin-speaker-preview-image">
+                </div>
+            {% endif %}
+            {{ form.as_p }}
+            <div class="admin-actions">
+                <button class="btn btn-accent" type="submit">{% if edit_obj %}Update Speaker{% else %}Create Speaker{% endif %}</button>
+                <a class="btn btn-outline" href="{% url 'dashboard_speakers' %}">Back to Speakers</a>
+            </div>
+        </form>
+    </section>
+</main>
+{% endblock %}

@@ -1,0 +1,74 @@
+[
+  {
+    "model": "intensive.speaker",
+    "pk": 1,
+    "fields": {
+      "full_name": "Dr. Michael Grayson",
+      "role_title": "Lead Facilitator",
+      "role_subtitle": "Freedom Intensive Director",
+      "country_code": "us",
+      "country_label": "United States",
+      "photo_url": "",
+      "read_more_url": "",
+      "display_order": 1,
+      "is_active": true,
+      "created_at": "2026-03-04T00:00:00Z",
+      "updated_at": "2026-03-04T00:00:00Z",
+      "sessions": []
+    }
+  },
+  {
+    "model": "intensive.speaker",
+    "pk": 2,
+    "fields": {
+      "full_name": "Pastor Emmanuel Stone",
+      "role_title": "Prayer & Ministry",
+      "role_subtitle": "Healing and Deliverance Team",
+      "country_code": "us",
+      "country_label": "United States",
+      "photo_url": "",
+      "read_more_url": "",
+      "display_order": 2,
+      "is_active": true,
+      "created_at": "2026-03-04T00:00:00Z",
+      "updated_at": "2026-03-04T00:00:00Z",
+      "sessions": []
+    }
+  },
+  {
+    "model": "intensive.speaker",
+    "pk": 3,
+    "fields": {
+      "full_name": "Dr. Rebecca Allen",
+      "role_title": "Discipleship Trainer",
+      "role_subtitle": "Applied Biblical Formation",
+      "country_code": "us",
+      "country_label": "United States",
+      "photo_url": "",
+      "read_more_url": "",
+      "display_order": 3,
+      "is_active": true,
+      "created_at": "2026-03-04T00:00:00Z",
+      "updated_at": "2026-03-04T00:00:00Z",
+      "sessions": []
+    }
+  },
+  {
+    "model": "intensive.speaker",
+    "pk": 4,
+    "fields": {
+      "full_name": "Jonathan Reed",
+      "role_title": "Community Guide",
+      "role_subtitle": "Next Steps & Accountability",
+      "country_code": "us",
+      "country_label": "United States",
+      "photo_url": "",
+      "read_more_url": "",
+      "display_order": 4,
+      "is_active": true,
+      "created_at": "2026-03-04T00:00:00Z",
+      "updated_at": "2026-03-04T00:00:00Z",
+      "sessions": []
+    }
+  }
+]

@@ -1,0 +1,73 @@
+from django.contrib import admin
+
+from .models import PaymentTransaction, Registration, Session, SiteSetting, Speaker, TrainingScheduleItem
+
+
+@admin.register(Session)
+class SessionAdmin(admin.ModelAdmin):
+    list_display = ("title", "location", "start_date", "end_date", "capacity", "price", "currency", "is_active")
+    list_filter = ("is_active", "currency", "start_date", "location")
+    search_fields = ("title", "location")
+
+
+@admin.register(Registration)
+class RegistrationAdmin(admin.ModelAdmin):
+    list_display = (
+        "full_name",
+        "email",
+        "phone",
+        "city",
+        "country",
+        "session",
+        "status",
+        "amount_paid",
+        "currency",
+        "created_at",
+    )
+    list_filter = ("status", "payment_provider", "currency", "session")
+    search_fields = ("full_name", "email", "phone", "city", "country", "payment_ref")
+
+
+@admin.register(TrainingScheduleItem)
+class TrainingScheduleItemAdmin(admin.ModelAdmin):
+    list_display = (
+        "display_order",
+        "day_name",
+        "start_time",
+        "end_time",
+        "lunch_start",
+        "lunch_end",
+        "is_active",
+    )
+    list_filter = ("is_active",)
+    search_fields = ("day_name",)
+    ordering = ("display_order", "id")
+
+
+@admin.register(SiteSetting)
+class SiteSettingAdmin(admin.ModelAdmin):
+    list_display = ("site_name", "venue_address", "updated_at")
+
+
+@admin.register(Speaker)
+class SpeakerAdmin(admin.ModelAdmin):
+    list_display = ("full_name", "role_title", "country_label", "display_order", "is_active")
+    list_filter = ("is_active", "country_label")
+    search_fields = ("full_name", "role_title", "country_label")
+    filter_horizontal = ("sessions",)
+
+
+@admin.register(PaymentTransaction)
+class PaymentTransactionAdmin(admin.ModelAdmin):
+    list_display = (
+        "created_at",
+        "transaction_type",
+        "status",
+        "provider",
+        "amount",
+        "currency",
+        "payment_ref",
+        "registration",
+    )
+    list_filter = ("transaction_type", "status", "provider", "currency")
+    search_fields = ("payment_ref", "stripe_payment_intent", "note", "registration__email", "registration__full_name")

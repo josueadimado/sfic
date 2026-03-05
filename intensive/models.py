@@ -1,0 +1,171 @@
+import uuid
+
+from django.db import models
+from django.utils import timezone
+
+
+class RegistrationStatus(models.TextChoices):
+    PENDING = "PENDING", "Pending"
+    PAID = "PAID", "Paid"
+    CANCELED = "CANCELED", "Canceled"
+
+
+class PaymentProvider(models.TextChoices):
+    STRIPE = "STRIPE", "Stripe"
+
+
+class TransactionType(models.TextChoices):
+    CHECKOUT_CREATED = "CHECKOUT_CREATED", "Checkout Created"
+    PAYMENT_COMPLETED = "PAYMENT_COMPLETED", "Payment Completed"
+    PAYMENT_CANCELED = "PAYMENT_CANCELED", "Payment Canceled"
+    PAYMENT_ERROR = "PAYMENT_ERROR", "Payment Error"
+
+
+class Session(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=120)
+    location = models.CharField(max_length=180, default="Dallas, TX, USA")
+    start_date = models.DateField()
+    end_date = models.DateField()
+    capacity = models.PositiveIntegerField()
+    price = models.PositiveIntegerField(help_text="Stored in the smallest currency unit.")
+    currency = models.CharField(max_length=8, default="USD")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["start_date", "title"]
+
+    def __str__(self) -> str:
+        return f"{self.title} ({self.start_date} to {self.end_date})"
+
+    @property
+    def paid_count(self) -> int:
+        return self.registrations.filter(status=RegistrationStatus.PAID).count()
+
+    @property
+    def seats_left(self) -> int:
+        return max(self.capacity - self.paid_count, 0)
+
+    @property
+    def display_price(self) -> str:
+        return f"{self.price / 100:.2f} {self.currency.upper()}"
+
+
+class TrainingScheduleItem(models.Model):
+    day_name = models.CharField(max_length=32)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    lunch_start = models.TimeField()
+    lunch_end = models.TimeField()
+    display_order = models.PositiveIntegerField(default=1)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["display_order", "id"]
+
+    def __str__(self) -> str:
+        return f"{self.day_name}: {self.start_time} - {self.end_time}"
+
+
+class SiteSetting(models.Model):
+    site_name = models.CharField(max_length=120, default="Set Free In Christ")
+    venue_address = models.CharField(
+        max_length=255,
+        default="Freedom Revival Center, 1200 Main St, Dallas, TX 75202, USA",
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Site Setting"
+        verbose_name_plural = "Site Settings"
+
+    def __str__(self) -> str:
+        return self.site_name
+
+
+class Speaker(models.Model):
+    full_name = models.CharField(max_length=140)
+    role_title = models.CharField(max_length=180)
+    role_subtitle = models.CharField(max_length=180, blank=True)
+    country_code = models.CharField(max_length=2, blank=True, help_text="ISO alpha-2 code, e.g. us, gb")
+    country_label = models.CharField(max_length=80, blank=True)
+    photo_image = models.ImageField(upload_to="speakers/", blank=True)
+    photo_url = models.URLField(blank=True, help_text="Use an image URL for speaker headshot.")
+    read_more_url = models.URLField(blank=True)
+    sessions = models.ManyToManyField(Session, blank=True, related_name="speakers")
+    display_order = models.PositiveIntegerField(default=1)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["display_order", "full_name"]
+
+    def __str__(self) -> str:
+        return self.full_name
+
+
+class Registration(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    full_name = models.CharField(max_length=160)
+    email = models.EmailField()
+    phone = models.CharField(max_length=40)
+    city = models.CharField(max_length=120, blank=True)
+    country = models.CharField(max_length=120, blank=True)
+    church = models.CharField(max_length=160, blank=True)
+    session = models.ForeignKey(
+        Session, on_delete=models.PROTECT, related_name="registrations"
+    )
+    status = models.CharField(
+        max_length=16,
+        choices=RegistrationStatus.choices,
+        default=RegistrationStatus.PENDING,
+    )
+    payment_provider = models.CharField(
+        max_length=16, choices=PaymentProvider.choices, default=PaymentProvider.STRIPE
+    )
+    payment_ref = models.CharField(max_length=200, blank=True)
+    amount_paid = models.PositiveIntegerField(default=0)
+    currency = models.CharField(max_length=8, default="USD")
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["email"]), models.Index(fields=["status"])]
+
+    def __str__(self) -> str:
+        return f"{self.full_name} - {self.session.title} ({self.status})"
+
+    @property
+    def display_amount_paid(self) -> str:
+        return f"{self.amount_paid / 100:.2f} {self.currency.upper()}"
+
+
+class PaymentTransaction(models.Model):
+    registration = models.ForeignKey(
+        Registration, on_delete=models.SET_NULL, null=True, blank=True, related_name="transactions"
+    )
+    session = models.ForeignKey(
+        Session, on_delete=models.SET_NULL, null=True, blank=True, related_name="transactions"
+    )
+    transaction_type = models.CharField(max_length=32, choices=TransactionType.choices)
+    status = models.CharField(max_length=16, choices=RegistrationStatus.choices, blank=True)
+    provider = models.CharField(max_length=16, choices=PaymentProvider.choices, default=PaymentProvider.STRIPE)
+    amount = models.PositiveIntegerField(default=0)
+    currency = models.CharField(max_length=8, default="USD")
+    payment_ref = models.CharField(max_length=200, blank=True)
+    stripe_payment_intent = models.CharField(max_length=200, blank=True)
+    note = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.transaction_type} - {self.payment_ref or 'N/A'}"

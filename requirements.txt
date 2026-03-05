@@ -1,0 +1,6 @@
+django
+stripe
+python-dotenv
+pillow
+pycountry
+reportlab

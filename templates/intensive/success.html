@@ -1,0 +1,36 @@
+{% extends "intensive/base.html" %}
+{% load static %}
+
+{% block title %}Reservation Confirmed{% endblock %}
+
+{% block body %}
+<main class="simple-page">
+    <div class="container centered result-card">
+        <div class="result-brand">
+            <img src="{% static 'images/logo set free in christ.svg' %}" alt="Set Free In Christ" class="result-logo">
+            <p class="result-brand-name">Set Free In Christ</p>
+        </div>
+        <h1 class="result-title">Reservation Confirmed</h1>
+        {% if registration %}
+            <p class="result-intro">Thank you, {{ registration.full_name }}. Your seat is confirmed and your payment was successful.</p>
+            <div class="result-meta">
+                <p><strong>Session:</strong> {{ registration.session.title }}</p>
+                <p><strong>Location:</strong> {{ registration.session.location }}</p>
+                <p><strong>City/Country:</strong> {{ registration.city }}, {{ registration.country }}</p>
+                <p><strong>Status:</strong> <span class="result-status">{{ registration.status }}</span></p>
+                <p><strong>Amount:</strong> {{ registration.display_amount_paid }}</p>
+                <p><strong>Reference:</strong> {{ registration.payment_ref|default:"-" }}</p>
+                <p><strong>Date:</strong> {{ registration.updated_at|date:"F j, Y g:i A" }}</p>
+            </div>
+            <p class="result-note">A confirmation email has been sent to <strong>{{ registration.email }}</strong>.</p>
+        {% else %}
+            <p class="result-intro">Your payment is being verified. If you do not get an email soon, contact support.</p>
+        {% endif %}
+        <div class="result-actions">
+            <button class="btn btn-outline print-hide" type="button" onclick="window.print()">Print Confirmation</button>
+            <a class="btn btn-accent" href="{% url 'home' %}">Back to Home</a>
+            <a class="btn btn-outline" href="{% url 'home' %}#register">Register Another Person</a>
+        </div>
+    </div>
+</main>
+{% endblock %}

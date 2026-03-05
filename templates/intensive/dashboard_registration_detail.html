@@ -1,0 +1,85 @@
+{% extends "intensive/base.html" %}
+
+{% block title %}Registration Details{% endblock %}
+
+{% block body %}
+<main class="admin-layout-page">
+    <aside class="admin-sidebar">
+        <div class="admin-sidebar-head">
+            <p class="eyebrow">Set Free In Christ</p>
+            <h2>Admin Panel</h2>
+        </div>
+        <nav class="admin-menu">
+            <a href="{% url 'dashboard' %}" class="{% if admin_page == 'registrations' %}is-active{% endif %}"><span class="menu-icon icon-registrations" aria-hidden="true"></span>Registrations</a>
+            <a href="{% url 'dashboard_transactions' %}" class="{% if admin_page == 'transactions' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Transactions</a>
+            <a href="{% url 'dashboard_sessions' %}" class="{% if admin_page == 'sessions' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Training Sessions</a>
+            <a href="{% url 'dashboard_schedule' %}" class="{% if admin_page == 'schedule' %}is-active{% endif %}"><span class="menu-icon icon-schedule" aria-hidden="true"></span>Training Schedule</a>
+            <a href="{% url 'dashboard_speakers' %}" class="{% if admin_page == 'speakers' %}is-active{% endif %}"><span class="menu-icon icon-speakers" aria-hidden="true"></span>Speakers</a>
+            <a href="{% url 'dashboard_site_settings' %}" class="{% if admin_page == 'settings' %}is-active{% endif %}"><span class="menu-icon icon-settings" aria-hidden="true"></span>Site Settings</a>
+        </nav>
+        <div class="admin-sidebar-foot">
+            <a class="btn btn-outline btn-with-icon" href="{% url 'home' %}" target="_blank" rel="noreferrer">View Site <span class="btn-icon" aria-hidden="true">&#8599;</span></a>
+            <a class="btn btn-outline btn-with-icon" href="{% url 'logout' %}">Logout <span class="btn-icon" aria-hidden="true">&#10132;</span></a>
+        </div>
+    </aside>
+
+    <section class="admin-main">
+        <button type="button" class="sidebar-toggle" data-sidebar-toggle aria-label="Close sidebar menu" title="Close menu">✕</button>
+        <div class="admin-actions" style="margin-bottom: 0.8rem;">
+            <a class="btn btn-outline" href="{% url 'dashboard' %}">← Back to Registrations</a>
+        </div>
+        <h1>Registrant Info</h1>
+        <p class="admin-subtitle">Detailed information and payment activity for this registration.</p>
+
+        <div class="admin-form-grid" style="max-width: 900px;">
+            <p><strong>Full Name:</strong> {{ registration.full_name }}</p>
+            <p><strong>Email:</strong> {{ registration.email }}</p>
+            <p><strong>Phone:</strong> {{ registration.phone }}</p>
+            <p><strong>City:</strong> {{ registration.city|default:"-" }}</p>
+            <p><strong>Country:</strong> {{ registration.country|default:"-" }}</p>
+            <p><strong>Church/Organization:</strong> {{ registration.church|default:"-" }}</p>
+            <p><strong>Session:</strong> {{ registration.session.title }}</p>
+            <p><strong>Session Location:</strong> {{ registration.session.location }}</p>
+            <p><strong>Status:</strong> <span class="status-pill status-{{ registration.status|lower }}">{{ registration.status }}</span></p>
+            <p><strong>Amount Paid:</strong> {{ registration.display_amount_paid }}</p>
+            <p><strong>Payment Reference:</strong> {{ registration.payment_ref|default:"-" }}</p>
+            <p><strong>Created:</strong> {{ registration.created_at }}</p>
+        </div>
+
+        <h2 class="admin-side-title" style="margin-top: 1rem;">Transaction Timeline</h2>
+        <div class="table-wrap admin-table-wrap">
+            <table class="admin-registrations-table">
+                <thead>
+                    <tr>
+                        <th>Created</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Amount</th>
+                        <th>Payment Ref</th>
+                        <th>Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in transactions %}
+                        <tr class="{% if item.status != 'PAID' %}is-faded{% endif %}">
+                            <td>{{ item.created_at }}</td>
+                            <td>{{ item.get_transaction_type_display }}</td>
+                            <td><span class="status-pill status-{{ item.status|lower }}">{{ item.status|default:"-" }}</span></td>
+                            <td>{{ item.amount|floatformat:2 }} {{ item.currency }}</td>
+                            <td>{{ item.payment_ref|default:"-" }}</td>
+                            <td>{{ item.note|default:"-" }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="6">No transaction records yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="admin-actions" style="margin-top: 0.9rem;">
+            <a class="btn btn-outline" href="{% url 'dashboard' %}">Back to Registrations</a>
+            <a class="btn btn-accent" href="{% url 'dashboard_transactions' %}">Open Transactions Page</a>
+        </div>
+    </section>
+</main>
+{% endblock %}

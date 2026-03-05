@@ -1,0 +1,78 @@
+{% extends "intensive/base.html" %}
+
+{% block title %}Manage Schedule{% endblock %}
+
+{% block body %}
+<main class="admin-layout-page">
+    <aside class="admin-sidebar">
+        <div class="admin-sidebar-head">
+            <p class="eyebrow">Set Free In Christ</p>
+            <h2>Admin Panel</h2>
+        </div>
+        <nav class="admin-menu">
+            <a href="{% url 'dashboard' %}" class="{% if admin_page == 'registrations' %}is-active{% endif %}"><span class="menu-icon icon-registrations" aria-hidden="true"></span>Registrations</a>
+            <a href="{% url 'dashboard_transactions' %}" class="{% if admin_page == 'transactions' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Transactions</a>
+            <a href="{% url 'dashboard_sessions' %}" class="{% if admin_page == 'sessions' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Training Sessions</a>
+            <a href="{% url 'dashboard_schedule' %}" class="{% if admin_page == 'schedule' %}is-active{% endif %}"><span class="menu-icon icon-schedule" aria-hidden="true"></span>Training Schedule</a>
+            <a href="{% url 'dashboard_speakers' %}" class="{% if admin_page == 'speakers' %}is-active{% endif %}"><span class="menu-icon icon-speakers" aria-hidden="true"></span>Speakers</a>
+            <a href="{% url 'dashboard_site_settings' %}" class="{% if admin_page == 'settings' %}is-active{% endif %}"><span class="menu-icon icon-settings" aria-hidden="true"></span>Site Settings</a>
+        </nav>
+        <div class="admin-sidebar-foot">
+            <a class="btn btn-outline btn-with-icon" href="{% url 'home' %}" target="_blank" rel="noreferrer">View Site <span class="btn-icon" aria-hidden="true">&#8599;</span></a>
+            <a class="btn btn-outline btn-with-icon" href="{% url 'logout' %}">Logout <span class="btn-icon" aria-hidden="true">&#10132;</span></a>
+        </div>
+    </aside>
+
+    <section class="admin-main">
+        <button type="button" class="sidebar-toggle" data-sidebar-toggle aria-label="Close sidebar menu" title="Close menu">✕</button>
+        <h1>Manage Training Schedule</h1>
+        <p class="admin-subtitle">View all schedule rows here. Click create or edit to open the form page.</p>
+        {% if messages %}
+            <div class="alerts">
+                {% for message in messages %}
+                    <p class="alert">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="admin-actions">
+            <a class="btn btn-accent" href="{% url 'dashboard_schedule_create' %}">Create Schedule Row</a>
+        </div>
+
+        <div class="table-wrap admin-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Order</th>
+                        <th>Day</th>
+                        <th>Time</th>
+                        <th>Lunch Break</th>
+                        <th>Active</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                        <tr>
+                            <td>{{ item.display_order }}</td>
+                            <td>{{ item.day_name }}</td>
+                            <td>{{ item.start_time|time:"g:i A" }} - {{ item.end_time|time:"g:i A" }}</td>
+                            <td>{{ item.lunch_start|time:"g:i A" }} - {{ item.lunch_end|time:"g:i A" }}</td>
+                            <td>{% if item.is_active %}Yes{% else %}No{% endif %}</td>
+                            <td>
+                                <a class="btn btn-outline btn-small" href="{% url 'dashboard_schedule_edit' item.id %}">Edit</a>
+                                <form method="post" action="{% url 'dashboard_schedule_delete' item.id %}" class="inline-form" data-confirm-message="Delete this schedule row? This action cannot be undone.">
+                                    {% csrf_token %}
+                                    <button class="btn btn-outline btn-small btn-danger" type="submit">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="6">No schedule rows yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+{% endblock %}

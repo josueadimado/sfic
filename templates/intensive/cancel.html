@@ -1,0 +1,16 @@
+{% extends "intensive/base.html" %}
+
+{% block title %}Payment Cancelled{% endblock %}
+
+{% block body %}
+<main class="simple-page">
+    <div class="container centered result-card">
+        <h1 class="result-title">Payment Canceled</h1>
+        <p class="result-intro">No worries. Your seat has not been confirmed yet. You can return and complete payment whenever you are ready.</p>
+        <div class="result-actions">
+            <a class="btn btn-accent" href="{% url 'home' %}#register">Try Again</a>
+            <a class="btn btn-outline" href="{% url 'home' %}">Back to Home</a>
+        </div>
+    </div>
+</main>
+{% endblock %}

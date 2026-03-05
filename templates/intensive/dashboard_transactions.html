@@ -1,0 +1,102 @@
+{% extends "intensive/base.html" %}
+
+{% block title %}Transactions{% endblock %}
+
+{% block body %}
+<main class="admin-layout-page">
+    <aside class="admin-sidebar">
+        <div class="admin-sidebar-head">
+            <p class="eyebrow">Set Free In Christ</p>
+            <h2>Admin Panel</h2>
+        </div>
+        <nav class="admin-menu">
+            <a href="{% url 'dashboard' %}" class="{% if admin_page == 'registrations' %}is-active{% endif %}"><span class="menu-icon icon-registrations" aria-hidden="true"></span>Registrations</a>
+            <a href="{% url 'dashboard_transactions' %}" class="{% if admin_page == 'transactions' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Transactions</a>
+            <a href="{% url 'dashboard_sessions' %}" class="{% if admin_page == 'sessions' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Training Sessions</a>
+            <a href="{% url 'dashboard_schedule' %}" class="{% if admin_page == 'schedule' %}is-active{% endif %}"><span class="menu-icon icon-schedule" aria-hidden="true"></span>Training Schedule</a>
+            <a href="{% url 'dashboard_speakers' %}" class="{% if admin_page == 'speakers' %}is-active{% endif %}"><span class="menu-icon icon-speakers" aria-hidden="true"></span>Speakers</a>
+            <a href="{% url 'dashboard_site_settings' %}" class="{% if admin_page == 'settings' %}is-active{% endif %}"><span class="menu-icon icon-settings" aria-hidden="true"></span>Site Settings</a>
+        </nav>
+        <div class="admin-sidebar-foot">
+            <a class="btn btn-outline btn-with-icon" href="{% url 'home' %}" target="_blank" rel="noreferrer">View Site <span class="btn-icon" aria-hidden="true">&#8599;</span></a>
+            <a class="btn btn-outline btn-with-icon" href="{% url 'logout' %}">Logout <span class="btn-icon" aria-hidden="true">&#10132;</span></a>
+        </div>
+    </aside>
+
+    <section class="admin-main">
+        <button type="button" class="sidebar-toggle" data-sidebar-toggle aria-label="Close sidebar menu" title="Close menu">✕</button>
+        <h1>Transactions</h1>
+        <p class="admin-subtitle">Payment records for reconciliation and auditing.</p>
+        {% if messages %}
+            <div class="alerts">
+                {% for message in messages %}
+                    <p class="alert">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'dashboard_transactions_backfill' %}" class="inline-form" data-confirm-message="Run backfill for missing transaction records?">
+            {% csrf_token %}
+            <button class="btn btn-outline" type="submit">Backfill Missing Transactions</button>
+        </form>
+
+        <form method="get" class="filters admin-filters">
+            <select name="tx_type" class="admin-select">
+                <option value="">All transaction types</option>
+                {% for value, label in tx_type_choices %}
+                    <option value="{{ value }}" {% if selected_tx_type == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <select name="status" class="admin-select">
+                <option value="">All statuses</option>
+                {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <button class="btn btn-accent" type="submit">Apply Filters</button>
+        </form>
+
+        <div class="table-wrap admin-table-wrap">
+            <table class="admin-registrations-table">
+                <thead>
+                    <tr>
+                        <th>Created</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Registrant</th>
+                        <th>Session</th>
+                        <th>Amount</th>
+                        <th>Payment Ref</th>
+                        <th>Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in transactions %}
+                        <tr class="{% if item.status != 'PAID' %}is-faded{% endif %}">
+                            <td>{{ item.created_at }}</td>
+                            <td>{{ item.get_transaction_type_display }}</td>
+                            <td>
+                                <span class="status-pill status-{{ item.status|lower }}">{{ item.status|default:"-" }}</span>
+                            </td>
+                            <td>
+                                {% if item.registration %}
+                                    {{ item.registration.full_name }}<br>
+                                    <small>{{ item.registration.email }}</small>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ item.session.title|default:"-" }}</td>
+                            <td>{{ item.amount|floatformat:2 }} {{ item.currency }}</td>
+                            <td>{{ item.payment_ref|default:"-" }}</td>
+                            <td>{{ item.note|default:"-" }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="8">No transactions found yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+{% endblock %}

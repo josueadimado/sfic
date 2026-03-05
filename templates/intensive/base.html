@@ -1,0 +1,123 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Freedom Intensive{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/site.css' %}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    {% block body %}{% endblock %}
+    <script>
+        (function () {
+            const storageKey = "sfic-admin-sidebar-collapsed";
+            const layouts = document.querySelectorAll(".admin-layout-page");
+            if (!layouts.length) return;
+
+            const storedState = localStorage.getItem(storageKey);
+            const collapsed = storedState === null
+                ? window.matchMedia("(max-width: 900px)").matches
+                : storedState === "1";
+            layouts.forEach((layout) => {
+                if (collapsed) {
+                    layout.classList.add("sidebar-collapsed");
+                }
+            });
+
+            function updateButtons() {
+                const isCollapsed = layouts[0].classList.contains("sidebar-collapsed");
+                document.querySelectorAll("[data-sidebar-toggle]").forEach((button) => {
+                    button.textContent = isCollapsed ? "☰" : "✕";
+                    button.setAttribute("aria-label", isCollapsed ? "Open sidebar menu" : "Close sidebar menu");
+                    button.setAttribute("title", isCollapsed ? "Open menu" : "Close menu");
+                });
+            }
+
+            document.querySelectorAll("[data-sidebar-toggle]").forEach((button) => {
+                button.addEventListener("click", () => {
+                    layouts.forEach((layout) => {
+                        layout.classList.toggle("sidebar-collapsed");
+                    });
+                    const isCollapsed = layouts[0].classList.contains("sidebar-collapsed");
+                    localStorage.setItem(storageKey, isCollapsed ? "1" : "0");
+                    updateButtons();
+                });
+            });
+
+            updateButtons();
+        })();
+
+        (function () {
+            document.querySelectorAll("form[data-confirm-message]").forEach((form) => {
+                form.addEventListener("submit", (event) => {
+                    const message = form.getAttribute("data-confirm-message") || "Are you sure?";
+                    if (!window.confirm(message)) {
+                        event.preventDefault();
+                    }
+                });
+            });
+        })();
+
+        (function () {
+            const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            const targets = document.querySelectorAll(
+                "main > section, .session-card, .speaker-card, .schedule-card, .feature-card, .admin-table, .admin-filters, .stats-cards > *, .admin-content-grid > *, .admin-main > *"
+            );
+            if (!targets.length) return;
+
+            targets.forEach((el, idx) => {
+                el.setAttribute("data-reveal", "");
+                const delay = Math.min((idx % 8) * 45, 240);
+                el.style.transitionDelay = `${delay}ms`;
+            });
+
+            if (reduceMotion) {
+                targets.forEach((el) => el.classList.add("is-visible"));
+                return;
+            }
+
+            const observer = new IntersectionObserver(
+                (entries, obs) => {
+                    entries.forEach((entry) => {
+                        if (!entry.isIntersecting) return;
+                        entry.target.classList.add("is-visible");
+                        obs.unobserve(entry.target);
+                    });
+                },
+                { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
+            );
+
+            targets.forEach((el) => observer.observe(el));
+        })();
+
+        (function () {
+            const adminLayout = document.querySelector(".admin-layout-page");
+            if (!adminLayout) return;
+
+            document.querySelectorAll("a[href]").forEach((link) => {
+                const href = link.getAttribute("href") || "";
+                const target = link.getAttribute("target");
+                if (!href || href.startsWith("#") || target === "_blank") return;
+                if (link.hasAttribute("download")) return;
+
+                const url = new URL(href, window.location.origin);
+                if (url.origin !== window.location.origin) return;
+
+                link.addEventListener("click", (event) => {
+                    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                    event.preventDefault();
+                    document.body.classList.add("page-is-leaving");
+                    window.setTimeout(() => {
+                        window.location.href = url.href;
+                    }, 220);
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

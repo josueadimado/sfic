@@ -1,0 +1,16 @@
+Hello {{ registration.full_name }},
+
+Your seat for {{ session.title }} is confirmed.
+
+Registration details:
+- Session: {{ session.title }}
+- Location: {{ session.location }}
+- City/Country: {{ registration.city }}, {{ registration.country }}
+- Dates: {{ session.start_date }} to {{ session.end_date }}
+- Amount Paid: {{ amount_paid }}
+- Status: {{ registration.status }}
+
+You can revisit the site here:
+{{ site_base_url }}
+
+Thank you for registering with Set Free In Christ.

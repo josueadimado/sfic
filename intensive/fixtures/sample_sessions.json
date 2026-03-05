@@ -1,0 +1,66 @@
+[
+  {
+    "model": "intensive.session",
+    "pk": "c0f3f3b1-9134-4daa-8a26-5c9f2cb4d0e1",
+    "fields": {
+      "title": "March 2026",
+      "location": "Dallas, TX, USA",
+      "start_date": "2026-03-25",
+      "end_date": "2026-03-27",
+      "capacity": 120,
+      "price": 15000,
+      "currency": "USD",
+      "is_active": true,
+      "created_at": "2026-03-04T00:00:00Z",
+      "updated_at": "2026-03-04T00:00:00Z"
+    }
+  },
+  {
+    "model": "intensive.session",
+    "pk": "2f3fb5b5-bf1d-4f79-8d5d-83abbe702a62",
+    "fields": {
+      "title": "April 2026 - Session 1",
+      "location": "Houston, TX, USA",
+      "start_date": "2026-04-15",
+      "end_date": "2026-04-17",
+      "capacity": 150,
+      "price": 18000,
+      "currency": "USD",
+      "is_active": true,
+      "created_at": "2026-03-04T00:00:00Z",
+      "updated_at": "2026-03-04T00:00:00Z"
+    }
+  },
+  {
+    "model": "intensive.session",
+    "pk": "f2f615e2-c953-43d7-90ca-dda9d9fe55de",
+    "fields": {
+      "title": "April 2026 - Session 2",
+      "location": "Atlanta, GA, USA",
+      "start_date": "2026-04-29",
+      "end_date": "2026-05-01",
+      "capacity": 100,
+      "price": 20000,
+      "currency": "USD",
+      "is_active": true,
+      "created_at": "2026-03-04T00:00:00Z",
+      "updated_at": "2026-03-04T00:00:00Z"
+    }
+  },
+  {
+    "model": "intensive.session",
+    "pk": "336e54a5-8ea8-4f63-9a5a-6a2146708be8",
+    "fields": {
+      "title": "May 2026",
+      "location": "Dallas, TX, USA",
+      "start_date": "2026-05-20",
+      "end_date": "2026-05-22",
+      "capacity": 100,
+      "price": 20000,
+      "currency": "USD",
+      "is_active": true,
+      "created_at": "2026-03-04T00:00:00Z",
+      "updated_at": "2026-03-04T00:00:00Z"
+    }
+  }
+]
