@@ -1949,6 +1949,26 @@ th {
         line-height: 0.95;
     }
 
+    .hero-meta-item {
+        display: flex;
+        width: 100%;
+        max-width: 100%;
+        border-radius: 14px;
+        align-items: flex-start;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .session-location {
+        display: flex;
+        width: 100%;
+        min-width: 0;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
     .facilities-wrap h2 {
         max-width: none;
     }
