@@ -169,4 +169,5 @@ class SpeakerForm(forms.ModelForm):
         ]
         widgets = {
             "sessions": forms.SelectMultiple(attrs={"size": 6}),
+            "role_subtitle": forms.Textarea(attrs={"rows": 3}),
         }

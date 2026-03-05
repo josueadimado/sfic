@@ -92,7 +92,7 @@ class SiteSetting(models.Model):
 class Speaker(models.Model):
     full_name = models.CharField(max_length=140)
     role_title = models.CharField(max_length=180)
-    role_subtitle = models.CharField(max_length=180, blank=True)
+    role_subtitle = models.TextField(blank=True)
     country_code = models.CharField(max_length=2, blank=True, help_text="ISO alpha-2 code, e.g. us, gb")
     country_label = models.CharField(max_length=80, blank=True)
     photo_image = models.ImageField(upload_to="speakers/", blank=True)
