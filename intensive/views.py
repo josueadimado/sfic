@@ -59,6 +59,12 @@ def _build_checkout_session(registration: Registration, session: Session) -> str
             "registration_id": str(registration.id),
             "session_id": str(session.id),
         },
+        payment_intent_data={
+            "metadata": {
+                "registration_id": str(registration.id),
+                "session_id": str(session.id),
+            }
+        },
         success_url=f"{settings.SITE_BASE_URL}/success?ref={{CHECKOUT_SESSION_ID}}",
         cancel_url=f"{settings.SITE_BASE_URL}/cancel?registration_id={registration.id}",
     )
@@ -358,6 +364,41 @@ def stripe_webhook(request: HttpRequest) -> HttpResponse:
                         payment_ref=str(checkout.get("id", registration.payment_ref)),
                         stripe_payment_intent=str(checkout.get("payment_intent", "")),
                         note="Checkout session expired.",
+                    )
+                    send_payment_retry_email(registration)
+    elif event["type"] == "payment_intent.payment_failed":
+        payment_intent = event["data"]["object"]
+        registration_id = payment_intent.get("metadata", {}).get("registration_id")
+        if registration_id:
+            try:
+                registration = Registration.objects.select_related("session").get(id=registration_id)
+            except Registration.DoesNotExist:
+                return HttpResponse(status=200)
+            if registration.status != RegistrationStatus.PAID:
+                if registration.status != RegistrationStatus.CANCELED:
+                    registration.status = RegistrationStatus.CANCELED
+                    registration.save(update_fields=["status", "updated_at"])
+                existing = PaymentTransaction.objects.filter(
+                    registration=registration,
+                    transaction_type=TransactionType.PAYMENT_ERROR,
+                    stripe_payment_intent=str(payment_intent.get("id", "")),
+                ).exists()
+                if not existing:
+                    error_message = (
+                        payment_intent.get("last_payment_error", {}).get("message")
+                        or "Payment failed in Stripe."
+                    )
+                    PaymentTransaction.objects.create(
+                        registration=registration,
+                        session=registration.session,
+                        transaction_type=TransactionType.PAYMENT_ERROR,
+                        status=registration.status,
+                        provider=PaymentProvider.STRIPE,
+                        amount=payment_intent.get("amount", registration.session.price),
+                        currency=str(payment_intent.get("currency", registration.session.currency)).upper(),
+                        payment_ref=registration.payment_ref,
+                        stripe_payment_intent=str(payment_intent.get("id", "")),
+                        note=f"Stripe payment failed: {error_message}",
                     )
                     send_payment_retry_email(registration)
     return HttpResponse(status=200)
