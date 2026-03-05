@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import HttpRequest, HttpResponse
+from django.urls import reverse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
@@ -62,6 +63,41 @@ def _home_context(reg_form: dict | None = None) -> dict:
 @require_GET
 def home(request: HttpRequest) -> HttpResponse:
     return render(request, "intensive/home.html", _home_context())
+
+
+@require_GET
+def robots_txt(request: HttpRequest) -> HttpResponse:
+    base = settings.SITE_BASE_URL.rstrip("/")
+    content = "\n".join(
+        [
+            "User-agent: *",
+            "Disallow: /dashboard/",
+            "Disallow: /admin/",
+            "Disallow: /checkout/",
+            "Disallow: /success",
+            "Disallow: /cancel",
+            f"Sitemap: {base}/sitemap.xml",
+        ]
+    )
+    return HttpResponse(content, content_type="text/plain")
+
+
+@require_GET
+def sitemap_xml(request: HttpRequest) -> HttpResponse:
+    base = settings.SITE_BASE_URL.rstrip("/")
+    home_url = f"{base}{reverse('home')}"
+    today = timezone.localdate().isoformat()
+    content = f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>{home_url}</loc>
+    <lastmod>{today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>
+"""
+    return HttpResponse(content, content_type="application/xml")
 
 
 @require_POST

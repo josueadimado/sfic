@@ -1,12 +1,51 @@
 {% extends "intensive/base.html" %}
 {% load static %}
 
-{% block title %}3 Day Freedom Intensive{% endblock %}
+{% block title %}3 Day Freedom Intensive | Set Free In Christ{% endblock %}
+{% block meta_description %}Register for the 3 Day Freedom Intensive by Set Free In Christ. View schedule, speakers, sessions, and complete secure online payment.{% endblock %}
+{% block og_title %}3 Day Freedom Intensive | Set Free In Christ{% endblock %}
+{% block og_description %}Register for the 3 Day Freedom Intensive by Set Free In Christ. View schedule, speakers, and available sessions.{% endblock %}
+{% block twitter_title %}3 Day Freedom Intensive | Set Free In Christ{% endblock %}
+{% block twitter_description %}Register for the 3 Day Freedom Intensive by Set Free In Christ. View schedule, speakers, and available sessions.{% endblock %}
 {% block head %}
     <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/intl-tel-input@23.8.0/build/css/intlTelInput.css"
     >
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "name": "Set Free In Christ",
+          "url": "{{ request.scheme }}://{{ request.get_host }}",
+          "logo": "{{ request.scheme }}://{{ request.get_host }}{% static 'images/logo set free in christ.svg' %}"
+        }
+        {% if speakers_session %},
+        {
+          "@type": "Event",
+          "name": "{{ speakers_session.title|escapejs }}",
+          "description": "3 Day Freedom Intensive by Set Free In Christ.",
+          "startDate": "{{ speakers_session.start_date|date:'c' }}",
+          "endDate": "{{ speakers_session.end_date|date:'c' }}",
+          "eventStatus": "https://schema.org/EventScheduled",
+          "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+          "location": {
+            "@type": "Place",
+            "name": "{{ speakers_session.location|default:venue_address|escapejs }}"
+          },
+          "organizer": {
+            "@type": "Organization",
+            "name": "Set Free In Christ",
+            "url": "{{ request.scheme }}://{{ request.get_host }}"
+          },
+          "url": "{{ request.scheme }}://{{ request.get_host }}#register"
+        }
+        {% endif %}
+      ]
+    }
+    </script>
 {% endblock %}
 
 {% block body %}
@@ -17,19 +56,19 @@
                 <img src="{% static 'images/logo set free in christ.svg' %}" alt="Set Free In Christ logo" class="brand-logo">
             </div>
             <div class="topbar-social" aria-label="Social media links">
-                <a class="social-instagram" href="https://www.instagram.com/" target="_blank" rel="noreferrer" aria-label="Instagram">
+                <a class="social-instagram" href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <rect x="3.5" y="3.5" width="17" height="17" rx="5"></rect>
                         <circle cx="12" cy="12" r="4"></circle>
                         <circle cx="17.4" cy="6.6" r="1"></circle>
                     </svg>
                 </a>
-                <a class="social-facebook" href="https://www.facebook.com/" target="_blank" rel="noreferrer" aria-label="Facebook">
+                <a class="social-facebook" href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M13.2 20v-7h2.4l.4-2.8h-2.8V8.5c0-.8.3-1.4 1.5-1.4h1.4V4.6c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4.1v1.6H7.5V13H10v7h3.2Z"></path>
                     </svg>
                 </a>
-                <a class="social-youtube" href="https://www.youtube.com/" target="_blank" rel="noreferrer" aria-label="YouTube">
+                <a class="social-youtube" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <rect class="yt-box" x="3.5" y="6" width="17" height="12" rx="3.2"></rect>
                         <path class="yt-play" d="M10 9.4v5.2l4.7-2.6L10 9.4Z"></path>
@@ -268,9 +307,9 @@
                     <article class="speaker-card">
                         <div class="speaker-photo-wrap">
                             {% if speaker.photo_image %}
-                                <img class="speaker-photo" src="{{ speaker.photo_image.url }}" alt="{{ speaker.full_name }}">
+                                <img class="speaker-photo" src="{{ speaker.photo_image.url }}" alt="{{ speaker.full_name }}" loading="lazy" decoding="async">
                             {% elif speaker.photo_url %}
-                                <img class="speaker-photo" src="{{ speaker.photo_url }}" alt="{{ speaker.full_name }}">
+                                <img class="speaker-photo" src="{{ speaker.photo_url }}" alt="{{ speaker.full_name }}" loading="lazy" decoding="async">
                             {% else %}
                                 <div class="speaker-avatar">{{ speaker.full_name|slice:":2"|upper }}</div>
                             {% endif %}
@@ -288,7 +327,7 @@
                             <p class="speaker-subtitle">{{ speaker.role_subtitle }}</p>
                         {% endif %}
                         {% if speaker.read_more_url %}
-                            <a class="speaker-link" href="{{ speaker.read_more_url }}" target="_blank" rel="noreferrer">Read More</a>
+                            <a class="speaker-link" href="{{ speaker.read_more_url }}" target="_blank" rel="noopener noreferrer">Read More</a>
                         {% endif %}
                     </article>
                 {% empty %}

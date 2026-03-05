@@ -5,6 +5,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Freedom Intensive{% endblock %}</title>
+    {% with canonical=request.scheme|add:"://"|add:request.get_host|add:request.path %}
+    <meta name="description" content="{% block meta_description %}Freedom Intensive registration and training by Set Free In Christ.{% endblock %}">
+    {% if request.path|slice:":10" == "/dashboard/" or request.path|slice:":7" == "/admin/" or request.path == "/success" or request.path == "/cancel" %}
+    <meta name="robots" content="noindex,nofollow">
+    {% else %}
+    <meta name="robots" content="{% block meta_robots %}index,follow{% endblock %}">
+    {% endif %}
+    <link rel="canonical" href="{{ canonical }}">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{% block og_title %}Freedom Intensive | Set Free In Christ{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Join the Freedom Intensive training and reserve your seat online.{% endblock %}">
+    <meta property="og:url" content="{{ canonical }}">
+    <meta property="og:image" content="{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/hero-main.jpg' %}{% endblock %}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{% block twitter_title %}Freedom Intensive | Set Free In Christ{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}Join the Freedom Intensive training and reserve your seat online.{% endblock %}">
+    <meta name="twitter:image" content="{% block twitter_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/hero-main.jpg' %}{% endblock %}">
+    {% endwith %}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
