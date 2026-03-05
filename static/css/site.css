@@ -1,6 +1,6 @@
 :root {
     --brand-green: #443425;
-    --brand-lime: #fdfbc1;
+    --brand-lime: #e6c46a;
     --brand-dark: #0c2e2a;
     --text-dark: #0f221f;
     --surface: #f4f5f2;
@@ -548,8 +548,8 @@ section[id] {
 }
 
 .countdown-item {
-    background: #d68418;
-    border: 1px solid #1a695b;
+    background: #443425;
+    border: 1px solid #6b4f35;
     border-radius: 999px;
     padding: 0.75rem 0.45rem 0.68rem;
     text-align: center;
@@ -702,7 +702,7 @@ section[id] {
     width: 10px;
     height: 10px;
     border-radius: 999px;
-    background: #fdfbc1;
+    background: var(--brand-lime);
 }
 
 #included .included-list + .included-intro {
@@ -843,9 +843,9 @@ section[id] {
 }
 
 .session-badge.low {
-    background: rgba(219, 255, 6, 0.17);
-    color: #2f4b00;
-    border-color: rgba(142, 170, 0, 0.4);
+    background: rgba(230, 196, 106, 0.24);
+    color: #5b4520;
+    border-color: rgba(230, 196, 106, 0.52);
 }
 
 .session-cta {
@@ -1832,9 +1832,9 @@ th {
 }
 
 .admin-menu a.is-active {
-    background: #fdfbc1;
-    color: #2f241a;
-    border-color: #fdfbc1;
+    background: #e6c46a;
+    color: #3a2b17;
+    border-color: #e6c46a;
     font-weight: 700;
 }
 
