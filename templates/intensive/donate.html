@@ -42,12 +42,8 @@
                     <option value="MONTHLY" {% if donation_form.frequency == 'MONTHLY' %}selected{% endif %}>Monthly recurring donation</option>
                 </select>
 
-                <label class="donation-anon-row" for="donation_cover_processing_fee">
-                    <input id="donation_cover_processing_fee" type="checkbox" name="cover_processing_fee" value="1" {% if donation_form.cover_processing_fee %}checked{% endif %}>
-                    <span>I want to cover the payment processing fee</span>
-                </label>
                 <p class="donation-help-text" id="donation-fee-help">
-                    Optional: this slightly increases your total charge so the ministry receives your full intended donation.
+                    Processing fee is added automatically so the ministry receives your full intended donation.
                 </p>
                 <p class="donation-help-text" id="donation-fee-estimate"></p>
 
@@ -99,13 +95,12 @@
 <script>
     (function () {
         const anon = document.getElementById("donation_is_anonymous");
-        const coverFee = document.getElementById("donation_cover_processing_fee");
         const amountInput = document.getElementById("donation_amount");
         const feeEstimate = document.getElementById("donation-fee-estimate");
         const nameInput = document.getElementById("donation_full_name");
         const emailInput = document.getElementById("donation_email");
         const messageInput = document.getElementById("donation_message");
-        if (!anon || !coverFee || !amountInput || !feeEstimate || !nameInput || !emailInput || !messageInput) return;
+        if (!anon || !amountInput || !feeEstimate || !nameInput || !emailInput || !messageInput) return;
 
         function syncAnonymousState() {
             const on = anon.checked;
@@ -126,17 +121,16 @@
 
         function updateFeeEstimate() {
             const amount = parseFloat(amountInput.value || "0");
-            if (!coverFee.checked || amount <= 0) {
+            if (amount <= 0) {
                 feeEstimate.textContent = "";
                 return;
             }
             const baseCents = Math.round(amount * 100);
             const grossCents = Math.ceil((baseCents + 30) / (1 - 0.029));
             const feeCents = Math.max(grossCents - baseCents, 0);
-            feeEstimate.textContent = "Estimated processing fee: $" + (feeCents / 100).toFixed(2) + " (total charge $" + (grossCents / 100).toFixed(2) + ")";
+            feeEstimate.textContent = "Estimated processing fee: $" + (feeCents / 100).toFixed(2) + " (estimated total charge $" + (grossCents / 100).toFixed(2) + ")";
         }
 
-        coverFee.addEventListener("change", updateFeeEstimate);
         amountInput.addEventListener("input", updateFeeEstimate);
         updateFeeEstimate();
     })();

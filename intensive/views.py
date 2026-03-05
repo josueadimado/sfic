@@ -362,7 +362,6 @@ def create_donation_checkout(request: HttpRequest) -> HttpResponse:
         values = {
             "amount": request.POST.get("amount", ""),
             "frequency": request.POST.get("frequency", DonationFrequency.ONE_TIME),
-            "cover_processing_fee": request.POST.get("cover_processing_fee", ""),
             "is_anonymous": request.POST.get("is_anonymous", ""),
             "full_name": request.POST.get("full_name", ""),
             "email": request.POST.get("email", ""),
@@ -375,7 +374,6 @@ def create_donation_checkout(request: HttpRequest) -> HttpResponse:
         values = {
             "amount": request.POST.get("amount", ""),
             "frequency": request.POST.get("frequency", DonationFrequency.ONE_TIME),
-            "cover_processing_fee": request.POST.get("cover_processing_fee", ""),
             "is_anonymous": request.POST.get("is_anonymous", ""),
             "full_name": request.POST.get("full_name", ""),
             "email": request.POST.get("email", ""),
@@ -384,11 +382,7 @@ def create_donation_checkout(request: HttpRequest) -> HttpResponse:
         return render(request, "intensive/donate.html", _donation_context(values))
 
     base_amount_cents = int(form.cleaned_data["amount"] * 100)
-    cover_processing_fee = form.cleaned_data.get("cover_processing_fee", False)
-    amount_cents = base_amount_cents
-    processing_fee_cents = 0
-    if cover_processing_fee:
-        amount_cents, processing_fee_cents = _gross_up_amount_for_processing_fee(base_amount_cents)
+    amount_cents, processing_fee_cents = _gross_up_amount_for_processing_fee(base_amount_cents)
     is_anonymous = form.cleaned_data.get("is_anonymous", False)
     donation = Donation.objects.create(
         provider="STRIPE",
@@ -400,14 +394,10 @@ def create_donation_checkout(request: HttpRequest) -> HttpResponse:
         amount=amount_cents,
         currency="USD",
         status=DonationStatus.PENDING,
-        note=(
-            f"Donation checkout created. Donor covers processing fee: {processing_fee_cents / 100:.2f} USD."
-            if cover_processing_fee
-            else "Donation checkout created."
-        ),
+        note=f"Donation checkout created. Processing fee included: {processing_fee_cents / 100:.2f} USD.",
         raw_payload={
             "base_amount_cents": base_amount_cents,
-            "cover_processing_fee": bool(cover_processing_fee),
+            "cover_processing_fee": True,
             "processing_fee_cents": processing_fee_cents,
             "checkout_amount_cents": amount_cents,
         },
@@ -466,6 +456,37 @@ def donation_success(request: HttpRequest) -> HttpResponse:
     manage_url = ""
     if ref:
         donation = Donation.objects.filter(stripe_checkout_id=ref).first()
+        if donation and donation.status != DonationStatus.COMPLETED and settings.STRIPE_SECRET_KEY:
+            # Fallback: if webhook is delayed, confirm payment directly from Stripe on success page.
+            try:
+                checkout = stripe.checkout.Session.retrieve(ref)
+            except stripe.error.StripeError:
+                checkout = None
+            if checkout:
+                payment_status = str(checkout.get("payment_status", "")).lower()
+                checkout_status = str(checkout.get("status", "")).lower()
+                if payment_status == "paid" or checkout_status == "complete":
+                    was_completed = donation.status == DonationStatus.COMPLETED
+                    donation.status = DonationStatus.COMPLETED
+                    donation.provider = "STRIPE"
+                    donation.provider_ref = str(checkout.get("id", donation.provider_ref))
+                    donation.stripe_checkout_id = str(checkout.get("id", donation.stripe_checkout_id))
+                    donation.stripe_payment_intent = str(
+                        checkout.get("payment_intent", donation.stripe_payment_intent)
+                    )
+                    donation.stripe_subscription_id = str(
+                        checkout.get("subscription", donation.stripe_subscription_id)
+                    )
+                    donation.stripe_customer_id = str(checkout.get("customer", donation.stripe_customer_id))
+                    donation.amount = checkout.get("amount_total", donation.amount) or donation.amount
+                    donation.currency = str(checkout.get("currency", donation.currency)).upper()
+                    donation.note = "Donation completed from success page verification."
+                    donation.raw_payload = checkout
+                    donation.save()
+                    forward_donation_to_donor_elf(donation)
+                    if not was_completed:
+                        send_admin_donation_notification(donation)
+                        send_donation_thank_you(donation)
         if donation:
             manage_url = build_donation_manage_url(donation)
     return render(request, "intensive/donation_success.html", {"donation": donation, "manage_url": manage_url})
