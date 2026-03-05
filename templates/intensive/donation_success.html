@@ -1,0 +1,33 @@
+{% extends "intensive/base.html" %}
+{% load static %}
+
+{% block title %}Donation Confirmed{% endblock %}
+
+{% block body %}
+<main class="simple-page">
+    <div class="container centered result-card">
+        <div class="result-brand">
+            <img src="{% static 'images/new logo set free.svg' %}" alt="Set Free In Christ" class="result-logo">
+            <p class="result-brand-name">Set Free In Christ</p>
+        </div>
+        <h1 class="result-title">Donation Received</h1>
+        {% if donation %}
+            <p class="result-intro">Thank you for your generosity. Your donation has been received successfully.</p>
+            <div class="result-meta">
+                <p><strong>Amount:</strong> {{ donation.display_amount }}</p>
+                <p><strong>Type:</strong> {{ donation.get_frequency_display }}</p>
+                <p><strong>Status:</strong> <span class="result-status">{{ donation.status }}</span></p>
+                <p><strong>Reference:</strong> {{ donation.provider_ref|default:"-" }}</p>
+            </div>
+        {% else %}
+            <p class="result-intro">Thank you for your support. Your donation is being verified.</p>
+        {% endif %}
+        <div class="result-actions">
+            {% if manage_url %}
+                <a class="btn btn-outline" href="{{ manage_url }}">Manage Monthly Donation</a>
+            {% endif %}
+            <a class="btn btn-accent" href="{% url 'home' %}">Back to Home</a>
+        </div>
+    </div>
+</main>
+{% endblock %}

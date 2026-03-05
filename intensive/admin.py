@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import PaymentTransaction, Registration, Session, SiteSetting, Speaker, TrainingScheduleItem
+from .models import Donation, PaymentTransaction, Registration, Session, SiteSetting, Speaker, TrainingScheduleItem
 
 
 @admin.register(Session)
@@ -46,7 +46,7 @@ class TrainingScheduleItemAdmin(admin.ModelAdmin):
 
 @admin.register(SiteSetting)
 class SiteSettingAdmin(admin.ModelAdmin):
-    list_display = ("site_name", "venue_address", "updated_at")
+    list_display = ("site_name", "venue_address", "donation_url", "updated_at")
 
 
 @admin.register(Speaker)
@@ -71,3 +71,21 @@ class PaymentTransactionAdmin(admin.ModelAdmin):
     )
     list_filter = ("transaction_type", "status", "provider", "currency")
     search_fields = ("payment_ref", "stripe_payment_intent", "note", "registration__email", "registration__full_name")
+
+
+@admin.register(Donation)
+class DonationAdmin(admin.ModelAdmin):
+    list_display = (
+        "created_at",
+        "provider",
+        "provider_ref",
+        "donor_name",
+        "frequency",
+        "is_anonymous",
+        "donor_email",
+        "amount",
+        "currency",
+        "status",
+    )
+    list_filter = ("provider", "status", "currency")
+    search_fields = ("provider_ref", "donor_name", "donor_email", "note")

@@ -1,6 +1,6 @@
 {% extends "intensive/base.html" %}
 
-{% block title %}{% if edit_obj %}Edit Speaker{% else %}Create Speaker{% endif %}{% endblock %}
+{% block title %}Donations{% endblock %}
 
 {% block body %}
 <main class="admin-layout-page">
@@ -29,14 +29,8 @@
 
     <section class="admin-main">
         <button type="button" class="sidebar-toggle" data-sidebar-toggle aria-label="Close sidebar menu" title="Close menu">✕</button>
-        <h1>{% if edit_obj %}Edit Speaker{% else %}Create Speaker{% endif %}</h1>
-        <p class="admin-subtitle">
-            {% if edit_obj %}
-                Update this speaker profile and save changes.
-            {% else %}
-                Add a new speaker profile for the homepage speaker section.
-            {% endif %}
-        </p>
+        <h1>Donations</h1>
+        <p class="admin-subtitle">Donor Elf donation records captured through your webhook endpoint.</p>
         {% if messages %}
             <div class="alerts">
                 {% for message in messages %}
@@ -45,25 +39,50 @@
             </div>
         {% endif %}
 
-        <form method="post" enctype="multipart/form-data" class="admin-form-grid" style="max-width: 820px;">
-            {% csrf_token %}
-            {% if edit_obj and edit_obj.photo_image %}
-                <div class="admin-speaker-preview">
-                    <p class="admin-speaker-preview-label">Current image</p>
-                    <img src="{{ edit_obj.photo_image.url }}" alt="{{ edit_obj.full_name }}" class="admin-speaker-preview-image">
-                </div>
-            {% elif edit_obj and edit_obj.photo_url %}
-                <div class="admin-speaker-preview">
-                    <p class="admin-speaker-preview-label">Current image</p>
-                    <img src="{{ edit_obj.photo_url }}" alt="{{ edit_obj.full_name }}" class="admin-speaker-preview-image">
-                </div>
-            {% endif %}
-            {{ form.as_p }}
-            <div class="admin-actions">
-                <button class="btn btn-accent" type="submit">{% if edit_obj %}Update Speaker{% else %}Create Speaker{% endif %}</button>
-                <a class="btn btn-outline" href="{% url 'dashboard_speakers' %}">Back to Speakers</a>
-            </div>
+        <form method="get" class="filters admin-filters">
+            <select name="status" class="admin-select">
+                <option value="">All statuses</option>
+                {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <button class="btn btn-accent" type="submit">Apply Filters</button>
         </form>
+
+        <div class="table-wrap admin-table-wrap">
+            <table class="admin-registrations-table">
+                <thead>
+                    <tr>
+                        <th>Created</th>
+                        <th>Status</th>
+                        <th>Donor</th>
+                        <th>Type</th>
+                        <th>Anonymous</th>
+                        <th>Email</th>
+                        <th>Amount</th>
+                        <th>Provider Ref</th>
+                        <th>Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in donations %}
+                        <tr class="{% if item.status != 'COMPLETED' %}is-faded{% endif %}">
+                            <td>{{ item.created_at }}</td>
+                            <td><span class="status-pill status-{{ item.status|lower }}">{{ item.status }}</span></td>
+                            <td>{{ item.donor_name|default:"-" }}</td>
+                            <td>{{ item.get_frequency_display }}</td>
+                            <td>{% if item.is_anonymous %}Yes{% else %}No{% endif %}</td>
+                            <td>{{ item.donor_email|default:"-" }}</td>
+                            <td>{{ item.display_amount }}</td>
+                            <td>{{ item.provider_ref|default:"-" }}</td>
+                            <td>{{ item.note|default:"-" }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="9">No donations found yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </section>
 </main>
 {% endblock %}

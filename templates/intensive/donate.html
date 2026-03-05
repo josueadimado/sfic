@@ -1,0 +1,116 @@
+{% extends "intensive/base.html" %}
+
+{% block title %}Donate | Set Free In Christ{% endblock %}
+
+{% block body %}
+<main class="section register donate-page">
+    <div class="container">
+        <div class="donation-shell">
+            <div class="donation-head">
+                <h2>DONATE</h2>
+                <p class="sessions-intro">
+                    Support this 501(c)(3) mission through one-time or monthly giving. Donations are processed securely with Stripe.
+                </p>
+                <p class="donation-help-note">
+                    If you choose anonymous donation, we will not collect your name, email, or message in this form.
+                </p>
+            </div>
+            {% if messages %}
+                <div class="alerts">
+                    {% for message in messages %}
+                        <p class="alert">{{ message }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <form method="post" action="{% url 'create_donation_checkout' %}" class="register-form donation-form">
+                {% csrf_token %}
+                <label for="donation_amount">Donation Amount (USD)</label>
+                <input
+                    id="donation_amount"
+                    name="amount"
+                    type="number"
+                    min="5"
+                    step="0.01"
+                    value="{{ donation_form.amount|default:'' }}"
+                    placeholder="e.g. 50.00"
+                    required
+                >
+
+                <label for="donation_frequency">Donation Type</label>
+                <select id="donation_frequency" name="frequency" required>
+                    <option value="ONE_TIME" {% if donation_form.frequency == 'ONE_TIME' %}selected{% endif %}>One-time donation</option>
+                    <option value="MONTHLY" {% if donation_form.frequency == 'MONTHLY' %}selected{% endif %}>Monthly recurring donation</option>
+                </select>
+
+                <label for="donation_full_name">Full Name</label>
+                <input
+                    id="donation_full_name"
+                    name="full_name"
+                    type="text"
+                    value="{{ donation_form.full_name|default:'' }}"
+                    autocomplete="name"
+                    placeholder="Enter your full name"
+                >
+
+                <label for="donation_email">Email</label>
+                <input
+                    id="donation_email"
+                    name="email"
+                    type="email"
+                    value="{{ donation_form.email|default:'' }}"
+                    autocomplete="email"
+                    placeholder="you@example.com"
+                >
+
+                <label class="donation-anon-row" for="donation_is_anonymous">
+                    <input id="donation_is_anonymous" type="checkbox" name="is_anonymous" value="1" {% if donation_form.is_anonymous %}checked{% endif %}>
+                    <span>Make this an anonymous donation</span>
+                </label>
+                <p class="donation-help-text" id="donation-anonymous-help">
+                    Anonymous mode hides and skips personal details (name, email, message).
+                </p>
+
+                <label for="donation_message">Message (optional)</label>
+                <input
+                    id="donation_message"
+                    name="message"
+                    type="text"
+                    value="{{ donation_form.message|default:'' }}"
+                    placeholder="Optional encouragement or note"
+                >
+
+                <div class="donation-actions">
+                    <button type="submit" class="btn btn-accent">Donate Securely</button>
+                    <a href="{% url 'home' %}" class="btn btn-outline">Back to Home</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+<script>
+    (function () {
+        const anon = document.getElementById("donation_is_anonymous");
+        const nameInput = document.getElementById("donation_full_name");
+        const emailInput = document.getElementById("donation_email");
+        const messageInput = document.getElementById("donation_message");
+        if (!anon || !nameInput || !emailInput || !messageInput) return;
+
+        function syncAnonymousState() {
+            const on = anon.checked;
+            nameInput.disabled = on;
+            emailInput.disabled = on;
+            messageInput.disabled = on;
+            nameInput.required = !on;
+            emailInput.required = !on;
+            if (on) {
+                nameInput.value = "";
+                emailInput.value = "";
+                messageInput.value = "";
+            }
+        }
+
+        anon.addEventListener("change", syncAnonymousState);
+        syncAnonymousState();
+    })();
+</script>
+{% endblock %}

@@ -4,7 +4,7 @@ Your seat for {{ session.title }} is confirmed.
 
 Registration details:
 - Session: {{ session.title }}
-- Location: {{ session.location }}
+- LOCATION: {{ session.location }}
 - City/Country: {{ registration.city }}, {{ registration.country }}
 - Dates: {{ session.start_date }} to {{ session.end_date }}
 - Amount Paid: {{ amount_paid }}

@@ -77,6 +77,7 @@ class SiteSetting(models.Model):
         max_length=255,
         default="Freedom Revival Center, 1200 Main St, Dallas, TX 75202, USA",
     )
+    donation_url = models.URLField(blank=True, help_text="Public donation page URL (for example Donor Elf).")
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -169,3 +170,51 @@ class PaymentTransaction(models.Model):
 
     def __str__(self) -> str:
         return f"{self.transaction_type} - {self.payment_ref or 'N/A'}"
+
+
+class DonationStatus(models.TextChoices):
+    PENDING = "PENDING", "Pending"
+    COMPLETED = "COMPLETED", "Completed"
+    FAILED = "FAILED", "Failed"
+    CANCELED = "CANCELED", "Canceled"
+
+
+class DonationFrequency(models.TextChoices):
+    ONE_TIME = "ONE_TIME", "One-time"
+    MONTHLY = "MONTHLY", "Monthly"
+
+
+class Donation(models.Model):
+    provider = models.CharField(max_length=32, default="STRIPE")
+    provider_ref = models.CharField(max_length=200, blank=True)
+    frequency = models.CharField(max_length=16, choices=DonationFrequency.choices, default=DonationFrequency.ONE_TIME)
+    is_anonymous = models.BooleanField(default=False)
+    donor_name = models.CharField(max_length=160, blank=True)
+    donor_email = models.EmailField(blank=True)
+    donor_message = models.CharField(max_length=255, blank=True)
+    amount = models.PositiveIntegerField(default=0, help_text="Stored in the smallest currency unit.")
+    currency = models.CharField(max_length=8, default="USD")
+    status = models.CharField(max_length=16, choices=DonationStatus.choices, default=DonationStatus.PENDING)
+    note = models.CharField(max_length=255, blank=True)
+    stripe_checkout_id = models.CharField(max_length=200, blank=True)
+    stripe_payment_intent = models.CharField(max_length=200, blank=True)
+    stripe_subscription_id = models.CharField(max_length=200, blank=True)
+    stripe_customer_id = models.CharField(max_length=200, blank=True)
+    raw_payload = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status"]),
+            models.Index(fields=["provider_ref"]),
+            models.Index(fields=["donor_email"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.provider} {self.provider_ref or self.id}"
+
+    @property
+    def display_amount(self) -> str:
+        return f"{self.amount / 100:.2f} {self.currency.upper()}"

@@ -1,0 +1,12 @@
+New donation received.
+
+Amount: {{ amount }}
+Type: {{ donation.get_frequency_display }}
+Status: {{ donation.status }}
+Anonymous: {% if donation.is_anonymous %}Yes{% else %}No{% endif %}
+Donor Name: {{ donation.donor_name|default:"-" }}
+Donor Email: {{ donation.donor_email|default:"-" }}
+Reference: {{ donation.provider_ref|default:"-" }}
+
+View donations:
+{{ dashboard_url }}

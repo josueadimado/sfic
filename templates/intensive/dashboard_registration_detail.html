@@ -12,6 +12,7 @@
         <nav class="admin-menu">
             <a href="{% url 'dashboard' %}" class="{% if admin_page == 'registrations' %}is-active{% endif %}"><span class="menu-icon icon-registrations" aria-hidden="true"></span>Registrations</a>
             <a href="{% url 'dashboard_transactions' %}" class="{% if admin_page == 'transactions' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Transactions</a>
+            <a href="{% url 'dashboard_donations' %}" class="{% if admin_page == 'donations' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Donations</a>
             <a href="{% url 'dashboard_sessions' %}" class="{% if admin_page == 'sessions' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Training Sessions</a>
             <a href="{% url 'dashboard_schedule' %}" class="{% if admin_page == 'schedule' %}is-active{% endif %}"><span class="menu-icon icon-schedule" aria-hidden="true"></span>Training Schedule</a>
             <a href="{% url 'dashboard_speakers' %}" class="{% if admin_page == 'speakers' %}is-active{% endif %}"><span class="menu-icon icon-speakers" aria-hidden="true"></span>Speakers</a>
@@ -42,7 +43,7 @@
             <p><strong>Country:</strong> {{ registration.country|default:"-" }}</p>
             <p><strong>Church/Organization:</strong> {{ registration.church|default:"-" }}</p>
             <p><strong>Session:</strong> {{ registration.session.title }}</p>
-            <p><strong>Session Location:</strong> {{ registration.session.location }}</p>
+            <p><strong>LOCATION:</strong> {{ registration.session.location }}</p>
             <p><strong>Status:</strong> <span class="status-pill status-{{ registration.status|lower }}">{{ registration.status }}</span></p>
             <p><strong>Amount Paid:</strong> {{ registration.display_amount_paid }}</p>
             <p><strong>Payment Reference:</strong> {{ registration.payment_ref|default:"-" }}</p>

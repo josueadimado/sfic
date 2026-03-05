@@ -1,0 +1,17 @@
+Hello{% if donation.is_anonymous %} Friend{% elif donation.donor_name %} {{ donation.donor_name }}{% endif %},
+
+Thank you for your generous donation to Set Free In Christ Mission.
+
+Amount: {{ amount }}
+Type: {{ donation.get_frequency_display }}
+Reference: {{ donation.provider_ref|default:"-" }}
+
+Your support helps us continue this ministry work responsibly and effectively.
+
+{% if manage_url %}
+Manage your monthly donation:
+{{ manage_url }}
+{% endif %}
+
+With gratitude,
+Set Free In Christ Mission

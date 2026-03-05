@@ -1,7 +1,11 @@
 import logging
+import json
+import os
+from urllib import request as urllib_request
 from io import BytesIO
 
 from django.conf import settings
+from django.core import signing
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -9,9 +13,10 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 
-from .models import Registration, Session
+from .models import Donation, Registration, Session
 
 logger = logging.getLogger(__name__)
+DONATION_MANAGE_SALT = "sfic-donation-manage"
 
 
 def _build_confirmation_pdf(registration: Registration, session: Session, amount_paid: str) -> bytes:
@@ -37,7 +42,7 @@ def _build_confirmation_pdf(registration: Registration, session: Session, amount
         ("Phone", registration.phone),
         ("City/Country", f"{registration.city}, {registration.country}"),
         ("Session", session.title),
-        ("Location", session.location),
+        ("LOCATION", session.location),
         ("Dates", f"{session.start_date} to {session.end_date}"),
         ("Amount Paid", amount_paid),
     ]
@@ -147,3 +152,100 @@ def send_admin_new_registration_notification(registration: Registration) -> bool
         logger.exception("Failed to send admin new registration email for %s", registration.id)
         return False
     return True
+
+
+def send_donation_thank_you(donation: Donation) -> bool:
+    email_to = (donation.donor_email or "").strip()
+    if not email_to:
+        return False
+    context = {
+        "donation": donation,
+        "amount": donation.display_amount,
+        "manage_url": build_donation_manage_url(donation),
+    }
+    subject = "Thank you for your donation"
+    text_message = render_to_string("intensive/emails/donation_thank_you.txt", context)
+    html_message = render_to_string("intensive/emails/donation_thank_you.html", context)
+    try:
+        email = EmailMultiAlternatives(
+            subject=subject,
+            body=text_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[email_to],
+        )
+        email.attach_alternative(html_message, "text/html")
+        email.send(fail_silently=False)
+    except Exception:
+        logger.exception("Failed to send donation thank-you email for %s", donation.id)
+        return False
+    return True
+
+
+def send_admin_donation_notification(donation: Donation) -> bool:
+    admin_email = (settings.ADMIN_NOTIFICATION_EMAIL or "").strip()
+    if not admin_email:
+        return False
+    context = {
+        "donation": donation,
+        "amount": donation.display_amount,
+        "dashboard_url": f"{settings.SITE_BASE_URL}/dashboard/donations/",
+    }
+    subject = "New donation received"
+    text_message = render_to_string("intensive/emails/admin_donation_notification.txt", context)
+    html_message = render_to_string("intensive/emails/admin_donation_notification.html", context)
+    try:
+        email = EmailMultiAlternatives(
+            subject=subject,
+            body=text_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[admin_email],
+        )
+        email.attach_alternative(html_message, "text/html")
+        email.send(fail_silently=False)
+    except Exception:
+        logger.exception("Failed to send admin donation notification for %s", donation.id)
+        return False
+    return True
+
+
+def forward_donation_to_donor_elf(donation: Donation) -> bool:
+    tracking_url = (os.getenv("DONOR_ELF_TRACKING_URL", "") or "").strip()
+    if not tracking_url:
+        return False
+
+    payload = {
+        "provider": donation.provider,
+        "provider_ref": donation.provider_ref,
+        "status": donation.status,
+        "frequency": donation.frequency,
+        "is_anonymous": donation.is_anonymous,
+        "donor_name": donation.donor_name,
+        "donor_email": donation.donor_email,
+        "amount": donation.amount / 100,
+        "currency": donation.currency,
+        "note": donation.note,
+        "created_at": donation.created_at.isoformat(),
+    }
+    secret = (os.getenv("DONOR_ELF_TRACKING_SECRET", "") or "").strip()
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib_request.Request(
+        tracking_url,
+        data=data,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    if secret:
+        req.add_header("X-Donor-Elf-Secret", secret)
+    try:
+        with urllib_request.urlopen(req, timeout=8) as resp:
+            return 200 <= resp.status < 300
+    except Exception:
+        logger.exception("Failed to forward donation %s to Donor Elf tracking URL", donation.id)
+        return False
+
+
+def build_donation_manage_url(donation: Donation) -> str:
+    if donation.frequency != "MONTHLY" or not donation.stripe_customer_id:
+        return ""
+    token = signing.dumps({"donation_id": donation.id}, salt=DONATION_MANAGE_SALT)
+    return f"{settings.SITE_BASE_URL}{reverse('donation_manage', args=[token])}"

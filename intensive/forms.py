@@ -3,7 +3,7 @@ import re
 from django import forms
 import pycountry
 
-from .models import Session, SiteSetting, Speaker, TrainingScheduleItem
+from .models import DonationFrequency, Session, SiteSetting, Speaker, TrainingScheduleItem
 
 
 def _flag_emoji(alpha_2: str) -> str:
@@ -66,6 +66,51 @@ class RegistrationForm(forms.Form):
             raise forms.ValidationError("Please enter your city.")
         return city
 
+
+class DonationForm(forms.Form):
+    amount = forms.DecimalField(
+        min_value=1,
+        max_digits=10,
+        decimal_places=2,
+        help_text="Enter amount in USD.",
+    )
+    frequency = forms.ChoiceField(choices=DonationFrequency.choices, initial=DonationFrequency.ONE_TIME)
+    is_anonymous = forms.BooleanField(required=False)
+    full_name = forms.CharField(max_length=160, required=False)
+    email = forms.EmailField(max_length=254, required=False)
+    message = forms.CharField(max_length=255, required=False)
+
+    def clean_amount(self):
+        amount = self.cleaned_data["amount"]
+        if amount < 5:
+            raise forms.ValidationError("Minimum donation is 5.00 USD.")
+        return amount
+
+    def clean_full_name(self):
+        full_name = self.cleaned_data.get("full_name", "").strip()
+        is_anonymous = self.cleaned_data.get("is_anonymous", False)
+        if not is_anonymous and len(full_name) < 2:
+            raise forms.ValidationError("Please enter your full name or choose anonymous.")
+        return full_name
+
+    def clean(self):
+        cleaned = super().clean()
+        is_anonymous = cleaned.get("is_anonymous", False)
+        full_name = (cleaned.get("full_name") or "").strip()
+        email = (cleaned.get("email") or "").strip()
+
+        if is_anonymous:
+            cleaned["full_name"] = ""
+            cleaned["email"] = ""
+            cleaned["message"] = ""
+            return cleaned
+
+        if not email:
+            self.add_error("email", "Please enter your email or choose anonymous.")
+        if len(full_name) < 2:
+            self.add_error("full_name", "Please enter your full name or choose anonymous.")
+        return cleaned
+
 class SessionManageForm(forms.ModelForm):
     class Meta:
         model = Session
@@ -99,7 +144,7 @@ class TrainingScheduleItemForm(forms.ModelForm):
 class SiteSettingForm(forms.ModelForm):
     class Meta:
         model = SiteSetting
-        fields = ["site_name", "venue_address"]
+        fields = ["site_name", "venue_address", "donation_url"]
 
 
 class SpeakerForm(forms.ModelForm):

@@ -20,7 +20,7 @@
           "@type": "Organization",
           "name": "Set Free In Christ",
           "url": "{{ request.scheme }}://{{ request.get_host }}",
-          "logo": "{{ request.scheme }}://{{ request.get_host }}{% static 'images/logo set free in christ.svg' %}"
+          "logo": "{{ request.scheme }}://{{ request.get_host }}{% static 'images/new logo set free.svg' %}"
         }
         {% if speakers_session %},
         {
@@ -53,7 +53,7 @@
     <div class="container topbar-inner">
         <div class="topbar-main">
             <div class="brand">
-                <img src="{% static 'images/logo set free in christ.svg' %}" alt="Set Free In Christ logo" class="brand-logo">
+                <img src="{% static 'images/new logo set free.svg' %}" alt="Set Free In Christ logo" class="brand-logo">
             </div>
             <div class="topbar-social" aria-label="Social media links">
                 <a class="social-instagram" href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
@@ -68,12 +68,13 @@
                         <path d="M13.2 20v-7h2.4l.4-2.8h-2.8V8.5c0-.8.3-1.4 1.5-1.4h1.4V4.6c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4.1v1.6H7.5V13H10v7h3.2Z"></path>
                     </svg>
                 </a>
-                <a class="social-youtube" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
+                <a class="social-youtube" href="https://www.youtube.com/@SetFreeInChrist-x4m" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <rect class="yt-box" x="3.5" y="6" width="17" height="12" rx="3.2"></rect>
                         <path class="yt-play" d="M10 9.4v5.2l4.7-2.6L10 9.4Z"></path>
                     </svg>
                 </a>
+                <a class="topbar-donate-btn" href="{% url 'donate' %}">Donate</a>
             </div>
             <button type="button" class="topbar-menu-toggle" data-mobile-menu-toggle aria-label="Open menu">☰</button>
         </div>
@@ -92,22 +93,19 @@
     <section class="hero">
         <div class="container hero-content hero-grid">
             <div class="hero-left">
-                <p class="eyebrow">3 DAY FREEDOM INTENSIVE</p>
+                <p class="eyebrow">3-DAY SPIRITUAL WARFARE INTENSIVE</p>
                 <h1 class="hero-title">
-                    BREAK FREE AND
-                    <span>STEP INTO FREEDOM</span>
+                    SPIRITUAL WARFARE
+                    <span>FREEDOM IN CHRIST</span>
                 </h1>
             </div>
             <div class="hero-right">
                 <p class="hero-copy lead">
-                    Break free from what’s holding you back and step into the freedom you were created for.
+                    This three-day intensive training leads believers through a clear biblical understanding of spiritual warfare,
+                    demonic influence, true freedom in Christ, and God’s protection.
                 </p>
                 <p class="hero-copy">
-                    In just three powerful days, this intensive training will guide you through biblical teaching,
-                    spiritual insight, and practical tools designed to help you experience lasting freedom.
-                </p>
-                <p class="hero-copy">
-                    Reserve your seat today and begin your journey to freedom.
+                    Join this immersive biblical journey and gain practical ministry tools for real freedom and responsible service.
                 </p>
                 <div class="hero-meta">
                     <p class="hero-meta-item">
@@ -115,7 +113,7 @@
                             <path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"></path>
                             <circle cx="12" cy="10" r="2.5"></circle>
                         </svg>
-                        In-person location: {{ venue_address }}
+                        LOCATION: {{ venue_address }}
                     </p>
                 </div>
                 <a class="btn btn-accent" href="#register">RESERVE YOUR SEAT</a>
@@ -124,10 +122,7 @@
     </section>
 
     <section id="about" class="strip about-section">
-        <div class="container grid-two about-grid">
-            <div class="about-left">
-                <h2>A HUB FOR FREEDOM, GROWTH, AND HEALING</h2>
-            </div>
+        <div class="container about-grid about-grid-centered">
             <div class="about-right">
                 <div class="countdown-wrap" aria-live="polite">
                     <p class="countdown-label">COUNTDOWN TO MARCH 26, 2026</p>
@@ -200,15 +195,19 @@
                 <h2 class="included-heading">WHAT'S INCLUDED</h2>
                 <div>
                     <p class="included-intro">
-                        When you register for the 3 Day Freedom Intensive, you will receive:
+                        Through Scripture-based teaching and practical ministry principles, participants will explore:
                     </p>
                     <ul class="included-list">
-                        <li>Three full days of transformational teaching</li>
-                        <li>Comprehensive training materials</li>
-                        <li>Video lessons and downloadable resources</li>
-                        <li>Personal note-taking and progress tracking</li>
-                        <li>Lifetime access to the training content</li>
+                        <li>The biblical foundations of spiritual warfare</li>
+                        <li>The authority believers share with Christ</li>
+                        <li>How spiritual bondage develops</li>
+                        <li>Practical steps toward lasting deliverance and freedom</li>
                     </ul>
+                    <p class="included-intro">
+                        In just three powerful days, this immersive training equips believers with the knowledge,
+                        discernment, and spiritual tools necessary to walk in the freedom Christ provides and to
+                        minister responsibly to others.
+                    </p>
                 </div>
             </div>
         </div>
@@ -443,6 +442,7 @@
             </form>
         </div>
     </section>
+
 </main>
 
 <footer class="footer">

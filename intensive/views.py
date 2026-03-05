@@ -1,10 +1,13 @@
 import csv
+import json
+import os
 
 import stripe
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
+from django.core import signing
 from django.db import transaction
 from django.http import HttpRequest, HttpResponse
 from django.urls import reverse
@@ -14,6 +17,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
 from .forms import (
+    DonationForm,
     RegistrationForm,
     SessionManageForm,
     SiteSettingForm,
@@ -21,6 +25,9 @@ from .forms import (
     TrainingScheduleItemForm,
 )
 from .models import (
+    Donation,
+    DonationFrequency,
+    DonationStatus,
     PaymentTransaction,
     PaymentProvider,
     Registration,
@@ -32,13 +39,57 @@ from .models import (
     TrainingScheduleItem,
 )
 from .services import (
+    build_donation_manage_url,
+    forward_donation_to_donor_elf,
+    DONATION_MANAGE_SALT,
+    send_admin_donation_notification,
     send_admin_new_registration_notification,
+    send_donation_thank_you,
     send_payment_retry_email,
     send_registration_confirmation,
 )
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 DEFAULT_VENUE_ADDRESS = "Freedom Revival Center, 1200 Main St, Dallas, TX 75202, USA"
+
+
+def _payload_get(payload: dict, *keys: str, default: str = "") -> str:
+    for key in keys:
+        value = payload.get(key)
+        if value is None:
+            continue
+        text = str(value).strip()
+        if text:
+            return text
+    return default
+
+
+def _to_cents(raw_amount) -> int:
+    if raw_amount in (None, ""):
+        return 0
+    text = str(raw_amount).strip().replace(",", "")
+    if not text:
+        return 0
+    try:
+        if "." in text:
+            return max(int(round(float(text) * 100)), 0)
+        value = int(text)
+        if value > 1000:
+            return max(value, 0)
+        return max(value * 100, 0)
+    except ValueError:
+        return 0
+
+
+def _map_donation_status(raw_status: str) -> str:
+    status = (raw_status or "").strip().lower()
+    if status in {"succeeded", "success", "completed", "complete", "paid"}:
+        return DonationStatus.COMPLETED
+    if status in {"failed", "declined", "error"}:
+        return DonationStatus.FAILED
+    if status in {"canceled", "cancelled", "void"}:
+        return DonationStatus.CANCELED
+    return DonationStatus.PENDING
 
 
 def _build_checkout_session(registration: Registration, session: Session) -> stripe.checkout.Session:
@@ -70,6 +121,44 @@ def _build_checkout_session(registration: Registration, session: Session) -> str
     )
 
 
+def _build_donation_checkout_session(donation: Donation) -> stripe.checkout.Session:
+    line_item = {
+        "price_data": {
+            "currency": donation.currency.lower(),
+            "unit_amount": donation.amount,
+            "product_data": {"name": "Donation - Set Free In Christ Mission"},
+        },
+        "quantity": 1,
+    }
+    common = {
+        "customer_email": donation.donor_email or None,
+        "line_items": [line_item],
+        "metadata": {
+            "donation_id": str(donation.id),
+            "frequency": donation.frequency,
+            "is_anonymous": "1" if donation.is_anonymous else "0",
+        },
+        "success_url": f"{settings.SITE_BASE_URL}/donation/success?ref={{CHECKOUT_SESSION_ID}}",
+        "cancel_url": f"{settings.SITE_BASE_URL}/donation/cancel?donation_id={donation.id}",
+    }
+    if donation.frequency == DonationFrequency.MONTHLY:
+        return stripe.checkout.Session.create(
+            mode="subscription",
+            subscription_data={
+                "metadata": {
+                    "donation_id": str(donation.id),
+                    "frequency": donation.frequency,
+                }
+            },
+            **common,
+        )
+    return stripe.checkout.Session.create(
+        mode="payment",
+        payment_intent_data={"metadata": {"donation_id": str(donation.id)}},
+        **common,
+    )
+
+
 def _home_context(reg_form: dict | None = None) -> dict:
     sessions = Session.objects.filter(is_active=True).order_by("start_date")
     schedule_items = TrainingScheduleItem.objects.filter(is_active=True).order_by("display_order")
@@ -87,6 +176,7 @@ def _home_context(reg_form: dict | None = None) -> dict:
         "speakers": speakers,
         "speakers_session": upcoming_session,
         "venue_address": site_setting.venue_address if site_setting else DEFAULT_VENUE_ADDRESS,
+        "donation_url": site_setting.donation_url if site_setting and site_setting.donation_url else "",
         "stripe_publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
         "reg_form": reg_form or {},
         "country_choices": RegistrationForm.COUNTRY_CHOICES,
@@ -94,9 +184,20 @@ def _home_context(reg_form: dict | None = None) -> dict:
     }
 
 
+def _donation_context(donation_form: dict | None = None) -> dict:
+    return {
+        "donation_form": donation_form or {},
+    }
+
+
 @require_GET
 def home(request: HttpRequest) -> HttpResponse:
     return render(request, "intensive/home.html", _home_context())
+
+
+@require_GET
+def donate(request: HttpRequest) -> HttpResponse:
+    return render(request, "intensive/donate.html", _donation_context())
 
 
 @require_POST
@@ -234,6 +335,56 @@ def create_checkout(request: HttpRequest) -> HttpResponse:
     return redirect(checkout_session.url)
 
 
+@require_POST
+def create_donation_checkout(request: HttpRequest) -> HttpResponse:
+    form = DonationForm(request.POST)
+    if not form.is_valid():
+        for field_errors in form.errors.values():
+            for error in field_errors:
+                messages.error(request, error)
+        values = {
+            "amount": request.POST.get("amount", ""),
+            "frequency": request.POST.get("frequency", DonationFrequency.ONE_TIME),
+            "is_anonymous": request.POST.get("is_anonymous", ""),
+            "full_name": request.POST.get("full_name", ""),
+            "email": request.POST.get("email", ""),
+            "message": request.POST.get("message", ""),
+        }
+        return render(request, "intensive/donate.html", _donation_context(values))
+
+    if not settings.STRIPE_SECRET_KEY:
+        messages.error(request, "Stripe is not configured yet. Please contact support.")
+        values = {
+            "amount": request.POST.get("amount", ""),
+            "frequency": request.POST.get("frequency", DonationFrequency.ONE_TIME),
+            "is_anonymous": request.POST.get("is_anonymous", ""),
+            "full_name": request.POST.get("full_name", ""),
+            "email": request.POST.get("email", ""),
+            "message": request.POST.get("message", ""),
+        }
+        return render(request, "intensive/donate.html", _donation_context(values))
+
+    amount_cents = int(form.cleaned_data["amount"] * 100)
+    is_anonymous = form.cleaned_data.get("is_anonymous", False)
+    donation = Donation.objects.create(
+        provider="STRIPE",
+        frequency=form.cleaned_data["frequency"],
+        is_anonymous=is_anonymous,
+        donor_name="" if is_anonymous else form.cleaned_data.get("full_name", ""),
+        donor_email=form.cleaned_data["email"],
+        donor_message=form.cleaned_data.get("message", ""),
+        amount=amount_cents,
+        currency="USD",
+        status=DonationStatus.PENDING,
+        note="Donation checkout created.",
+    )
+    checkout_session = _build_donation_checkout_session(donation)
+    donation.provider_ref = checkout_session.id
+    donation.stripe_checkout_id = checkout_session.id
+    donation.save(update_fields=["provider_ref", "stripe_checkout_id", "updated_at"])
+    return redirect(checkout_session.url)
+
+
 @require_GET
 def resume_checkout(request: HttpRequest, registration_id: str) -> HttpResponse:
     registration = get_object_or_404(
@@ -274,6 +425,58 @@ def resume_checkout(request: HttpRequest, registration_id: str) -> HttpResponse:
     return redirect(checkout_session.url)
 
 
+@require_GET
+def donation_success(request: HttpRequest) -> HttpResponse:
+    ref = request.GET.get("ref")
+    donation = None
+    manage_url = ""
+    if ref:
+        donation = Donation.objects.filter(stripe_checkout_id=ref).first()
+        if donation:
+            manage_url = build_donation_manage_url(donation)
+    return render(request, "intensive/donation_success.html", {"donation": donation, "manage_url": manage_url})
+
+
+@require_GET
+def donation_cancel(request: HttpRequest) -> HttpResponse:
+    donation = None
+    donation_id = request.GET.get("donation_id")
+    if donation_id:
+        donation = Donation.objects.filter(id=donation_id).first()
+        if donation and donation.status != DonationStatus.COMPLETED:
+            donation.status = DonationStatus.CANCELED
+            donation.note = "Donation checkout canceled by donor."
+            donation.save(update_fields=["status", "note", "updated_at"])
+    return render(request, "intensive/donation_cancel.html", {"donation": donation})
+
+
+@require_GET
+def donation_manage(request: HttpRequest, token: str) -> HttpResponse:
+    try:
+        data = signing.loads(token, salt=DONATION_MANAGE_SALT, max_age=60 * 60 * 24 * 365 * 3)
+    except signing.BadSignature:
+        messages.error(request, "This donation management link is invalid or expired.")
+        return redirect("donate")
+
+    donation_id = data.get("donation_id")
+    donation = Donation.objects.filter(id=donation_id).first()
+    if not donation or donation.frequency != DonationFrequency.MONTHLY or not donation.stripe_customer_id:
+        messages.error(request, "Monthly donation details were not found for this link.")
+        return redirect("donate")
+    if not settings.STRIPE_SECRET_KEY:
+        messages.error(request, "Stripe is not configured yet. Please contact support.")
+        return redirect("donate")
+    try:
+        portal = stripe.billing_portal.Session.create(
+            customer=donation.stripe_customer_id,
+            return_url=f"{settings.SITE_BASE_URL}/donate/",
+        )
+    except stripe.error.StripeError:
+        messages.error(request, "We could not open the donation management portal right now.")
+        return redirect("donate")
+    return redirect(portal.url)
+
+
 @csrf_exempt
 @require_POST
 def stripe_webhook(request: HttpRequest) -> HttpResponse:
@@ -291,6 +494,29 @@ def stripe_webhook(request: HttpRequest) -> HttpResponse:
 
     if event["type"] == "checkout.session.completed":
         checkout = event["data"]["object"]
+        donation_id = checkout.get("metadata", {}).get("donation_id")
+        if donation_id:
+            donation = Donation.objects.filter(id=donation_id).first()
+            if donation:
+                was_completed = donation.status == DonationStatus.COMPLETED
+                donation.status = DonationStatus.COMPLETED
+                donation.provider = "STRIPE"
+                donation.provider_ref = str(checkout.get("id", donation.provider_ref))
+                donation.stripe_checkout_id = str(checkout.get("id", donation.stripe_checkout_id))
+                donation.stripe_payment_intent = str(checkout.get("payment_intent", donation.stripe_payment_intent))
+                donation.stripe_subscription_id = str(checkout.get("subscription", donation.stripe_subscription_id))
+                donation.stripe_customer_id = str(checkout.get("customer", donation.stripe_customer_id))
+                donation.amount = checkout.get("amount_total", donation.amount) or donation.amount
+                donation.currency = str(checkout.get("currency", donation.currency)).upper()
+                donation.note = "Donation completed via Stripe Checkout."
+                donation.raw_payload = checkout
+                donation.save()
+                forward_donation_to_donor_elf(donation)
+                if not was_completed:
+                    send_admin_donation_notification(donation)
+                    send_donation_thank_you(donation)
+            return HttpResponse(status=200)
+
         registration_id = checkout.get("metadata", {}).get("registration_id")
         if registration_id:
             try:
@@ -337,6 +563,16 @@ def stripe_webhook(request: HttpRequest) -> HttpResponse:
                 return HttpResponse(status=200)
     elif event["type"] == "checkout.session.expired":
         checkout = event["data"]["object"]
+        donation_id = checkout.get("metadata", {}).get("donation_id")
+        if donation_id:
+            donation = Donation.objects.filter(id=donation_id).first()
+            if donation and donation.status != DonationStatus.COMPLETED:
+                donation.status = DonationStatus.CANCELED
+                donation.note = "Donation checkout session expired."
+                donation.raw_payload = checkout
+                donation.save(update_fields=["status", "note", "raw_payload", "updated_at"])
+            return HttpResponse(status=200)
+
         registration_id = checkout.get("metadata", {}).get("registration_id")
         if registration_id:
             try:
@@ -368,6 +604,21 @@ def stripe_webhook(request: HttpRequest) -> HttpResponse:
                     send_payment_retry_email(registration)
     elif event["type"] == "payment_intent.payment_failed":
         payment_intent = event["data"]["object"]
+        donation_id = payment_intent.get("metadata", {}).get("donation_id")
+        if donation_id:
+            donation = Donation.objects.filter(id=donation_id).first()
+            if donation and donation.status != DonationStatus.COMPLETED:
+                donation.status = DonationStatus.FAILED
+                donation.stripe_payment_intent = str(payment_intent.get("id", donation.stripe_payment_intent))
+                donation.note = (
+                    payment_intent.get("last_payment_error", {}).get("message")
+                    or "Donation payment failed in Stripe."
+                )
+                donation.raw_payload = payment_intent
+                donation.save(update_fields=["status", "stripe_payment_intent", "note", "raw_payload", "updated_at"])
+                forward_donation_to_donor_elf(donation)
+            return HttpResponse(status=200)
+
         registration_id = payment_intent.get("metadata", {}).get("registration_id")
         if registration_id:
             try:
@@ -401,6 +652,59 @@ def stripe_webhook(request: HttpRequest) -> HttpResponse:
                         note=f"Stripe payment failed: {error_message}",
                     )
                     send_payment_retry_email(registration)
+    elif event["type"] == "invoice.paid":
+        invoice = event["data"]["object"]
+        subscription_id = str(invoice.get("subscription", ""))
+        if subscription_id:
+            base_donation = Donation.objects.filter(stripe_subscription_id=subscription_id).first()
+            if base_donation:
+                provider_ref = str(invoice.get("id", ""))
+                existing = Donation.objects.filter(provider_ref=provider_ref).exists()
+                if not existing:
+                    recurring = Donation.objects.create(
+                        provider="STRIPE",
+                        provider_ref=provider_ref,
+                        frequency=DonationFrequency.MONTHLY,
+                        is_anonymous=base_donation.is_anonymous,
+                        donor_name=base_donation.donor_name,
+                        donor_email=base_donation.donor_email,
+                        donor_message=base_donation.donor_message,
+                        amount=invoice.get("amount_paid", base_donation.amount) or base_donation.amount,
+                        currency=str(invoice.get("currency", base_donation.currency)).upper(),
+                        status=DonationStatus.COMPLETED,
+                        note="Recurring monthly donation payment received.",
+                        stripe_subscription_id=subscription_id,
+                        stripe_customer_id=str(invoice.get("customer", "")),
+                        raw_payload=invoice,
+                    )
+                    forward_donation_to_donor_elf(recurring)
+                    send_admin_donation_notification(recurring)
+                    send_donation_thank_you(recurring)
+            return HttpResponse(status=200)
+    elif event["type"] == "invoice.payment_failed":
+        invoice = event["data"]["object"]
+        subscription_id = str(invoice.get("subscription", ""))
+        if subscription_id:
+            base_donation = Donation.objects.filter(stripe_subscription_id=subscription_id).first()
+            if base_donation:
+                failure = Donation.objects.create(
+                    provider="STRIPE",
+                    provider_ref=str(invoice.get("id", "")),
+                    frequency=DonationFrequency.MONTHLY,
+                    is_anonymous=base_donation.is_anonymous,
+                    donor_name=base_donation.donor_name,
+                    donor_email=base_donation.donor_email,
+                    donor_message=base_donation.donor_message,
+                    amount=invoice.get("amount_due", base_donation.amount) or base_donation.amount,
+                    currency=str(invoice.get("currency", base_donation.currency)).upper(),
+                    status=DonationStatus.FAILED,
+                    note="Recurring monthly donation payment failed.",
+                    stripe_subscription_id=subscription_id,
+                    stripe_customer_id=str(invoice.get("customer", "")),
+                    raw_payload=invoice,
+                )
+                forward_donation_to_donor_elf(failure)
+            return HttpResponse(status=200)
     return HttpResponse(status=200)
 
 
@@ -450,6 +754,56 @@ def cancel(request: HttpRequest) -> HttpResponse:
     return render(request, "intensive/cancel.html", context)
 
 
+@csrf_exempt
+@require_POST
+def donor_elf_webhook(request: HttpRequest) -> HttpResponse:
+    expected_secret = (os.getenv("DONOR_ELF_WEBHOOK_SECRET", "") or "").strip()
+    if expected_secret:
+        incoming_secret = (
+            request.META.get("HTTP_X_DONOR_ELF_SECRET", "")
+            or request.GET.get("secret", "")
+            or request.POST.get("secret", "")
+        ).strip()
+        if incoming_secret != expected_secret:
+            return HttpResponse(status=403)
+
+    payload: dict = {}
+    if request.body:
+        try:
+            payload = json.loads(request.body.decode("utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            payload = {}
+    if not payload:
+        payload = request.POST.dict()
+    if not payload:
+        return HttpResponse(status=400)
+
+    provider_ref = _payload_get(payload, "donation_id", "id", "transaction_id", "reference")
+    donor_name = _payload_get(payload, "name", "donor_name", "full_name")
+    donor_email = _payload_get(payload, "email", "donor_email")
+    amount = _to_cents(payload.get("amount") or payload.get("donation_amount") or payload.get("total"))
+    currency = _payload_get(payload, "currency", default="USD").upper()
+    status = _map_donation_status(_payload_get(payload, "status", "payment_status", "state"))
+    event_name = _payload_get(payload, "event", "event_type")
+    note = f"Donor Elf webhook{': ' + event_name if event_name else ''}"
+
+    defaults = {
+        "provider": "DONOR_ELF",
+        "donor_name": donor_name,
+        "donor_email": donor_email,
+        "amount": amount,
+        "currency": currency or "USD",
+        "status": status,
+        "note": note,
+        "raw_payload": payload,
+    }
+    if provider_ref:
+        Donation.objects.update_or_create(provider_ref=provider_ref, defaults=defaults)
+    else:
+        Donation.objects.create(provider_ref="", **defaults)
+    return HttpResponse(status=200)
+
+
 @login_required
 @require_GET
 def dashboard(request: HttpRequest) -> HttpResponse:
@@ -473,6 +827,24 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         "admin_page": "registrations",
     }
     return render(request, "intensive/dashboard.html", context)
+
+
+@login_required
+@require_GET
+def dashboard_donations(request: HttpRequest) -> HttpResponse:
+    status = request.GET.get("status")
+    if status is None:
+        status = DonationStatus.COMPLETED
+    donations = Donation.objects.all()
+    if status:
+        donations = donations.filter(status=status)
+    context = {
+        "donations": donations[:500],
+        "selected_status": status,
+        "status_choices": DonationStatus.choices,
+        "admin_page": "donations",
+    }
+    return render(request, "intensive/dashboard_donations.html", context)
 
 
 @login_required

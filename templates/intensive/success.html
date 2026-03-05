@@ -7,7 +7,7 @@
 <main class="simple-page">
     <div class="container centered result-card">
         <div class="result-brand">
-            <img src="{% static 'images/logo set free in christ.svg' %}" alt="Set Free In Christ" class="result-logo">
+            <img src="{% static 'images/new logo set free.svg' %}" alt="Set Free In Christ" class="result-logo">
             <p class="result-brand-name">Set Free In Christ</p>
         </div>
         <h1 class="result-title">Reservation Confirmed</h1>
@@ -15,7 +15,7 @@
             <p class="result-intro">Thank you, {{ registration.full_name }}. Your seat is confirmed and your payment was successful.</p>
             <div class="result-meta">
                 <p><strong>Session:</strong> {{ registration.session.title }}</p>
-                <p><strong>Location:</strong> {{ registration.session.location }}</p>
+                <p><strong>LOCATION:</strong> {{ registration.session.location }}</p>
                 <p><strong>City/Country:</strong> {{ registration.city }}, {{ registration.country }}</p>
                 <p><strong>Status:</strong> <span class="result-status">{{ registration.status }}</span></p>
                 <p><strong>Amount:</strong> {{ registration.display_amount_paid }}</p>
