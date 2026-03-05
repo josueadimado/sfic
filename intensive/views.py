@@ -109,6 +109,41 @@ def _gross_up_amount_for_processing_fee(base_amount_cents: int) -> tuple[int, in
     return total_charge, fee
 
 
+def _mark_donation_completed_from_checkout(donation: Donation, checkout, note: str) -> None:
+    was_completed = donation.status == DonationStatus.COMPLETED
+    donation.status = DonationStatus.COMPLETED
+    donation.provider = "STRIPE"
+    donation.provider_ref = str(checkout.get("id", donation.provider_ref))
+    donation.stripe_checkout_id = str(checkout.get("id", donation.stripe_checkout_id))
+    donation.stripe_payment_intent = str(checkout.get("payment_intent", donation.stripe_payment_intent))
+    donation.stripe_subscription_id = str(checkout.get("subscription", donation.stripe_subscription_id))
+    donation.stripe_customer_id = str(checkout.get("customer", donation.stripe_customer_id))
+    donation.amount = checkout.get("amount_total", donation.amount) or donation.amount
+    donation.currency = str(checkout.get("currency", donation.currency)).upper()
+    donation.note = note
+    donation.raw_payload = checkout
+    donation.save()
+    forward_donation_to_donor_elf(donation)
+    if not was_completed:
+        send_admin_donation_notification(donation)
+        send_donation_thank_you(donation)
+
+
+def _sync_pending_donation_from_stripe(donation: Donation, note: str) -> bool:
+    if donation.status == DonationStatus.COMPLETED or not donation.stripe_checkout_id or not settings.STRIPE_SECRET_KEY:
+        return False
+    try:
+        checkout = stripe.checkout.Session.retrieve(donation.stripe_checkout_id)
+    except stripe.error.StripeError:
+        return False
+    payment_status = str(checkout.get("payment_status", "")).lower()
+    checkout_status = str(checkout.get("status", "")).lower()
+    if payment_status == "paid" or checkout_status == "complete":
+        _mark_donation_completed_from_checkout(donation, checkout, note)
+        return True
+    return False
+
+
 def _build_checkout_session(registration: Registration, session: Session) -> stripe.checkout.Session:
     return stripe.checkout.Session.create(
         mode="payment",
@@ -456,37 +491,27 @@ def donation_success(request: HttpRequest) -> HttpResponse:
     manage_url = ""
     if ref:
         donation = Donation.objects.filter(stripe_checkout_id=ref).first()
-        if donation and donation.status != DonationStatus.COMPLETED and settings.STRIPE_SECRET_KEY:
-            # Fallback: if webhook is delayed, confirm payment directly from Stripe on success page.
+        if not donation and settings.STRIPE_SECRET_KEY:
             try:
                 checkout = stripe.checkout.Session.retrieve(ref)
             except stripe.error.StripeError:
                 checkout = None
             if checkout:
-                payment_status = str(checkout.get("payment_status", "")).lower()
-                checkout_status = str(checkout.get("status", "")).lower()
-                if payment_status == "paid" or checkout_status == "complete":
-                    was_completed = donation.status == DonationStatus.COMPLETED
-                    donation.status = DonationStatus.COMPLETED
-                    donation.provider = "STRIPE"
-                    donation.provider_ref = str(checkout.get("id", donation.provider_ref))
-                    donation.stripe_checkout_id = str(checkout.get("id", donation.stripe_checkout_id))
-                    donation.stripe_payment_intent = str(
-                        checkout.get("payment_intent", donation.stripe_payment_intent)
-                    )
-                    donation.stripe_subscription_id = str(
-                        checkout.get("subscription", donation.stripe_subscription_id)
-                    )
-                    donation.stripe_customer_id = str(checkout.get("customer", donation.stripe_customer_id))
-                    donation.amount = checkout.get("amount_total", donation.amount) or donation.amount
-                    donation.currency = str(checkout.get("currency", donation.currency)).upper()
-                    donation.note = "Donation completed from success page verification."
-                    donation.raw_payload = checkout
-                    donation.save()
-                    forward_donation_to_donor_elf(donation)
-                    if not was_completed:
-                        send_admin_donation_notification(donation)
-                        send_donation_thank_you(donation)
+                donation_id = checkout.get("metadata", {}).get("donation_id")
+                if donation_id:
+                    donation = Donation.objects.filter(id=donation_id).first()
+                    if donation and donation.stripe_checkout_id != ref:
+                        donation.stripe_checkout_id = ref
+                        donation.provider_ref = ref
+                        donation.save(update_fields=["stripe_checkout_id", "provider_ref", "updated_at"])
+        if donation:
+            if donation.stripe_checkout_id != ref:
+                donation.stripe_checkout_id = ref
+                donation.provider_ref = ref
+                donation.save(update_fields=["stripe_checkout_id", "provider_ref", "updated_at"])
+            _sync_pending_donation_from_stripe(
+                donation, note="Donation completed from success page verification."
+            )
         if donation:
             manage_url = build_donation_manage_url(donation)
     return render(request, "intensive/donation_success.html", {"donation": donation, "manage_url": manage_url})
@@ -887,6 +912,16 @@ def dashboard(request: HttpRequest) -> HttpResponse:
 @login_required
 @require_GET
 def dashboard_donations(request: HttpRequest) -> HttpResponse:
+    # Keep dashboard trustworthy even when webhook delivery is delayed or missed.
+    if settings.STRIPE_SECRET_KEY:
+        pending = (
+            Donation.objects.filter(status=DonationStatus.PENDING)
+            .exclude(stripe_checkout_id="")
+            .order_by("-created_at")[:40]
+        )
+        for item in pending:
+            _sync_pending_donation_from_stripe(item, note="Donation completed from dashboard sync.")
+
     status = request.GET.get("status")
     if status is None:
         status = DonationStatus.COMPLETED
