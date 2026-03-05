@@ -1,0 +1,16 @@
+New registration received.
+
+Name: {{ registration.full_name }}
+Email: {{ registration.email }}
+Phone: {{ registration.phone }}
+City/Country: {{ registration.city }}, {{ registration.country }}
+Church/Organization: {{ registration.church|default:"-" }}
+
+Session: {{ session.title }}
+Location: {{ session.location }}
+Dates: {{ session.start_date }} to {{ session.end_date }}
+Amount Due: {{ amount_due }}
+Current Status: {{ registration.status }}
+
+View in dashboard:
+{{ dashboard_url }}

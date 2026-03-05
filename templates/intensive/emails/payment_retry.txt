@@ -1,0 +1,14 @@
+Hello {{ registration.full_name }},
+
+We noticed your payment for the Freedom Intensive was not completed.
+
+You can finish your registration securely using this link:
+{{ resume_url }}
+
+Session: {{ session.title }}
+Location: {{ session.location }}
+Amount Due: {{ amount_due }}
+
+If you already completed payment, you can ignore this email.
+
+Set Free In Christ

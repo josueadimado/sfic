@@ -3,6 +3,7 @@ import csv
 import stripe
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import HttpRequest, HttpResponse
@@ -30,10 +31,37 @@ from .models import (
     TransactionType,
     TrainingScheduleItem,
 )
-from .services import send_registration_confirmation
+from .services import (
+    send_admin_new_registration_notification,
+    send_payment_retry_email,
+    send_registration_confirmation,
+)
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 DEFAULT_VENUE_ADDRESS = "Freedom Revival Center, 1200 Main St, Dallas, TX 75202, USA"
+
+
+def _build_checkout_session(registration: Registration, session: Session) -> stripe.checkout.Session:
+    return stripe.checkout.Session.create(
+        mode="payment",
+        customer_email=registration.email,
+        line_items=[
+            {
+                "price_data": {
+                    "currency": session.currency.lower(),
+                    "unit_amount": session.price,
+                    "product_data": {"name": f"3 Day Freedom Intensive - {session.title}"},
+                },
+                "quantity": 1,
+            }
+        ],
+        metadata={
+            "registration_id": str(registration.id),
+            "session_id": str(session.id),
+        },
+        success_url=f"{settings.SITE_BASE_URL}/success?ref={{CHECKOUT_SESSION_ID}}",
+        cancel_url=f"{settings.SITE_BASE_URL}/cancel?registration_id={registration.id}",
+    )
 
 
 def _home_context(reg_form: dict | None = None) -> dict:
@@ -63,6 +91,13 @@ def _home_context(reg_form: dict | None = None) -> dict:
 @require_GET
 def home(request: HttpRequest) -> HttpResponse:
     return render(request, "intensive/home.html", _home_context())
+
+
+@require_POST
+@login_required
+def dashboard_logout(request: HttpRequest) -> HttpResponse:
+    logout(request)
+    return redirect("home")
 
 
 @require_GET
@@ -147,6 +182,7 @@ def create_checkout(request: HttpRequest) -> HttpResponse:
         amount_paid=session.price,
         currency=session.currency,
     )
+    send_admin_new_registration_notification(registration)
 
     if not settings.STRIPE_SECRET_KEY:
         messages.error(request, "Stripe is not configured yet. Please add keys in .env.")
@@ -174,26 +210,7 @@ def create_checkout(request: HttpRequest) -> HttpResponse:
         }
         return render(request, "intensive/home.html", _home_context(form_values))
 
-    checkout_session = stripe.checkout.Session.create(
-        mode="payment",
-        customer_email=registration.email,
-        line_items=[
-            {
-                "price_data": {
-                    "currency": session.currency.lower(),
-                    "unit_amount": session.price,
-                    "product_data": {"name": f"3 Day Freedom Intensive - {session.title}"},
-                },
-                "quantity": 1,
-            }
-        ],
-        metadata={
-            "registration_id": str(registration.id),
-            "session_id": str(session.id),
-        },
-        success_url=f"{settings.SITE_BASE_URL}/success?ref={{CHECKOUT_SESSION_ID}}",
-        cancel_url=f"{settings.SITE_BASE_URL}/cancel",
-    )
+    checkout_session = _build_checkout_session(registration, session)
     registration.payment_ref = checkout_session.id
     registration.save(update_fields=["payment_ref", "updated_at"])
     PaymentTransaction.objects.create(
@@ -207,6 +224,46 @@ def create_checkout(request: HttpRequest) -> HttpResponse:
         payment_ref=checkout_session.id,
         stripe_payment_intent=str(checkout_session.get("payment_intent", "")),
         note="Checkout session created.",
+    )
+    return redirect(checkout_session.url)
+
+
+@require_GET
+def resume_checkout(request: HttpRequest, registration_id: str) -> HttpResponse:
+    registration = get_object_or_404(
+        Registration.objects.select_related("session"),
+        id=registration_id,
+    )
+    if registration.status == RegistrationStatus.PAID:
+        messages.info(request, "This registration has already been paid.")
+        return redirect(f"{reverse('success')}?ref={registration.payment_ref}")
+
+    session = registration.session
+    paid_count = session.registrations.filter(status=RegistrationStatus.PAID).count()
+    if paid_count >= session.capacity:
+        messages.error(request, "This session is now full, so payment cannot be completed.")
+        return redirect("home")
+
+    if not settings.STRIPE_SECRET_KEY:
+        messages.error(request, "Stripe is not configured yet. Please contact support.")
+        return redirect("home")
+
+    checkout_session = _build_checkout_session(registration, session)
+    registration.payment_ref = checkout_session.id
+    if registration.status != RegistrationStatus.PENDING:
+        registration.status = RegistrationStatus.PENDING
+    registration.save(update_fields=["payment_ref", "status", "updated_at"])
+    PaymentTransaction.objects.create(
+        registration=registration,
+        session=session,
+        transaction_type=TransactionType.CHECKOUT_CREATED,
+        status=registration.status,
+        provider=PaymentProvider.STRIPE,
+        amount=session.price,
+        currency=session.currency.upper(),
+        payment_ref=checkout_session.id,
+        stripe_payment_intent=str(checkout_session.get("payment_intent", "")),
+        note="Checkout session created from retry link.",
     )
     return redirect(checkout_session.url)
 
@@ -272,6 +329,37 @@ def stripe_webhook(request: HttpRequest) -> HttpResponse:
                         send_registration_confirmation(registration)
             except Registration.DoesNotExist:
                 return HttpResponse(status=200)
+    elif event["type"] == "checkout.session.expired":
+        checkout = event["data"]["object"]
+        registration_id = checkout.get("metadata", {}).get("registration_id")
+        if registration_id:
+            try:
+                registration = Registration.objects.select_related("session").get(id=registration_id)
+            except Registration.DoesNotExist:
+                return HttpResponse(status=200)
+            if registration.status != RegistrationStatus.PAID:
+                if registration.status != RegistrationStatus.CANCELED:
+                    registration.status = RegistrationStatus.CANCELED
+                    registration.save(update_fields=["status", "updated_at"])
+                existing = PaymentTransaction.objects.filter(
+                    registration=registration,
+                    transaction_type=TransactionType.PAYMENT_CANCELED,
+                    payment_ref=str(checkout.get("id", registration.payment_ref)),
+                ).exists()
+                if not existing:
+                    PaymentTransaction.objects.create(
+                        registration=registration,
+                        session=registration.session,
+                        transaction_type=TransactionType.PAYMENT_CANCELED,
+                        status=registration.status,
+                        provider=PaymentProvider.STRIPE,
+                        amount=checkout.get("amount_total", registration.session.price),
+                        currency=str(checkout.get("currency", registration.session.currency)).upper(),
+                        payment_ref=str(checkout.get("id", registration.payment_ref)),
+                        stripe_payment_intent=str(checkout.get("payment_intent", "")),
+                        note="Checkout session expired.",
+                    )
+                    send_payment_retry_email(registration)
     return HttpResponse(status=200)
 
 
@@ -290,7 +378,35 @@ def success(request: HttpRequest) -> HttpResponse:
 
 @require_GET
 def cancel(request: HttpRequest) -> HttpResponse:
-    return render(request, "intensive/cancel.html")
+    registration = None
+    registration_id = request.GET.get("registration_id")
+    if registration_id:
+        registration = Registration.objects.filter(id=registration_id).select_related("session").first()
+    if registration and registration.status != RegistrationStatus.PAID:
+        if registration.status != RegistrationStatus.CANCELED:
+            registration.status = RegistrationStatus.CANCELED
+            registration.save(update_fields=["status", "updated_at"])
+
+        existing = PaymentTransaction.objects.filter(
+            registration=registration,
+            transaction_type=TransactionType.PAYMENT_CANCELED,
+            payment_ref=registration.payment_ref,
+        ).exists()
+        if not existing:
+            PaymentTransaction.objects.create(
+                registration=registration,
+                session=registration.session,
+                transaction_type=TransactionType.PAYMENT_CANCELED,
+                status=registration.status,
+                provider=PaymentProvider.STRIPE,
+                amount=registration.session.price,
+                currency=registration.session.currency.upper(),
+                payment_ref=registration.payment_ref,
+                note="Customer canceled payment from checkout page.",
+            )
+            send_payment_retry_email(registration)
+    context = {"registration": registration}
+    return render(request, "intensive/cancel.html", context)
 
 
 @login_required
