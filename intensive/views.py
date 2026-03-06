@@ -1,6 +1,9 @@
 import csv
 import json
 import os
+import secrets
+import string
+import re
 from decimal import Decimal, ROUND_UP
 
 import stripe
@@ -8,9 +11,11 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.core import signing
 from django.db import transaction
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -36,6 +41,7 @@ from .models import (
     Session,
     SiteSetting,
     Speaker,
+    StudentDiscountCode,
     TransactionType,
     TrainingScheduleItem,
 )
@@ -48,6 +54,7 @@ from .services import (
     send_donation_thank_you,
     send_payment_retry_email,
     send_registration_confirmation,
+    send_student_discount_code_email,
 )
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -109,6 +116,23 @@ def _gross_up_amount_for_processing_fee(base_amount_cents: int) -> tuple[int, in
     return total_charge, fee
 
 
+def _generate_student_discount_code(length: int = 8) -> str:
+    alphabet = string.ascii_uppercase + string.digits
+    while True:
+        code = "".join(secrets.choice(alphabet) for _ in range(length))
+        if not StudentDiscountCode.objects.filter(code=code).exists():
+            return code
+
+
+def _ensure_registration_confirmation_email(registration: Registration) -> None:
+    if registration.confirmation_email_sent:
+        return
+    sent = send_registration_confirmation(registration)
+    if sent:
+        registration.confirmation_email_sent = True
+        registration.save(update_fields=["confirmation_email_sent", "updated_at"])
+
+
 def _mark_donation_completed_from_checkout(donation: Donation, checkout, note: str) -> None:
     was_completed = donation.status == DonationStatus.COMPLETED
     donation.status = DonationStatus.COMPLETED
@@ -152,7 +176,7 @@ def _build_checkout_session(registration: Registration, session: Session) -> str
             {
                 "price_data": {
                     "currency": session.currency.lower(),
-                    "unit_amount": session.price,
+                    "unit_amount": registration.amount_paid,
                     "product_data": {"name": f"3 Day Freedom Intensive - {session.title}"},
                 },
                 "quantity": 1,
@@ -211,11 +235,12 @@ def _build_donation_checkout_session(donation: Donation) -> stripe.checkout.Sess
     )
 
 
-def _home_context(reg_form: dict | None = None) -> dict:
+def _home_context(reg_form: dict | None = None, focus_register: bool = False) -> dict:
     sessions = Session.objects.filter(is_active=True).order_by("start_date")
     schedule_items = TrainingScheduleItem.objects.filter(is_active=True).order_by("display_order")
     today = timezone.localdate()
-    upcoming_session = sessions.filter(start_date__gte=today).first() or sessions.first()
+    next_session = sessions.filter(start_date__gte=today).first()
+    upcoming_session = next_session or sessions.first()
     speakers = Speaker.objects.filter(is_active=True).prefetch_related("sessions")
     if upcoming_session:
         session_speakers = speakers.filter(sessions=upcoming_session)
@@ -225,12 +250,15 @@ def _home_context(reg_form: dict | None = None) -> dict:
     return {
         "sessions": sessions,
         "schedule_items": schedule_items,
+        "countdown_session": next_session,
         "speakers": speakers,
         "speakers_session": upcoming_session,
         "venue_address": site_setting.venue_address if site_setting else DEFAULT_VENUE_ADDRESS,
         "donation_url": site_setting.donation_url if site_setting and site_setting.donation_url else "",
+        "student_discount_percent": site_setting.student_discount_percent if site_setting else 0,
         "stripe_publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
         "reg_form": reg_form or {},
+        "focus_register": focus_register,
         "country_choices": RegistrationForm.COUNTRY_CHOICES,
         "country_options": RegistrationForm.COUNTRY_OPTIONS,
     }
@@ -309,11 +337,48 @@ def create_checkout(request: HttpRequest) -> HttpResponse:
             "city": raw.get("city", ""),
             "country": raw.get("country", ""),
             "church": raw.get("church", ""),
+            "is_student": raw.get("is_student", ""),
+            "student_id": raw.get("student_id", ""),
+            "student_discount_code": raw.get("student_discount_code", ""),
             "session_id": raw.get("session_id", ""),
         }
-        return render(request, "intensive/home.html", _home_context(form_values))
+        return render(request, "intensive/home.html", _home_context(form_values, focus_register=True))
 
     session = get_object_or_404(Session, id=form.cleaned_data["session_id"], is_active=True)
+    email = form.cleaned_data["email"].strip().lower()
+
+    # Prevent duplicate registrations for the same session/email.
+    existing_paid = Registration.objects.filter(
+        session=session,
+        email__iexact=email,
+        status=RegistrationStatus.PAID,
+    ).order_by("-created_at").first()
+    if existing_paid:
+        messages.info(
+            request,
+            "You already have a paid registration for this session with this email.",
+        )
+        if existing_paid.payment_ref:
+            return redirect(f"{reverse('success')}?ref={existing_paid.payment_ref}")
+        return redirect("home")
+
+    existing_unpaid = Registration.objects.filter(
+        session=session,
+        email__iexact=email,
+    ).exclude(status=RegistrationStatus.PAID).order_by("-created_at").first()
+    if existing_unpaid:
+        existing_unpaid.full_name = form.cleaned_data["full_name"]
+        existing_unpaid.phone = form.cleaned_data["phone"]
+        existing_unpaid.city = form.cleaned_data["city"]
+        existing_unpaid.country = form.cleaned_data["country"]
+        existing_unpaid.church = form.cleaned_data["church"]
+        existing_unpaid.save(update_fields=["full_name", "phone", "city", "country", "church", "updated_at"])
+        messages.info(
+            request,
+            "You already started registration for this session. Continue payment with your existing record.",
+        )
+        return redirect("resume_checkout", registration_id=existing_unpaid.id)
+
     paid_count = session.registrations.filter(status=RegistrationStatus.PAID).count()
     if paid_count >= session.capacity:
         messages.error(request, "This session is already full. Please pick another one.")
@@ -324,9 +389,69 @@ def create_checkout(request: HttpRequest) -> HttpResponse:
             "city": form.cleaned_data["city"],
             "country": form.cleaned_data["country"],
             "church": form.cleaned_data["church"],
+            "is_student": form.cleaned_data.get("is_student", False),
+            "student_id": form.cleaned_data.get("student_id", ""),
+            "student_discount_code": form.cleaned_data.get("student_discount_code", ""),
             "session_id": str(form.cleaned_data["session_id"]),
         }
-        return render(request, "intensive/home.html", _home_context(form_values))
+        return render(request, "intensive/home.html", _home_context(form_values, focus_register=True))
+
+    site_setting = SiteSetting.objects.first()
+    discount_percent = site_setting.student_discount_percent if site_setting else 0
+    is_student = form.cleaned_data.get("is_student", False)
+    student_id = form.cleaned_data.get("student_id", "")
+    student_discount_code = form.cleaned_data.get("student_discount_code", "")
+    verified_discount_code = None
+
+    if is_student:
+        if not student_discount_code:
+            messages.error(
+                request,
+                "Enter your one-time student code before payment. Use the 'Verify ID & Send Code' button first.",
+            )
+            form_values = {
+                "full_name": form.cleaned_data["full_name"],
+                "email": form.cleaned_data["email"],
+                "phone": form.cleaned_data["phone"],
+                "city": form.cleaned_data["city"],
+                "country": form.cleaned_data["country"],
+                "church": form.cleaned_data["church"],
+                "is_student": True,
+                "student_id": student_id,
+                "student_discount_code": "",
+                "session_id": str(form.cleaned_data["session_id"]),
+            }
+            return render(request, "intensive/home.html", _home_context(form_values, focus_register=True))
+
+        verified_discount_code = StudentDiscountCode.objects.filter(
+            code=student_discount_code,
+            email__iexact=email,
+            student_id=student_id,
+            is_used=False,
+        ).first()
+        if not verified_discount_code:
+            messages.error(request, "Invalid or already-used student discount code.")
+            form_values = {
+                "full_name": form.cleaned_data["full_name"],
+                "email": form.cleaned_data["email"],
+                "phone": form.cleaned_data["phone"],
+                "city": form.cleaned_data["city"],
+                "country": form.cleaned_data["country"],
+                "church": form.cleaned_data["church"],
+                "is_student": True,
+                "student_id": student_id,
+                "student_discount_code": student_discount_code,
+                "session_id": str(form.cleaned_data["session_id"]),
+            }
+            return render(request, "intensive/home.html", _home_context(form_values, focus_register=True))
+
+    discount_amount = 0
+    amount_due = session.price
+    if is_student and verified_discount_code and discount_percent > 0:
+        discount_amount = (session.price * discount_percent) // 100
+        if discount_amount >= session.price:
+            discount_amount = max(session.price - 1, 0)
+        amount_due = max(session.price - discount_amount, 0)
 
     registration = Registration.objects.create(
         full_name=form.cleaned_data["full_name"],
@@ -335,12 +460,21 @@ def create_checkout(request: HttpRequest) -> HttpResponse:
         city=form.cleaned_data["city"],
         country=form.cleaned_data["country"],
         church=form.cleaned_data["church"],
+        is_student=is_student,
+        student_id=student_id if is_student else "",
+        student_discount_code=verified_discount_code.code if verified_discount_code else "",
+        discount_amount=discount_amount,
         session=session,
         status=RegistrationStatus.PENDING,
         payment_provider=PaymentProvider.STRIPE,
-        amount_paid=session.price,
+        amount_paid=amount_due,
         currency=session.currency,
     )
+    if verified_discount_code:
+        verified_discount_code.is_used = True
+        verified_discount_code.used_at = timezone.now()
+        verified_discount_code.used_registration = registration
+        verified_discount_code.save(update_fields=["is_used", "used_at", "used_registration"])
     send_admin_new_registration_notification(registration)
 
     if not settings.STRIPE_SECRET_KEY:
@@ -353,7 +487,7 @@ def create_checkout(request: HttpRequest) -> HttpResponse:
             transaction_type=TransactionType.PAYMENT_ERROR,
             status=registration.status,
             provider=PaymentProvider.STRIPE,
-            amount=session.price,
+            amount=registration.amount_paid,
             currency=session.currency.upper(),
             payment_ref=registration.payment_ref,
             note="Stripe key missing in environment.",
@@ -365,9 +499,12 @@ def create_checkout(request: HttpRequest) -> HttpResponse:
             "city": form.cleaned_data["city"],
             "country": form.cleaned_data["country"],
             "church": form.cleaned_data["church"],
+            "is_student": is_student,
+            "student_id": student_id,
+            "student_discount_code": student_discount_code,
             "session_id": str(form.cleaned_data["session_id"]),
         }
-        return render(request, "intensive/home.html", _home_context(form_values))
+        return render(request, "intensive/home.html", _home_context(form_values, focus_register=True))
 
     checkout_session = _build_checkout_session(registration, session)
     registration.payment_ref = checkout_session.id
@@ -378,13 +515,91 @@ def create_checkout(request: HttpRequest) -> HttpResponse:
         transaction_type=TransactionType.CHECKOUT_CREATED,
         status=registration.status,
         provider=PaymentProvider.STRIPE,
-        amount=session.price,
+        amount=registration.amount_paid,
         currency=session.currency.upper(),
         payment_ref=checkout_session.id,
         stripe_payment_intent=str(checkout_session.get("payment_intent", "")),
         note="Checkout session created.",
     )
     return redirect(checkout_session.url)
+
+
+@require_POST
+def request_student_discount_code(request: HttpRequest) -> HttpResponse:
+    is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
+    raw = request.POST
+    form_values = {
+        "full_name": raw.get("full_name", "").strip(),
+        "email": raw.get("email", "").strip(),
+        "phone": raw.get("phone", "").strip(),
+        "city": raw.get("city", "").strip(),
+        "country": raw.get("country", "").strip(),
+        "church": raw.get("church", "").strip(),
+        "is_student": raw.get("is_student", ""),
+        "student_id": raw.get("student_id", "").strip(),
+        "student_discount_code": raw.get("student_discount_code", "").strip(),
+        "session_id": raw.get("session_id", ""),
+    }
+
+    if not form_values["is_student"]:
+        message = "Select 'I am an Andrews University student' before requesting a code."
+        if is_ajax:
+            return JsonResponse({"ok": False, "message": message}, status=400)
+        messages.error(request, message)
+        return render(request, "intensive/home.html", _home_context(form_values, focus_register=True))
+
+    student_id = form_values["student_id"]
+    if not re.fullmatch(r"\d{6}", student_id):
+        message = "Andrews University student ID must be exactly 6 digits."
+        if is_ajax:
+            return JsonResponse({"ok": False, "message": message}, status=400)
+        messages.error(request, message)
+        return render(request, "intensive/home.html", _home_context(form_values, focus_register=True))
+
+    email = form_values["email"]
+    try:
+        validate_email(email)
+    except ValidationError:
+        message = "Enter a valid email address so we can send your one-time code."
+        if is_ajax:
+            return JsonResponse({"ok": False, "message": message}, status=400)
+        messages.error(request, message)
+        return render(request, "intensive/home.html", _home_context(form_values, focus_register=True))
+
+    site_setting = SiteSetting.objects.first()
+    discount_percent = site_setting.student_discount_percent if site_setting else 0
+
+    existing = StudentDiscountCode.objects.filter(
+        student_id=student_id,
+        email__iexact=email,
+        is_used=False,
+    ).order_by("-created_at").first()
+    code = existing.code if existing else _generate_student_discount_code()
+    if not existing:
+        StudentDiscountCode.objects.create(
+            student_id=student_id,
+            email=email.lower(),
+            code=code,
+        )
+
+    sent = send_student_discount_code_email(
+        to_email=email,
+        full_name=form_values["full_name"],
+        student_id=student_id,
+        code=code,
+        discount_percent=discount_percent,
+    )
+    if sent:
+        message = "Student code sent. Check your email and enter it below before payment."
+        if is_ajax:
+            return JsonResponse({"ok": True, "message": message})
+        messages.success(request, message)
+    else:
+        message = "Could not send your code email right now. Please try again."
+        if is_ajax:
+            return JsonResponse({"ok": False, "message": message}, status=500)
+        messages.error(request, message)
+    return render(request, "intensive/home.html", _home_context(form_values, focus_register=True))
 
 
 @require_POST
@@ -475,7 +690,7 @@ def resume_checkout(request: HttpRequest, registration_id: str) -> HttpResponse:
         transaction_type=TransactionType.CHECKOUT_CREATED,
         status=registration.status,
         provider=PaymentProvider.STRIPE,
-        amount=session.price,
+        amount=registration.amount_paid,
         currency=session.currency.upper(),
         payment_ref=checkout_session.id,
         stripe_payment_intent=str(checkout_session.get("payment_intent", "")),
@@ -613,7 +828,7 @@ def stripe_webhook(request: HttpRequest) -> HttpResponse:
                             transaction_type=TransactionType.PAYMENT_CANCELED,
                             status=registration.status,
                             provider=PaymentProvider.STRIPE,
-                            amount=checkout.get("amount_total", session.price),
+                            amount=checkout.get("amount_total", registration.amount_paid),
                             currency=str(checkout.get("currency", session.currency)).upper(),
                             payment_ref=str(checkout.get("id", registration.payment_ref)),
                             stripe_payment_intent=str(checkout.get("payment_intent", "")),
@@ -622,7 +837,7 @@ def stripe_webhook(request: HttpRequest) -> HttpResponse:
                     else:
                         registration.status = RegistrationStatus.PAID
                         registration.payment_ref = checkout.get("id", registration.payment_ref)
-                        registration.amount_paid = checkout.get("amount_total", session.price)
+                        registration.amount_paid = checkout.get("amount_total", registration.amount_paid)
                         registration.currency = checkout.get("currency", session.currency).upper()
                         registration.updated_at = timezone.now()
                         registration.save()
@@ -638,7 +853,7 @@ def stripe_webhook(request: HttpRequest) -> HttpResponse:
                             stripe_payment_intent=str(checkout.get("payment_intent", "")),
                             note="Payment confirmed from webhook.",
                         )
-                        send_registration_confirmation(registration)
+                        _ensure_registration_confirmation_email(registration)
             except Registration.DoesNotExist:
                 return HttpResponse(status=200)
     elif event["type"] == "checkout.session.expired":
@@ -675,7 +890,7 @@ def stripe_webhook(request: HttpRequest) -> HttpResponse:
                         transaction_type=TransactionType.PAYMENT_CANCELED,
                         status=registration.status,
                         provider=PaymentProvider.STRIPE,
-                        amount=checkout.get("amount_total", registration.session.price),
+                        amount=checkout.get("amount_total", registration.amount_paid),
                         currency=str(checkout.get("currency", registration.session.currency)).upper(),
                         payment_ref=str(checkout.get("id", registration.payment_ref)),
                         stripe_payment_intent=str(checkout.get("payment_intent", "")),
@@ -725,7 +940,7 @@ def stripe_webhook(request: HttpRequest) -> HttpResponse:
                         transaction_type=TransactionType.PAYMENT_ERROR,
                         status=registration.status,
                         provider=PaymentProvider.STRIPE,
-                        amount=payment_intent.get("amount", registration.session.price),
+                        amount=payment_intent.get("amount", registration.amount_paid),
                         currency=str(payment_intent.get("currency", registration.session.currency)).upper(),
                         payment_ref=registration.payment_ref,
                         stripe_payment_intent=str(payment_intent.get("id", "")),
@@ -794,6 +1009,56 @@ def success(request: HttpRequest) -> HttpResponse:
     registration = None
     if ref:
         registration = Registration.objects.filter(payment_ref=ref).select_related("session").first()
+        if not registration and settings.STRIPE_SECRET_KEY:
+            try:
+                checkout = stripe.checkout.Session.retrieve(ref)
+            except stripe.error.StripeError:
+                checkout = None
+            if checkout:
+                registration_id = checkout.get("metadata", {}).get("registration_id")
+                if registration_id:
+                    registration = (
+                        Registration.objects.filter(id=registration_id).select_related("session").first()
+                    )
+                    if registration and registration.payment_ref != ref:
+                        registration.payment_ref = ref
+                        registration.save(update_fields=["payment_ref", "updated_at"])
+
+        if registration and registration.status != RegistrationStatus.PAID and settings.STRIPE_SECRET_KEY:
+            try:
+                checkout = stripe.checkout.Session.retrieve(ref)
+            except stripe.error.StripeError:
+                checkout = None
+            if checkout:
+                payment_status = str(checkout.get("payment_status", "")).lower()
+                checkout_status = str(checkout.get("status", "")).lower()
+                if payment_status == "paid" or checkout_status == "complete":
+                    registration.status = RegistrationStatus.PAID
+                    registration.payment_ref = str(checkout.get("id", registration.payment_ref))
+                    registration.amount_paid = checkout.get("amount_total", registration.amount_paid)
+                    registration.currency = str(checkout.get("currency", registration.currency)).upper()
+                    registration.save(update_fields=["status", "payment_ref", "amount_paid", "currency", "updated_at"])
+                    exists = PaymentTransaction.objects.filter(
+                        registration=registration,
+                        transaction_type=TransactionType.PAYMENT_COMPLETED,
+                        payment_ref=registration.payment_ref,
+                    ).exists()
+                    if not exists:
+                        PaymentTransaction.objects.create(
+                            registration=registration,
+                            session=registration.session,
+                            transaction_type=TransactionType.PAYMENT_COMPLETED,
+                            status=registration.status,
+                            provider=PaymentProvider.STRIPE,
+                            amount=registration.amount_paid,
+                            currency=registration.currency.upper(),
+                            payment_ref=registration.payment_ref,
+                            stripe_payment_intent=str(checkout.get("payment_intent", "")),
+                            note="Payment confirmed from success-page verification.",
+                        )
+
+        if registration and registration.status == RegistrationStatus.PAID:
+            _ensure_registration_confirmation_email(registration)
     return render(
         request,
         "intensive/success.html",
@@ -824,7 +1089,7 @@ def cancel(request: HttpRequest) -> HttpResponse:
                 transaction_type=TransactionType.PAYMENT_CANCELED,
                 status=registration.status,
                 provider=PaymentProvider.STRIPE,
-                amount=registration.session.price,
+                amount=registration.amount_paid or registration.session.price,
                 currency=registration.session.currency.upper(),
                 payment_ref=registration.payment_ref,
                 note="Customer canceled payment from checkout page.",
@@ -1237,6 +1502,10 @@ def export_csv(request: HttpRequest) -> HttpResponse:
             "City",
             "Country",
             "Church",
+            "Is Student",
+            "Student ID",
+            "Discount Code",
+            "Discount Amount",
             "Session",
             "Status",
             "Payment Ref",
@@ -1254,6 +1523,10 @@ def export_csv(request: HttpRequest) -> HttpResponse:
                 row.city,
                 row.country,
                 row.church,
+                "Yes" if row.is_student else "No",
+                row.student_id,
+                row.student_discount_code,
+                f"{row.discount_amount / 100:.2f}",
                 row.session.title,
                 row.status,
                 row.payment_ref,

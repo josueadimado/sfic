@@ -66,6 +66,9 @@
                         <th>City</th>
                         <th>Country</th>
                         <th>Session</th>
+                        <th>Student</th>
+                        <th>Student ID</th>
+                        <th>Discount</th>
                         <th>Status</th>
                         <th>Amount</th>
                         <th>Created</th>
@@ -84,6 +87,24 @@
                             <td>{{ item.city|default:"-" }}</td>
                             <td>{{ item.country|default:"-" }}</td>
                             <td>{{ item.session.title }}</td>
+                            <td>
+                                {% if item.is_student %}
+                                    <span class="status-pill status-paid">Yes</span>
+                                {% else %}
+                                    <span class="status-pill">No</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ item.student_id|default:"-" }}</td>
+                            <td>
+                                {% if item.discount_amount %}
+                                    <strong>{{ item.display_discount_amount }}</strong>
+                                    {% if item.student_discount_code %}
+                                        <br><small>Code: {{ item.student_discount_code }}</small>
+                                    {% endif %}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
                             <td><span class="status-pill status-{{ item.status|lower }}">{{ item.status }}</span></td>
                             <td>{{ item.display_amount_paid }}</td>
                             <td>{{ item.created_at }}</td>
@@ -92,7 +113,7 @@
                             </td>
                         </tr>
                     {% empty %}
-                        <tr><td colspan="9">No registrations found.</td></tr>
+                        <tr><td colspan="12">No registrations found.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

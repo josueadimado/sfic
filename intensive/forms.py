@@ -34,6 +34,9 @@ class RegistrationForm(forms.Form):
     city = forms.CharField(max_length=120)
     country = forms.ChoiceField(choices=COUNTRY_CHOICES)
     church = forms.CharField(max_length=160, required=False)
+    is_student = forms.BooleanField(required=False)
+    student_id = forms.CharField(max_length=6, required=False)
+    student_discount_code = forms.CharField(max_length=32, required=False)
     session_id = forms.UUIDField()
 
     def clean_session_id(self):
@@ -65,6 +68,26 @@ class RegistrationForm(forms.Form):
         if len(city) < 2:
             raise forms.ValidationError("Please enter your city.")
         return city
+
+    def clean_student_id(self):
+        student_id = (self.cleaned_data.get("student_id") or "").strip()
+        is_student = self.cleaned_data.get("is_student", False)
+        if not is_student:
+            return ""
+        if not re.fullmatch(r"\d{6}", student_id):
+            raise forms.ValidationError("Andrews University student ID must be exactly 6 digits.")
+        return student_id
+
+    def clean_student_discount_code(self):
+        return (self.cleaned_data.get("student_discount_code") or "").strip().upper()
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("is_student", False) and not cleaned.get("student_id"):
+            self.add_error("student_id", "Please enter your 6-digit student ID.")
+        if not cleaned.get("is_student", False):
+            cleaned["student_discount_code"] = ""
+        return cleaned
 
 
 class DonationForm(forms.Form):
@@ -144,7 +167,13 @@ class TrainingScheduleItemForm(forms.ModelForm):
 class SiteSettingForm(forms.ModelForm):
     class Meta:
         model = SiteSetting
-        fields = ["site_name", "venue_address", "donation_url"]
+        fields = ["site_name", "venue_address", "donation_url", "student_discount_percent"]
+
+    def clean_student_discount_percent(self):
+        value = self.cleaned_data.get("student_discount_percent", 0)
+        if value < 0 or value > 95:
+            raise forms.ValidationError("Student discount percent must be between 0 and 95.")
+        return value
 
 
 class SpeakerForm(forms.ModelForm):

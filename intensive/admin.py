@@ -1,6 +1,15 @@
 from django.contrib import admin
 
-from .models import Donation, PaymentTransaction, Registration, Session, SiteSetting, Speaker, TrainingScheduleItem
+from .models import (
+    Donation,
+    PaymentTransaction,
+    Registration,
+    Session,
+    SiteSetting,
+    Speaker,
+    StudentDiscountCode,
+    TrainingScheduleItem,
+)
 
 
 @admin.register(Session)
@@ -18,6 +27,8 @@ class RegistrationAdmin(admin.ModelAdmin):
         "phone",
         "city",
         "country",
+        "is_student",
+        "student_id",
         "session",
         "status",
         "amount_paid",
@@ -25,7 +36,7 @@ class RegistrationAdmin(admin.ModelAdmin):
         "created_at",
     )
     list_filter = ("status", "payment_provider", "currency", "session")
-    search_fields = ("full_name", "email", "phone", "city", "country", "payment_ref")
+    search_fields = ("full_name", "email", "phone", "city", "country", "payment_ref", "student_id")
 
 
 @admin.register(TrainingScheduleItem)
@@ -46,7 +57,7 @@ class TrainingScheduleItemAdmin(admin.ModelAdmin):
 
 @admin.register(SiteSetting)
 class SiteSettingAdmin(admin.ModelAdmin):
-    list_display = ("site_name", "venue_address", "donation_url", "updated_at")
+    list_display = ("site_name", "venue_address", "donation_url", "student_discount_percent", "updated_at")
 
 
 @admin.register(Speaker)
@@ -89,3 +100,10 @@ class DonationAdmin(admin.ModelAdmin):
     )
     list_filter = ("provider", "status", "currency")
     search_fields = ("provider_ref", "donor_name", "donor_email", "note")
+
+
+@admin.register(StudentDiscountCode)
+class StudentDiscountCodeAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "student_id", "email", "code", "is_used", "used_at", "used_registration")
+    list_filter = ("is_used", "created_at")
+    search_fields = ("student_id", "email", "code")

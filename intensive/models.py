@@ -78,6 +78,10 @@ class SiteSetting(models.Model):
         default="Freedom Revival Center, 1200 Main St, Dallas, TX 75202, USA",
     )
     donation_url = models.URLField(blank=True, help_text="Public donation page URL (for example Donor Elf).")
+    student_discount_percent = models.PositiveSmallIntegerField(
+        default=0,
+        help_text="Student discount percent for registration (0-95).",
+    )
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -119,6 +123,13 @@ class Registration(models.Model):
     city = models.CharField(max_length=120, blank=True)
     country = models.CharField(max_length=120, blank=True)
     church = models.CharField(max_length=160, blank=True)
+    is_student = models.BooleanField(default=False)
+    student_id = models.CharField(max_length=6, blank=True)
+    student_discount_code = models.CharField(max_length=32, blank=True)
+    discount_amount = models.PositiveIntegerField(
+        default=0,
+        help_text="Discount in the smallest currency unit.",
+    )
     session = models.ForeignKey(
         Session, on_delete=models.PROTECT, related_name="registrations"
     )
@@ -132,6 +143,7 @@ class Registration(models.Model):
     )
     payment_ref = models.CharField(max_length=200, blank=True)
     amount_paid = models.PositiveIntegerField(default=0)
+    confirmation_email_sent = models.BooleanField(default=False)
     currency = models.CharField(max_length=8, default="USD")
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
@@ -146,6 +158,10 @@ class Registration(models.Model):
     @property
     def display_amount_paid(self) -> str:
         return f"{self.amount_paid / 100:.2f} {self.currency.upper()}"
+
+    @property
+    def display_discount_amount(self) -> str:
+        return f"{self.discount_amount / 100:.2f} {self.currency.upper()}"
 
 
 class PaymentTransaction(models.Model):
@@ -218,3 +234,30 @@ class Donation(models.Model):
     @property
     def display_amount(self) -> str:
         return f"{self.amount / 100:.2f} {self.currency.upper()}"
+
+
+class StudentDiscountCode(models.Model):
+    student_id = models.CharField(max_length=6)
+    email = models.EmailField()
+    code = models.CharField(max_length=32, unique=True)
+    is_used = models.BooleanField(default=False)
+    used_at = models.DateTimeField(null=True, blank=True)
+    used_registration = models.ForeignKey(
+        Registration,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="student_codes_used",
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["student_id", "email"]),
+            models.Index(fields=["code"]),
+            models.Index(fields=["is_used"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.code} ({self.student_id})"

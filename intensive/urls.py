@@ -9,6 +9,7 @@ urlpatterns = [
     path("robots.txt", views.robots_txt, name="robots_txt"),
     path("sitemap.xml", views.sitemap_xml, name="sitemap_xml"),
     path("checkout/", views.create_checkout, name="create_checkout"),
+    path("checkout/student-code/", views.request_student_discount_code, name="request_student_discount_code"),
     path("donate/checkout/", views.create_donation_checkout, name="create_donation_checkout"),
     path("checkout/resume/<uuid:registration_id>/", views.resume_checkout, name="resume_checkout"),
     path("success", views.success, name="success"),

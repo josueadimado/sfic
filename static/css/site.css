@@ -1092,6 +1092,62 @@ section[id] {
     background: #fff;
 }
 
+#student-fields {
+    margin-top: 0.15rem;
+    display: none;
+}
+
+#student-fields .btn {
+    margin-top: 0.25rem;
+}
+
+.register-actions {
+    margin-top: 0.25rem;
+}
+
+.student-code-loader {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.15rem 0 0.35rem;
+    font-size: 0.92rem;
+    color: #5f4b29;
+    font-weight: 600;
+}
+
+.student-code-loader.is-visible {
+    display: inline-flex;
+}
+
+.loader-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    border: 2px solid #e6c46a;
+    border-top-color: #9b7a3b;
+    animation: spin-loader 0.9s linear infinite;
+}
+
+@keyframes spin-loader {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.student-code-feedback {
+    margin: 0.1rem 0 0.35rem;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.student-code-feedback.is-success {
+    color: #2f6a45;
+}
+
+.student-code-feedback.is-error {
+    color: #9a2f2f;
+}
+
 .donation-form {
     max-width: none;
     gap: 0.72rem;
@@ -1437,6 +1493,10 @@ td {
     text-align: left;
     padding: 0.7rem;
     font-size: 0.92rem;
+}
+
+.admin-registrations-table td small {
+    color: #4f645f;
 }
 
 th {

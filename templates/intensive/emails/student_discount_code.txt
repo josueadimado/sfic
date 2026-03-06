@@ -1,0 +1,11 @@
+Hello {% if full_name %}{{ full_name }}{% else %}Student{% endif %},
+
+Here is your one-time student discount code for Freedom Intensive registration:
+
+Code: {{ code }}
+Student ID: {{ student_id }}
+Discount: {{ discount_percent }}%
+
+Enter this code in the "Student discount code" field on the registration form, then submit to continue payment.
+
+This code can only be used once.

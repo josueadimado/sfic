@@ -97,7 +97,7 @@ def send_registration_confirmation(registration: Registration) -> bool:
 def send_payment_retry_email(registration: Registration) -> bool:
     session: Session = registration.session
     resume_url = f"{settings.SITE_BASE_URL}{reverse('resume_checkout', args=[registration.id])}"
-    amount_due = f"{session.price / 100:.2f} {session.currency.upper()}"
+    amount_due = f"{registration.amount_paid / 100:.2f} {registration.currency.upper()}"
     context = {
         "registration": registration,
         "session": session,
@@ -128,7 +128,7 @@ def send_admin_new_registration_notification(registration: Registration) -> bool
         return False
 
     session: Session = registration.session
-    amount_due = f"{session.price / 100:.2f} {session.currency.upper()}"
+    amount_due = f"{registration.amount_paid / 100:.2f} {registration.currency.upper()}"
     dashboard_url = f"{settings.SITE_BASE_URL}/dashboard/registrations/{registration.id}/"
     context = {
         "registration": registration,
@@ -150,6 +150,40 @@ def send_admin_new_registration_notification(registration: Registration) -> bool
         email.send(fail_silently=False)
     except Exception:
         logger.exception("Failed to send admin new registration email for %s", registration.id)
+        return False
+    return True
+
+
+def send_student_discount_code_email(
+    *,
+    to_email: str,
+    full_name: str,
+    student_id: str,
+    code: str,
+    discount_percent: int,
+) -> bool:
+    if not to_email:
+        return False
+    context = {
+        "full_name": full_name,
+        "student_id": student_id,
+        "code": code,
+        "discount_percent": discount_percent,
+    }
+    subject = "Your one-time student discount code"
+    text_message = render_to_string("intensive/emails/student_discount_code.txt", context)
+    html_message = render_to_string("intensive/emails/student_discount_code.html", context)
+    try:
+        email = EmailMultiAlternatives(
+            subject=subject,
+            body=text_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[to_email],
+        )
+        email.attach_alternative(html_message, "text/html")
+        email.send(fail_silently=False)
+    except Exception:
+        logger.exception("Failed to send student discount code email to %s", to_email)
         return False
     return True
 

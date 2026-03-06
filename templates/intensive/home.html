@@ -125,8 +125,13 @@
         <div class="container about-grid about-grid-centered">
             <div class="about-right">
                 <div class="countdown-wrap" aria-live="polite">
-                    <p class="countdown-label">COUNTDOWN TO MARCH 26, 2026</p>
-                    <div class="countdown-grid" id="countdown" data-target-date="2026-03-26T00:00:00">
+                    {% if countdown_session %}
+                        <p class="countdown-label">COUNTDOWN TO {{ countdown_session.start_date|date:"F j, Y"|upper }}</p>
+                        <div class="countdown-grid" id="countdown" data-target-date="{{ countdown_session.start_date|date:'Y-m-d' }}T08:30:00">
+                    {% else %}
+                        <p class="countdown-label">NO UPCOMING SESSION SCHEDULED</p>
+                        <div class="countdown-grid" id="countdown">
+                    {% endif %}
                         <div class="countdown-item">
                             <span id="cd-days">00</span>
                             <small>Days</small>
@@ -366,6 +371,11 @@
                     {% endfor %}
                 </div>
             {% endif %}
+            <div class="student-code-loader" id="student-code-loader" aria-live="polite">
+                <span class="loader-dot" aria-hidden="true"></span>
+                <span>Sending your student code...</span>
+            </div>
+            <p class="student-code-feedback" id="student-code-feedback" aria-live="polite"></p>
             <form method="post" action="{% url 'create_checkout' %}" class="register-form">
                 {% csrf_token %}
                 <label for="full_name">Full Name</label>
@@ -437,6 +447,48 @@
                     placeholder="e.g. Set Free Church"
                 >
 
+                <label class="donation-anon-row" for="is_student">
+                    <input id="is_student" type="checkbox" name="is_student" value="1" {% if reg_form.is_student %}checked{% endif %}>
+                    <span>I am an Andrews University student</span>
+                </label>
+                <div id="student-fields">
+                    <label for="student_id">Andrews Student ID (6 digits)</label>
+                    <input
+                        id="student_id"
+                        name="student_id"
+                        type="text"
+                        value="{{ reg_form.student_id|default:'' }}"
+                        inputmode="numeric"
+                        maxlength="6"
+                        pattern="[0-9]{6}"
+                        placeholder="e.g. 123456"
+                    >
+                    <label for="student_discount_code">Student discount code</label>
+                    <input
+                        id="student_discount_code"
+                        name="student_discount_code"
+                        type="text"
+                        value="{{ reg_form.student_discount_code|default:'' }}"
+                        maxlength="32"
+                        placeholder="Enter one-time code from email"
+                    >
+                    <p class="donation-help-text">
+                        Enter your 6-digit student ID first and submit registration. We will email your one-time code.
+                        {% if student_discount_percent %}
+                            Current student discount: {{ student_discount_percent }}%.
+                        {% endif %}
+                    </p>
+                    <button
+                        type="submit"
+                        id="verify-student-code-btn"
+                        class="btn btn-outline"
+                        formaction="{% url 'request_student_discount_code' %}"
+                        formnovalidate
+                    >
+                        VERIFY ID &amp; SEND CODE
+                    </button>
+                </div>
+
                 <label for="session_id">Choose Session</label>
                 <select id="session_id" name="session_id" required>
                     <option value="">Select session...</option>
@@ -453,7 +505,9 @@
                 </select>
                 <p class="payment-preview is-empty" id="payment-preview">Select a session to see your payment amount.</p>
 
-                <button type="submit" class="btn btn-accent">PAY & RESERVE SEAT</button>
+                <div class="register-actions">
+                    <button type="submit" class="btn btn-accent">PAY &amp; RESERVE SEAT</button>
+                </div>
             </form>
         </div>
     </section>
@@ -476,7 +530,10 @@
         const container = document.getElementById("countdown");
         if (!container) return;
 
-        const targetDate = new Date(container.dataset.targetDate);
+        const targetRaw = container.dataset.targetDate;
+        if (!targetRaw) return;
+        const targetDate = new Date(targetRaw);
+        if (Number.isNaN(targetDate.getTime())) return;
         const daysEl = document.getElementById("cd-days");
         const hoursEl = document.getElementById("cd-hours");
         const minutesEl = document.getElementById("cd-minutes");
@@ -546,6 +603,9 @@
     (function () {
         const registerSelect = document.getElementById("session_id");
         const paymentPreview = document.getElementById("payment-preview");
+        const studentCheck = document.getElementById("is_student");
+        const studentCodeInput = document.getElementById("student_discount_code");
+        const discountPercent = Number("{{ student_discount_percent|default:0 }}");
         if (!registerSelect) return;
 
         function updatePaymentPreview() {
@@ -558,10 +618,28 @@
                 paymentPreview.textContent = "Select a session to see your payment amount.";
                 return;
             }
-            const amount = Number(priceRaw) / 100;
-            const formatted = `${amount.toFixed(2)} ${currency}`;
+            const baseAmount = Number(priceRaw) / 100;
+            let totalAmount = baseAmount;
+            let discountAmount = 0;
+            const codeEntered = studentCodeInput && studentCodeInput.value.trim().length > 0;
+            const studentSelected = studentCheck && studentCheck.checked;
+
+            if (studentSelected && codeEntered && discountPercent > 0) {
+                discountAmount = (baseAmount * discountPercent) / 100;
+                if (discountAmount >= baseAmount) {
+                    discountAmount = Math.max(baseAmount - 0.01, 0);
+                }
+                totalAmount = Math.max(baseAmount - discountAmount, 0);
+            }
+
+            const baseFormatted = `${baseAmount.toFixed(2)} ${currency}`;
+            const totalFormatted = `${totalAmount.toFixed(2)} ${currency}`;
             paymentPreview.classList.remove("is-empty");
-            paymentPreview.textContent = `Amount to Pay: ${formatted}`;
+            if (studentSelected && codeEntered && discountPercent > 0) {
+                paymentPreview.textContent = `Amount to Pay: ${totalFormatted} (Student discount ${discountPercent}% applied from ${baseFormatted})`;
+            } else {
+                paymentPreview.textContent = `Amount to Pay: ${baseFormatted}`;
+            }
         }
 
         document.querySelectorAll("[data-select-session]").forEach((button) => {
@@ -575,7 +653,19 @@
         });
 
         registerSelect.addEventListener("change", updatePaymentPreview);
+        if (studentCheck) studentCheck.addEventListener("change", updatePaymentPreview);
+        if (studentCodeInput) studentCodeInput.addEventListener("input", updatePaymentPreview);
         updatePaymentPreview();
+    })();
+
+    (function () {
+        const shouldFocusRegister = "{{ focus_register|yesno:'1,0' }}" === "1";
+        if (!shouldFocusRegister) return;
+        const registerSection = document.getElementById("register");
+        if (!registerSection) return;
+        window.requestAnimationFrame(() => {
+            registerSection.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
     })();
 
     (function () {
@@ -668,6 +758,64 @@
 
         countrySelect.addEventListener("change", updateCountryPreview);
         updateCountryPreview();
+    })();
+
+    (function () {
+        const studentCheck = document.getElementById("is_student");
+        const studentFields = document.getElementById("student-fields");
+        const studentId = document.getElementById("student_id");
+        if (!studentCheck || !studentFields || !studentId) return;
+
+        function syncStudentFields() {
+            const on = studentCheck.checked;
+            studentFields.style.display = on ? "block" : "none";
+            studentId.required = on;
+        }
+
+        studentCheck.addEventListener("change", syncStudentFields);
+        syncStudentFields();
+    })();
+
+    (function () {
+        const form = document.querySelector("form.register-form");
+        const verifyBtn = document.getElementById("verify-student-code-btn");
+        const loader = document.getElementById("student-code-loader");
+        const feedback = document.getElementById("student-code-feedback");
+        if (!form || !verifyBtn || !loader || !feedback) return;
+
+        verifyBtn.addEventListener("click", async function (event) {
+            event.preventDefault();
+            feedback.textContent = "";
+            feedback.classList.remove("is-error", "is-success");
+            loader.classList.add("is-visible");
+            verifyBtn.disabled = true;
+
+            const formData = new FormData(form);
+            formData.set("is_student", document.getElementById("is_student")?.checked ? "1" : "");
+
+            try {
+                const response = await fetch(verifyBtn.getAttribute("formaction"), {
+                    method: "POST",
+                    body: formData,
+                    headers: { "X-Requested-With": "XMLHttpRequest" },
+                    credentials: "same-origin",
+                });
+                const data = await response.json();
+                if (response.ok && data.ok) {
+                    feedback.textContent = data.message || "Student code sent.";
+                    feedback.classList.add("is-success");
+                } else {
+                    feedback.textContent = data.message || "Could not send code. Please try again.";
+                    feedback.classList.add("is-error");
+                }
+            } catch (err) {
+                feedback.textContent = "Network error while sending code. Please try again.";
+                feedback.classList.add("is-error");
+            } finally {
+                loader.classList.remove("is-visible");
+                verifyBtn.disabled = false;
+            }
+        });
     })();
 </script>
 {% endblock %}

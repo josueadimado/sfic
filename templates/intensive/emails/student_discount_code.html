@@ -1,0 +1,30 @@
+<html>
+<body style="margin:0;padding:0;background:#f4f7f6;font-family:Arial,sans-serif;color:#173a34;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f7f6;padding:24px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="620" cellpadding="0" cellspacing="0" style="max-width:620px;background:#ffffff;border:1px solid #dce6e2;border-radius:14px;overflow:hidden;">
+          <tr>
+            <td style="padding:22px 24px;background:#443425;color:#ffffff;">
+              <h1 style="margin:0;font-size:22px;line-height:1.2;">Student Discount Code</h1>
+              <p style="margin:8px 0 0;font-size:14px;opacity:0.9;">Set Free In Christ</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px 24px;font-size:14px;line-height:1.7;">
+              <p style="margin:0 0 12px;">Hello {% if full_name %}{{ full_name }}{% else %}Student{% endif %},</p>
+              <p style="margin:0 0 12px;">Use this one-time code to apply your student discount during registration:</p>
+              <p style="margin:0 0 14px;padding:12px 14px;background:#f8f7f5;border:1px solid #e5ddd0;border-radius:10px;">
+                <strong>Code:</strong> <span style="letter-spacing:0.08em;">{{ code }}</span><br>
+                <strong>Student ID:</strong> {{ student_id }}<br>
+                <strong>Discount:</strong> {{ discount_percent }}%
+              </p>
+              <p style="margin:0;">Enter this in the <strong>Student discount code</strong> field on the registration form. This code can be used once.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
