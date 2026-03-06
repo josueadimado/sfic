@@ -66,7 +66,7 @@ def _build_confirmation_pdf(registration: Registration, session: Session, amount
 
 def send_registration_confirmation(registration: Registration) -> bool:
     session: Session = registration.session
-    subject = "Your Freedom Intensive reservation is confirmed"
+    subject = "Your 3-Day Spiritual Warfare Intensive registration is confirmed"
     amount_paid = f"{registration.amount_paid / 100:.2f} {registration.currency}"
     context = {
         "registration": registration,

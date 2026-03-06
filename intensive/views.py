@@ -133,6 +133,52 @@ def _ensure_registration_confirmation_email(registration: Registration) -> None:
         registration.save(update_fields=["confirmation_email_sent", "updated_at"])
 
 
+def _sync_pending_registration_from_stripe(registration: Registration, note: str) -> bool:
+    if (
+        registration.status == RegistrationStatus.PAID
+        or not registration.payment_ref
+        or not settings.STRIPE_SECRET_KEY
+    ):
+        return False
+    try:
+        checkout = stripe.checkout.Session.retrieve(registration.payment_ref)
+    except stripe.error.StripeError:
+        return False
+
+    payment_status = str(checkout.get("payment_status", "")).lower()
+    checkout_status = str(checkout.get("status", "")).lower()
+    if payment_status != "paid" and checkout_status != "complete":
+        return False
+
+    registration.status = RegistrationStatus.PAID
+    registration.payment_ref = str(checkout.get("id", registration.payment_ref))
+    registration.amount_paid = checkout.get("amount_total", registration.amount_paid) or registration.amount_paid
+    registration.currency = str(checkout.get("currency", registration.currency)).upper()
+    registration.save(update_fields=["status", "payment_ref", "amount_paid", "currency", "updated_at"])
+
+    exists = PaymentTransaction.objects.filter(
+        registration=registration,
+        transaction_type=TransactionType.PAYMENT_COMPLETED,
+        payment_ref=registration.payment_ref,
+    ).exists()
+    if not exists:
+        PaymentTransaction.objects.create(
+            registration=registration,
+            session=registration.session,
+            transaction_type=TransactionType.PAYMENT_COMPLETED,
+            status=registration.status,
+            provider=PaymentProvider.STRIPE,
+            amount=registration.amount_paid,
+            currency=registration.currency.upper(),
+            payment_ref=registration.payment_ref,
+            stripe_payment_intent=str(checkout.get("payment_intent", "")),
+            note=note,
+        )
+
+    _ensure_registration_confirmation_email(registration)
+    return True
+
+
 def _mark_donation_completed_from_checkout(donation: Donation, checkout, note: str) -> None:
     was_completed = donation.status == DonationStatus.COMPLETED
     donation.status = DonationStatus.COMPLETED
@@ -1024,38 +1070,10 @@ def success(request: HttpRequest) -> HttpResponse:
                         registration.payment_ref = ref
                         registration.save(update_fields=["payment_ref", "updated_at"])
 
-        if registration and registration.status != RegistrationStatus.PAID and settings.STRIPE_SECRET_KEY:
-            try:
-                checkout = stripe.checkout.Session.retrieve(ref)
-            except stripe.error.StripeError:
-                checkout = None
-            if checkout:
-                payment_status = str(checkout.get("payment_status", "")).lower()
-                checkout_status = str(checkout.get("status", "")).lower()
-                if payment_status == "paid" or checkout_status == "complete":
-                    registration.status = RegistrationStatus.PAID
-                    registration.payment_ref = str(checkout.get("id", registration.payment_ref))
-                    registration.amount_paid = checkout.get("amount_total", registration.amount_paid)
-                    registration.currency = str(checkout.get("currency", registration.currency)).upper()
-                    registration.save(update_fields=["status", "payment_ref", "amount_paid", "currency", "updated_at"])
-                    exists = PaymentTransaction.objects.filter(
-                        registration=registration,
-                        transaction_type=TransactionType.PAYMENT_COMPLETED,
-                        payment_ref=registration.payment_ref,
-                    ).exists()
-                    if not exists:
-                        PaymentTransaction.objects.create(
-                            registration=registration,
-                            session=registration.session,
-                            transaction_type=TransactionType.PAYMENT_COMPLETED,
-                            status=registration.status,
-                            provider=PaymentProvider.STRIPE,
-                            amount=registration.amount_paid,
-                            currency=registration.currency.upper(),
-                            payment_ref=registration.payment_ref,
-                            stripe_payment_intent=str(checkout.get("payment_intent", "")),
-                            note="Payment confirmed from success-page verification.",
-                        )
+        if registration and registration.status != RegistrationStatus.PAID:
+            _sync_pending_registration_from_stripe(
+                registration, note="Payment confirmed from success-page verification."
+            )
 
         if registration and registration.status == RegistrationStatus.PAID:
             _ensure_registration_confirmation_email(registration)
@@ -1172,6 +1190,29 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         "admin_page": "registrations",
     }
     return render(request, "intensive/dashboard.html", context)
+
+
+@login_required
+@require_POST
+def dashboard_registrations_sync_pending(request: HttpRequest) -> HttpResponse:
+    synced_count = 0
+    pending = (
+        Registration.objects.select_related("session")
+        .filter(status=RegistrationStatus.PENDING)
+        .exclude(payment_ref="")
+        .order_by("-created_at")[:300]
+    )
+    for registration in pending:
+        if _sync_pending_registration_from_stripe(
+            registration, note="Payment backfilled from dashboard pending sync."
+        ):
+            synced_count += 1
+
+    if synced_count:
+        messages.success(request, f"Synced {synced_count} pending registration(s) from Stripe.")
+    else:
+        messages.info(request, "No pending registrations were ready to sync.")
+    return redirect("dashboard")
 
 
 @login_required

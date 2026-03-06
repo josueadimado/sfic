@@ -56,6 +56,10 @@
             <button class="btn btn-accent" type="submit">Apply Filters</button>
             <a class="btn btn-outline" href="{% url 'export_csv' %}?session={{ selected_session }}&status={{ selected_status }}">Export CSV</a>
         </form>
+        <form method="post" action="{% url 'dashboard_registrations_sync_pending' %}" class="filters admin-filters" data-confirm-message="Sync pending registrations from Stripe now?">
+            {% csrf_token %}
+            <button class="btn btn-outline" type="submit">Sync Pending from Stripe</button>
+        </form>
 
         <div class="table-wrap admin-table-wrap">
             <table class="admin-registrations-table">

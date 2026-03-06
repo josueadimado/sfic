@@ -22,6 +22,11 @@ urlpatterns = [
     path("dashboard/login/", auth_views.LoginView.as_view(template_name="intensive/login.html"), name="login"),
     path("dashboard/logout/", views.dashboard_logout, name="logout"),
     path("dashboard/", views.dashboard, name="dashboard"),
+    path(
+        "dashboard/registrations/sync-pending/",
+        views.dashboard_registrations_sync_pending,
+        name="dashboard_registrations_sync_pending",
+    ),
     path("dashboard/donations/", views.dashboard_donations, name="dashboard_donations"),
     path("dashboard/registrations/<uuid:item_id>/", views.dashboard_registration_detail, name="dashboard_registration_detail"),
     path("dashboard/sessions/", views.dashboard_sessions, name="dashboard_sessions"),

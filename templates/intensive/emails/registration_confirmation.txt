@@ -1,6 +1,6 @@
 Hello {{ registration.full_name }},
 
-Your seat for {{ session.title }} is confirmed.
+Your registration for the 3-Day Spiritual Warfare Intensive ({{ session.title }}) is confirmed.
 
 Registration details:
 - Session: {{ session.title }}
@@ -12,5 +12,7 @@ Registration details:
 
 You can revisit the site here:
 {{ site_base_url }}
+
+We look forward to welcoming you for this Scripture-based training and ministry experience.
 
 Thank you for registering with Set Free In Christ.
