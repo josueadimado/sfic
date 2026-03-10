@@ -173,6 +173,7 @@ h3,
     align-items: center;
     gap: 0.45rem;
     padding-right: 0.35rem;
+    flex-wrap: nowrap;
 }
 
 .topbar-social a {
@@ -200,6 +201,10 @@ h3,
     color: #ffffff;
     background: #d68418;
     border: 1px solid #d68418;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
 }
 
 .topbar-social .topbar-donate-btn:hover {
@@ -2362,7 +2367,7 @@ th {
 
     .topbar-social {
         gap: 0.25rem;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         justify-content: flex-end;
         max-width: 128px;
     }
