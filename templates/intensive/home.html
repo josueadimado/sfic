@@ -83,7 +83,6 @@
             <a href="#about">About</a>
             <a href="#schedule">Schedule</a>
             <a href="#speakers">Speakers</a>
-            <a href="#register" class="topbar-register-btn">Register</a>
         </nav>
     </div>
     <div class="mobile-menu-backdrop" data-mobile-menu-backdrop aria-hidden="true"></div>
@@ -116,7 +115,6 @@
                         LOCATION: {{ venue_address }}
                     </p>
                 </div>
-                <a class="btn btn-accent" href="#register">RESERVE YOUR SEAT</a>
             </div>
         </div>
     </section>
@@ -297,7 +295,6 @@
                             {{ session.location }}
                         </p>
                         <p class="session-date">{{ session.start_date|date:"F j" }} - {{ session.end_date|date:"F j, Y" }}</p>
-                        <p class="meta">{{ session.seats_left }} seats left of {{ session.capacity }}</p>
                         <p class="price">{{ session.display_price }}</p>
                         <a href="#register" class="btn btn-accent session-cta" data-select-session="{{ session.id }}">Reserve This Session</a>
                     </article>
@@ -364,6 +361,15 @@
     <section id="register" class="section register">
         <div class="container">
             <h2>REGISTER Now</h2>
+            <div class="access-note">
+                <p>
+                    <strong>Unable to attend the live session?</strong> You will still receive one-time access to the
+                    seminar recording and materials for up to one month.
+                </p>
+                <p>
+                    This access is single-use: once you open and view the content, that one access is considered used.
+                </p>
+            </div>
             {% if messages %}
                 <div class="alerts">
                     {% for message in messages %}

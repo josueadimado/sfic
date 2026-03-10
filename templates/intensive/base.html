@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>document.documentElement.classList.add("js-loading");</script>
     <title>{% block title %}Freedom Intensive{% endblock %}</title>
     {% with canonical=request.scheme|add:"://"|add:request.get_host|add:request.path %}
     <meta name="description" content="{% block meta_description %}Freedom Intensive registration and training by Set Free In Christ.{% endblock %}">
@@ -30,8 +31,28 @@
     {% block head %}{% endblock %}
 </head>
 <body>
+    <div class="page-loader" id="page-loader" aria-hidden="true">
+        <div class="page-loader-inner">
+            <span class="page-loader-ring"></span>
+            <img src="{% static 'images/new logo set free.svg' %}" alt="Set Free In Christ" class="page-loader-logo">
+        </div>
+    </div>
     {% block body %}{% endblock %}
     <script>
+        (function () {
+            const loader = document.getElementById("page-loader");
+            function hideLoader() {
+                document.documentElement.classList.remove("js-loading");
+                if (loader) loader.setAttribute("aria-hidden", "true");
+            }
+
+            if (document.readyState === "complete") {
+                window.setTimeout(hideLoader, 120);
+                return;
+            }
+            window.addEventListener("load", () => window.setTimeout(hideLoader, 160), { once: true });
+        })();
+
         (function () {
             const storageKey = "sfic-admin-sidebar-collapsed";
             const layouts = document.querySelectorAll(".admin-layout-page");
