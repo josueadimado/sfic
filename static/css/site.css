@@ -2339,3 +2339,124 @@ th {
         position: static;
     }
 }
+
+@media (max-width: 640px) {
+    .container {
+        width: min(96%, 100%);
+    }
+
+    .topbar-main {
+        min-height: 70px;
+        gap: 0.35rem;
+    }
+
+    .brand {
+        width: 170px;
+        min-height: 64px;
+    }
+
+    .brand-logo {
+        width: 170px;
+        height: 64px;
+    }
+
+    .topbar-social {
+        gap: 0.25rem;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        max-width: 128px;
+    }
+
+    .topbar-social a {
+        width: 30px;
+        height: 30px;
+    }
+
+    .topbar-social .topbar-donate-btn {
+        min-width: 58px;
+        height: 30px;
+        padding: 0 0.45rem;
+        font-size: 0.64rem;
+    }
+
+    .hero {
+        min-height: 62vh;
+    }
+
+    .hero-content {
+        padding-block: 4rem 4.5rem;
+    }
+
+    .hero h1 {
+        font-size: clamp(2.1rem, 10.5vw, 3rem);
+        max-width: 100%;
+    }
+
+    .hero-copy,
+    .hero-copy.lead {
+        font-size: 1rem;
+        line-height: 1.5;
+    }
+
+    .countdown-label {
+        text-align: center;
+        line-height: 1.35;
+    }
+
+    .countdown-item span {
+        font-size: 1.45rem;
+    }
+
+    .experience-intro,
+    .experience-item p,
+    .included-intro,
+    .included-list li,
+    .sessions-intro,
+    .speakers-intro,
+    .schedule-intro {
+        font-size: 1.03rem;
+        line-height: 1.55;
+    }
+
+    .session-card {
+        min-height: 0;
+        padding: 1rem 0.95rem;
+    }
+
+    .session-card h3 {
+        font-size: 1.25rem;
+    }
+
+    .session-date {
+        font-size: 1rem;
+    }
+
+    .register h2 {
+        margin-bottom: 0.45rem;
+    }
+
+    .access-note {
+        padding: 0.7rem 0.75rem;
+    }
+
+    .register-form {
+        gap: 0.58rem;
+    }
+
+    .register-form input,
+    .register-form select {
+        font-size: 0.98rem;
+    }
+
+    #student-fields .btn,
+    .register-actions .btn,
+    .session-cta {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .student-code-loader,
+    .student-code-feedback {
+        font-size: 0.86rem;
+    }
+}
