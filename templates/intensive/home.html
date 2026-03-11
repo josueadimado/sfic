@@ -248,26 +248,26 @@
                 {% for item in schedule_items %}
                     <article>
                         <h3>{{ item.day_name }}</h3>
-                        <p>CT {{ item.start_time|time:"g:i A" }} - {{ item.end_time|time:"g:i A" }}</p>
+                        <p>{{ item.start_time|time:"g:i A" }} - {{ item.end_time|time:"g:i A" }} (CST)</p>
                         <p class="lunch-line">
-                            Lunch Break: CT {{ item.lunch_start|time:"g:i A" }} - {{ item.lunch_end|time:"g:i A" }}
+                            Lunch Break: {{ item.lunch_start|time:"g:i A" }} - {{ item.lunch_end|time:"g:i A" }} (CST)
                         </p>
                     </article>
                 {% empty %}
                     <article>
                         <h3>Wednesday</h3>
-                        <p>CT 8:30 AM - 5:30 PM</p>
-                        <p class="lunch-line">Lunch Break: CT 12:30 PM - 1:30 PM</p>
+                        <p>8:30 AM - 5:30 PM (CST)</p>
+                        <p class="lunch-line">Lunch Break: 12:30 PM - 1:30 PM (CST)</p>
                     </article>
                     <article>
                         <h3>Thursday</h3>
-                        <p>CT 8:30 AM - 5:30 PM</p>
-                        <p class="lunch-line">Lunch Break: CT 12:30 PM - 1:30 PM</p>
+                        <p>8:30 AM - 5:30 PM (CST)</p>
+                        <p class="lunch-line">Lunch Break: 12:30 PM - 1:30 PM (CST)</p>
                     </article>
                     <article>
                         <h3>Friday</h3>
-                        <p>CT 8:00 AM - 5:00 PM</p>
-                        <p class="lunch-line">Lunch Break: CT 12:00 PM - 12:30 PM</p>
+                        <p>8:00 AM - 5:00 PM (CST)</p>
+                        <p class="lunch-line">Lunch Break: 12:00 PM - 12:30 PM (CST)</p>
                     </article>
                 {% endfor %}
             </div>
