@@ -207,10 +207,35 @@ h3,
     line-height: 1;
 }
 
+.topbar-social .topbar-call-btn {
+    width: auto;
+    min-width: 168px;
+    height: 38px;
+    padding: 0 0.85rem;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: #443425;
+    background: #ffffff;
+    border: 1px solid #d9d3c7;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
 .topbar-social .topbar-donate-btn:hover {
     color: #ffffff;
     background: #ba7014;
     border-color: #ba7014;
+}
+
+.topbar-social .topbar-call-btn:hover {
+    border-color: #443425;
+    color: #2f241a;
 }
 
 .topbar-social a:hover {
@@ -418,6 +443,16 @@ section[id] {
     border: 1px solid rgba(255, 255, 255, 0.22);
     border-radius: 999px;
     padding: 0.34rem 0.65rem;
+}
+
+.contact-link {
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.contact-link:hover {
+    text-decoration: underline;
 }
 
 .location-icon {
@@ -2206,6 +2241,13 @@ th {
         font-size: 0.72rem;
     }
 
+    .topbar-social .topbar-call-btn {
+        min-width: 148px;
+        height: 34px;
+        padding: 0 0.65rem;
+        font-size: 0.68rem;
+    }
+
     .admin-select {
         min-width: 100%;
     }
@@ -2369,7 +2411,7 @@ th {
         gap: 0.25rem;
         flex-wrap: nowrap;
         justify-content: flex-end;
-        max-width: 128px;
+        max-width: none;
     }
 
     .topbar-social a {
@@ -2382,6 +2424,13 @@ th {
         height: 30px;
         padding: 0 0.45rem;
         font-size: 0.64rem;
+    }
+
+    .topbar-social .topbar-call-btn {
+        min-width: 120px;
+        height: 30px;
+        padding: 0 0.45rem;
+        font-size: 0.58rem;
     }
 
     .hero {
