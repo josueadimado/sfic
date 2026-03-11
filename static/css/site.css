@@ -2393,30 +2393,47 @@ th {
     }
 
     .topbar-main {
-        min-height: 70px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "brand toggle"
+            "social social";
+        align-items: center;
+        min-height: auto;
         gap: 0.35rem;
+        padding: 0.35rem 0 0.45rem;
     }
 
     .brand {
-        width: 170px;
-        min-height: 64px;
+        grid-area: brand;
+        width: 160px;
+        min-height: 58px;
     }
 
     .brand-logo {
-        width: 170px;
-        height: 64px;
+        width: 160px;
+        height: 58px;
+    }
+
+    .topbar-menu-toggle {
+        grid-area: toggle;
+        justify-self: end;
     }
 
     .topbar-social {
+        grid-area: social;
         gap: 0.25rem;
-        flex-wrap: nowrap;
-        justify-content: flex-end;
+        flex-wrap: wrap;
+        justify-content: flex-start;
         max-width: none;
+        width: 100%;
+        padding-right: 0;
     }
 
     .topbar-social a {
         width: 30px;
         height: 30px;
+        flex: 0 0 auto;
     }
 
     .topbar-social .topbar-donate-btn {
@@ -2427,7 +2444,7 @@ th {
     }
 
     .topbar-social .topbar-call-btn {
-        min-width: 120px;
+        min-width: 112px;
         height: 30px;
         padding: 0 0.45rem;
         font-size: 0.58rem;
