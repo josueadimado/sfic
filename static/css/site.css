@@ -445,6 +445,10 @@ section[id] {
     padding: 0.34rem 0.65rem;
 }
 
+.hero-call-mobile {
+    display: none;
+}
+
 .contact-link {
     color: #ffffff;
     text-decoration: none;
@@ -2423,9 +2427,9 @@ th {
     .topbar-social {
         grid-area: social;
         gap: 0.25rem;
-        flex-wrap: wrap;
-        justify-content: flex-start;
-        max-width: none;
+        flex-wrap: nowrap;
+        justify-content: flex-end;
+        max-width: 128px;
         width: 100%;
         padding-right: 0;
     }
@@ -2444,10 +2448,7 @@ th {
     }
 
     .topbar-social .topbar-call-btn {
-        min-width: 112px;
-        height: 30px;
-        padding: 0 0.45rem;
-        font-size: 0.58rem;
+        display: none;
     }
 
     .hero {
@@ -2467,6 +2468,10 @@ th {
     .hero-copy.lead {
         font-size: 1rem;
         line-height: 1.5;
+    }
+
+    .hero-call-mobile {
+        display: inline-flex;
     }
 
     .countdown-label {
