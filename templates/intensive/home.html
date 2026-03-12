@@ -74,7 +74,6 @@
                         <path class="yt-play" d="M10 9.4v5.2l4.7-2.6L10 9.4Z"></path>
                     </svg>
                 </a>
-                <a class="topbar-call-btn" href="tel:+12692083370">Call: +1 269-208-3370</a>
                 <a class="topbar-donate-btn" href="{% url 'donate' %}">Donate</a>
             </div>
             <button type="button" class="topbar-menu-toggle" data-mobile-menu-toggle aria-label="Open menu">☰</button>
@@ -114,12 +113,6 @@
                             <circle cx="12" cy="10" r="2.5"></circle>
                         </svg>
                         LOCATION: {{ venue_address }}
-                    </p>
-                    <p class="hero-meta-item hero-call-mobile">
-                        <svg class="location-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M5 4h3l1.4 3.2-1.8 1.6a15.4 15.4 0 0 0 6.6 6.6L15.8 13 19 14.4v3a2 2 0 0 1-2 2A16 16 0 0 1 5 7a2 2 0 0 1 2-2Z"></path>
-                        </svg>
-                        CALL: <a href="tel:+12692083370" class="contact-link">+1 269-208-3370</a>
                     </p>
                 </div>
             </div>
@@ -368,15 +361,6 @@
     <section id="register" class="section register">
         <div class="container">
             <h2>REGISTER Now</h2>
-            <div class="access-note">
-                <p>
-                    <strong>
-                        Can’t attend every live session? If you register but are unable to attend the entire live
-                        seminar sessions, you will receive a one-time access code to the full 3-day seminar recording
-                        and all materials, including slide presentations, available for up to one month.
-                    </strong>
-                </p>
-            </div>
             {% if messages %}
                 <div class="alerts">
                     {% for message in messages %}
@@ -537,6 +521,23 @@
         </div>
     </div>
 </footer>
+
+<aside class="floating-access-note" id="floating-access-note" aria-live="polite" aria-label="Registration access notice">
+    <button type="button" class="floating-access-close" id="floating-access-close" aria-label="Close notice">×</button>
+    <p>
+        <strong>
+            Can’t attend every live session? If you register but are unable to attend the entire live seminar sessions,
+            you will receive a one-time access code to the full 3-day seminar recording and all materials, including
+            slide presentations, available for up to one month.
+        </strong>
+    </p>
+</aside>
+
+<a class="floating-call-btn" href="tel:+12692083370" aria-label="Call +1 269-208-3370">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M5 4h3l1.4 3.2-1.8 1.6a15.4 15.4 0 0 0 6.6 6.6L15.8 13 19 14.4v3a2 2 0 0 1-2 2A16 16 0 0 1 5 7a2 2 0 0 1 2-2Z"></path>
+    </svg>
+</a>
 
 <script>
     (function () {
@@ -829,6 +830,44 @@
                 verifyBtn.disabled = false;
             }
         });
+    })();
+
+    (function () {
+        const note = document.getElementById("floating-access-note");
+        const closeBtn = document.getElementById("floating-access-close");
+        const registerSection = document.getElementById("register");
+        if (!note || !closeBtn) return;
+
+        const storageKey = "floatingAccessNoteDismissed";
+        if (window.localStorage.getItem(storageKey) === "1") return;
+
+        let isClosed = false;
+
+        function shouldShow() {
+            const isPhone = window.matchMedia("(max-width: 640px)").matches;
+            if (isPhone && registerSection) {
+                const registerTop = registerSection.getBoundingClientRect().top;
+                if (registerTop <= window.innerHeight * 0.85) {
+                    return false;
+                }
+            }
+            return window.scrollY > 0;
+        }
+
+        function updateVisibility() {
+            if (isClosed) return;
+            note.classList.toggle("is-visible", shouldShow());
+        }
+
+        closeBtn.addEventListener("click", function () {
+            isClosed = true;
+            note.classList.remove("is-visible");
+            window.localStorage.setItem(storageKey, "1");
+        });
+
+        window.addEventListener("scroll", updateVisibility, { passive: true });
+        window.addEventListener("resize", updateVisibility);
+        updateVisibility();
     })();
 </script>
 {% endblock %}
