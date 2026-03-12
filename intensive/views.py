@@ -146,6 +146,47 @@ def _ensure_admin_paid_registration_notification(registration: Registration) -> 
         registration.save(update_fields=["admin_paid_notification_sent", "updated_at"])
 
 
+def _create_payment_transaction_once(
+    *,
+    registration: Registration | None,
+    session: Session | None,
+    transaction_type: str,
+    status: str,
+    provider: str,
+    amount: int,
+    currency: str,
+    payment_ref: str = "",
+    stripe_payment_intent: str = "",
+    note: str = "",
+) -> None:
+    payment_ref = str(payment_ref or "")
+    stripe_payment_intent = str(stripe_payment_intent or "")
+    existing = PaymentTransaction.objects.filter(
+        registration=registration,
+        transaction_type=transaction_type,
+        provider=provider,
+        payment_ref=payment_ref,
+        stripe_payment_intent=stripe_payment_intent,
+        amount=amount,
+        currency=str(currency).upper(),
+        status=status,
+    ).exists()
+    if existing:
+        return
+    PaymentTransaction.objects.create(
+        registration=registration,
+        session=session,
+        transaction_type=transaction_type,
+        status=status,
+        provider=provider,
+        amount=amount,
+        currency=str(currency).upper(),
+        payment_ref=payment_ref,
+        stripe_payment_intent=stripe_payment_intent,
+        note=note,
+    )
+
+
 def _sync_pending_registration_from_stripe(registration: Registration, note: str) -> bool:
     if (
         registration.status == RegistrationStatus.PAID
@@ -169,24 +210,18 @@ def _sync_pending_registration_from_stripe(registration: Registration, note: str
     registration.currency = str(checkout.get("currency", registration.currency)).upper()
     registration.save(update_fields=["status", "payment_ref", "amount_paid", "currency", "updated_at"])
 
-    exists = PaymentTransaction.objects.filter(
+    _create_payment_transaction_once(
         registration=registration,
+        session=registration.session,
         transaction_type=TransactionType.PAYMENT_COMPLETED,
+        status=registration.status,
+        provider=PaymentProvider.STRIPE,
+        amount=registration.amount_paid,
+        currency=registration.currency.upper(),
         payment_ref=registration.payment_ref,
-    ).exists()
-    if not exists:
-        PaymentTransaction.objects.create(
-            registration=registration,
-            session=registration.session,
-            transaction_type=TransactionType.PAYMENT_COMPLETED,
-            status=registration.status,
-            provider=PaymentProvider.STRIPE,
-            amount=registration.amount_paid,
-            currency=registration.currency.upper(),
-            payment_ref=registration.payment_ref,
-            stripe_payment_intent=str(checkout.get("payment_intent", "")),
-            note=note,
-        )
+        stripe_payment_intent=str(checkout.get("payment_intent", "")),
+        note=note,
+    )
 
     _ensure_registration_confirmation_email(registration)
     _ensure_admin_paid_registration_notification(registration)
@@ -541,7 +576,7 @@ def create_checkout(request: HttpRequest) -> HttpResponse:
         messages.error(request, "Stripe is not configured yet. Please add keys in .env.")
         registration.status = RegistrationStatus.CANCELED
         registration.save(update_fields=["status", "updated_at"])
-        PaymentTransaction.objects.create(
+        _create_payment_transaction_once(
             registration=registration,
             session=session,
             transaction_type=TransactionType.PAYMENT_ERROR,
@@ -569,7 +604,7 @@ def create_checkout(request: HttpRequest) -> HttpResponse:
     checkout_session = _build_checkout_session(registration, session)
     registration.payment_ref = checkout_session.id
     registration.save(update_fields=["payment_ref", "updated_at"])
-    PaymentTransaction.objects.create(
+    _create_payment_transaction_once(
         registration=registration,
         session=session,
         transaction_type=TransactionType.CHECKOUT_CREATED,
@@ -744,7 +779,7 @@ def resume_checkout(request: HttpRequest, registration_id: str) -> HttpResponse:
     if registration.status != RegistrationStatus.PENDING:
         registration.status = RegistrationStatus.PENDING
     registration.save(update_fields=["payment_ref", "status", "updated_at"])
-    PaymentTransaction.objects.create(
+    _create_payment_transaction_once(
         registration=registration,
         session=session,
         transaction_type=TransactionType.CHECKOUT_CREATED,
@@ -882,7 +917,7 @@ def stripe_webhook(request: HttpRequest) -> HttpResponse:
                     if paid_count >= session.capacity:
                         registration.status = RegistrationStatus.CANCELED
                         registration.save(update_fields=["status", "updated_at"])
-                        PaymentTransaction.objects.create(
+                        _create_payment_transaction_once(
                             registration=registration,
                             session=session,
                             transaction_type=TransactionType.PAYMENT_CANCELED,
@@ -901,7 +936,7 @@ def stripe_webhook(request: HttpRequest) -> HttpResponse:
                         registration.currency = checkout.get("currency", session.currency).upper()
                         registration.updated_at = timezone.now()
                         registration.save()
-                        PaymentTransaction.objects.create(
+                        _create_payment_transaction_once(
                             registration=registration,
                             session=session,
                             transaction_type=TransactionType.PAYMENT_COMPLETED,
@@ -945,7 +980,7 @@ def stripe_webhook(request: HttpRequest) -> HttpResponse:
                     payment_ref=str(checkout.get("id", registration.payment_ref)),
                 ).exists()
                 if not existing:
-                    PaymentTransaction.objects.create(
+                    _create_payment_transaction_once(
                         registration=registration,
                         session=registration.session,
                         transaction_type=TransactionType.PAYMENT_CANCELED,
@@ -995,7 +1030,7 @@ def stripe_webhook(request: HttpRequest) -> HttpResponse:
                         payment_intent.get("last_payment_error", {}).get("message")
                         or "Payment failed in Stripe."
                     )
-                    PaymentTransaction.objects.create(
+                    _create_payment_transaction_once(
                         registration=registration,
                         session=registration.session,
                         transaction_type=TransactionType.PAYMENT_ERROR,
@@ -1117,7 +1152,7 @@ def cancel(request: HttpRequest) -> HttpResponse:
             payment_ref=registration.payment_ref,
         ).exists()
         if not existing:
-            PaymentTransaction.objects.create(
+            _create_payment_transaction_once(
                 registration=registration,
                 session=registration.session,
                 transaction_type=TransactionType.PAYMENT_CANCELED,
@@ -1456,8 +1491,29 @@ def dashboard_transactions(request: HttpRequest) -> HttpResponse:
     if tx_type:
         transactions = transactions.filter(transaction_type=tx_type)
 
+    # Hide historical duplicate rows created by repeated payment callbacks.
+    unique_rows = []
+    seen_keys = set()
+    for tx in transactions.order_by("-created_at")[:2000]:
+        key = (
+            tx.registration_id,
+            tx.transaction_type,
+            tx.provider,
+            tx.payment_ref or "",
+            tx.stripe_payment_intent or "",
+            tx.amount,
+            (tx.currency or "").upper(),
+            tx.status or "",
+        )
+        if key in seen_keys:
+            continue
+        seen_keys.add(key)
+        unique_rows.append(tx)
+        if len(unique_rows) >= 500:
+            break
+
     context = {
-        "transactions": transactions[:500],
+        "transactions": unique_rows,
         "selected_status": status,
         "selected_tx_type": tx_type,
         "status_choices": RegistrationStatus.choices,

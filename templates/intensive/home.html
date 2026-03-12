@@ -839,7 +839,17 @@
         if (!note || !closeBtn) return;
 
         const storageKey = "floatingAccessNoteDismissed";
-        if (window.localStorage.getItem(storageKey) === "1") return;
+        try {
+            // Old versions used localStorage and could hide this forever on some devices.
+            window.localStorage.removeItem(storageKey);
+        } catch (err) {
+            // Ignore storage-access errors in restrictive browsers.
+        }
+        try {
+            if (window.sessionStorage.getItem(storageKey) === "1") return;
+        } catch (err) {
+            // Ignore storage-access errors and continue.
+        }
 
         let isClosed = false;
 
@@ -862,7 +872,11 @@
         closeBtn.addEventListener("click", function () {
             isClosed = true;
             note.classList.remove("is-visible");
-            window.localStorage.setItem(storageKey, "1");
+            try {
+                window.sessionStorage.setItem(storageKey, "1");
+            } catch (err) {
+                // Ignore storage-access errors.
+            }
         });
 
         window.addEventListener("scroll", updateVisibility, { passive: true });
