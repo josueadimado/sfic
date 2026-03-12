@@ -1,5 +1,6 @@
 import re
 from pathlib import Path
+from decimal import Decimal, ROUND_HALF_UP
 
 from django import forms
 import pycountry
@@ -136,6 +137,26 @@ class DonationForm(forms.Form):
         return cleaned
 
 class SessionManageForm(forms.ModelForm):
+    price = forms.DecimalField(
+        min_value=0,
+        max_digits=10,
+        decimal_places=2,
+        help_text="Enter amount in USD (for example 120.00).",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk and self.instance.price is not None:
+            self.initial["price"] = (Decimal(self.instance.price) / Decimal("100")).quantize(
+                Decimal("0.01"),
+                rounding=ROUND_HALF_UP,
+            )
+
+    def clean_price(self):
+        price_value = self.cleaned_data["price"]
+        cents = (price_value * Decimal("100")).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        return int(cents)
+
     class Meta:
         model = Session
         fields = ["title", "location", "start_date", "end_date", "capacity", "price", "currency", "is_active"]

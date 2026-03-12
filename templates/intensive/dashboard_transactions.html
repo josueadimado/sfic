@@ -91,7 +91,7 @@
                                 {% endif %}
                             </td>
                             <td>{{ item.session.title|default:"-" }}</td>
-                            <td>{{ item.amount|floatformat:2 }} {{ item.currency }}</td>
+                            <td>{{ item.display_amount }}</td>
                             <td>{{ item.payment_ref|default:"-" }}</td>
                             <td>{{ item.note|default:"-" }}</td>
                         </tr>

@@ -198,6 +198,10 @@ class PaymentTransaction(models.Model):
     def __str__(self) -> str:
         return f"{self.transaction_type} - {self.payment_ref or 'N/A'}"
 
+    @property
+    def display_amount(self) -> str:
+        return f"{self.amount / 100:.2f} {self.currency.upper()}"
+
 
 class DonationStatus(models.TextChoices):
     PENDING = "PENDING", "Pending"
