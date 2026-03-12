@@ -1,0 +1,41 @@
+<html>
+<body style="margin:0;padding:0;background:#f4f7f6;font-family:Arial,sans-serif;color:#173a34;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f7f6;padding:24px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="620" cellpadding="0" cellspacing="0" style="max-width:620px;background:#ffffff;border:1px solid #dce6e2;border-radius:14px;overflow:hidden;">
+          <tr>
+            <td style="padding:22px 24px;background:#443425;color:#ffffff;">
+              <h1 style="margin:0;font-size:22px;line-height:1.2;">Registration Payment Confirmed</h1>
+              <p style="margin:8px 0 0;font-size:14px;opacity:0.9;">Freedom Intensive</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px 24px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f8fbfa;border:1px solid #e0ebe7;border-radius:10px;">
+                <tr>
+                  <td style="padding:12px 14px;font-size:14px;line-height:1.7;">
+                    <strong>Name:</strong> {{ registration.full_name }}<br>
+                    <strong>Email:</strong> {{ registration.email }}<br>
+                    <strong>Phone:</strong> {{ registration.phone }}<br>
+                    <strong>City/Country:</strong> {{ registration.city }}, {{ registration.country }}<br>
+                    <strong>Church/Organization:</strong> {{ registration.church|default:"-" }}<br>
+                    <strong>Session:</strong> {{ session.title }}<br>
+                    <strong>LOCATION:</strong> {{ session.location }}<br>
+                    <strong>Dates:</strong> {{ session.start_date }} to {{ session.end_date }}<br>
+                    <strong>Amount Paid:</strong> {{ amount_paid }}<br>
+                    <strong>Current Status:</strong> {{ registration.status }}
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:16px 0 0;font-size:14px;">
+                <a href="{{ dashboard_url }}" style="color:#443425;font-weight:700;">Open registration in dashboard</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

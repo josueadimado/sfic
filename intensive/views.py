@@ -51,6 +51,7 @@ from .services import (
     DONATION_MANAGE_SALT,
     send_admin_donation_notification,
     send_admin_new_registration_notification,
+    send_admin_paid_registration_notification,
     send_donation_thank_you,
     send_payment_retry_email,
     send_registration_confirmation,
@@ -133,6 +134,18 @@ def _ensure_registration_confirmation_email(registration: Registration) -> None:
         registration.save(update_fields=["confirmation_email_sent", "updated_at"])
 
 
+def _ensure_admin_paid_registration_notification(registration: Registration) -> None:
+    if (
+        registration.status != RegistrationStatus.PAID
+        or registration.admin_paid_notification_sent
+    ):
+        return
+    sent = send_admin_paid_registration_notification(registration)
+    if sent:
+        registration.admin_paid_notification_sent = True
+        registration.save(update_fields=["admin_paid_notification_sent", "updated_at"])
+
+
 def _sync_pending_registration_from_stripe(registration: Registration, note: str) -> bool:
     if (
         registration.status == RegistrationStatus.PAID
@@ -176,6 +189,7 @@ def _sync_pending_registration_from_stripe(registration: Registration, note: str
         )
 
     _ensure_registration_confirmation_email(registration)
+    _ensure_admin_paid_registration_notification(registration)
     return True
 
 
@@ -900,6 +914,7 @@ def stripe_webhook(request: HttpRequest) -> HttpResponse:
                             note="Payment confirmed from webhook.",
                         )
                         _ensure_registration_confirmation_email(registration)
+                        _ensure_admin_paid_registration_notification(registration)
             except Registration.DoesNotExist:
                 return HttpResponse(status=200)
     elif event["type"] == "checkout.session.expired":
@@ -1077,6 +1092,7 @@ def success(request: HttpRequest) -> HttpResponse:
 
         if registration and registration.status == RegistrationStatus.PAID:
             _ensure_registration_confirmation_email(registration)
+            _ensure_admin_paid_registration_notification(registration)
     return render(
         request,
         "intensive/success.html",
@@ -1180,6 +1196,15 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         registrations = registrations.filter(session_id=session_id)
     if status:
         registrations = registrations.filter(status=status)
+
+    # Catch up missed "payment confirmed" admin alerts for recent paid registrations.
+    pending_admin_alerts = (
+        Registration.objects.select_related("session")
+        .filter(status=RegistrationStatus.PAID, admin_paid_notification_sent=False)
+        .order_by("-updated_at")[:120]
+    )
+    for registration in pending_admin_alerts:
+        _ensure_admin_paid_registration_notification(registration)
 
     context = {
         "registrations": registrations[:300],
@@ -1383,12 +1408,20 @@ def dashboard_site_settings(request: HttpRequest) -> HttpResponse:
     instance = SiteSetting.objects.first()
 
     if request.method == "POST":
-        form = SiteSettingForm(request.POST, instance=instance)
+        form = SiteSettingForm(request.POST, request.FILES, instance=instance)
         if form.is_valid():
             form.save()
             messages.success(request, "Site settings updated successfully.")
             return redirect("dashboard_site_settings")
-        messages.error(request, "Please fix the errors in the settings form.")
+        detailed_error = ""
+        for errors in form.errors.values():
+            if errors:
+                detailed_error = errors[0]
+                break
+        if detailed_error:
+            messages.error(request, f"Please fix the errors in the settings form. {detailed_error}")
+        else:
+            messages.error(request, "Please fix the errors in the settings form.")
     else:
         form = SiteSettingForm(instance=instance)
 

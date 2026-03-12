@@ -1,4 +1,5 @@
 import re
+from pathlib import Path
 
 from django import forms
 import pycountry
@@ -165,15 +166,66 @@ class TrainingScheduleItemForm(forms.ModelForm):
 
 
 class SiteSettingForm(forms.ModelForm):
+    ALLOWED_MATERIAL_EXTENSIONS = {".pdf", ".doc", ".docx", ".ppt", ".pptx"}
+    ALLOWED_MATERIAL_CONTENT_TYPES = {
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["registration_material_pdf_one"].label = "Registration material file one"
+        self.fields["registration_material_pdf_two"].label = "Registration material file two"
+        self.fields["registration_material_pdf_one"].help_text = "Optional file (PDF, DOC, DOCX, PPT, or PPTX) attached to registration confirmation emails."
+        self.fields["registration_material_pdf_two"].help_text = "Optional second file (PDF, DOC, DOCX, PPT, or PPTX) attached to registration confirmation emails."
+
     class Meta:
         model = SiteSetting
-        fields = ["site_name", "venue_address", "donation_url", "student_discount_percent"]
+        fields = [
+            "site_name",
+            "venue_address",
+            "donation_url",
+            "student_discount_percent",
+            "registration_material_pdf_one",
+            "registration_material_pdf_two",
+        ]
 
     def clean_student_discount_percent(self):
         value = self.cleaned_data.get("student_discount_percent", 0)
         if value < 0 or value > 95:
             raise forms.ValidationError("Student discount percent must be between 0 and 95.")
         return value
+
+    def clean_registration_material_pdf_one(self):
+        file = self.cleaned_data.get("registration_material_pdf_one")
+        if not file:
+            return file
+        file_name = str(getattr(file, "name", ""))
+        content_type = str(getattr(file, "content_type", "")).lower()
+        file_ext = Path(file_name).suffix.lower()
+        if (
+            file_ext not in self.ALLOWED_MATERIAL_EXTENSIONS
+            and content_type not in self.ALLOWED_MATERIAL_CONTENT_TYPES
+        ):
+            raise forms.ValidationError("Material 1 must be a PDF, DOC, DOCX, PPT, or PPTX file.")
+        return file
+
+    def clean_registration_material_pdf_two(self):
+        file = self.cleaned_data.get("registration_material_pdf_two")
+        if not file:
+            return file
+        file_name = str(getattr(file, "name", ""))
+        content_type = str(getattr(file, "content_type", "")).lower()
+        file_ext = Path(file_name).suffix.lower()
+        if (
+            file_ext not in self.ALLOWED_MATERIAL_EXTENSIONS
+            and content_type not in self.ALLOWED_MATERIAL_CONTENT_TYPES
+        ):
+            raise forms.ValidationError("Material 2 must be a PDF, DOC, DOCX, PPT, or PPTX file.")
+        return file
 
 
 class SpeakerForm(forms.ModelForm):

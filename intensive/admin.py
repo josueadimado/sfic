@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.db.models import Count, Q
 
 from .models import (
     Donation,
@@ -14,9 +15,38 @@ from .models import (
 
 @admin.register(Session)
 class SessionAdmin(admin.ModelAdmin):
-    list_display = ("title", "location", "start_date", "end_date", "capacity", "price", "currency", "is_active")
+    list_display = (
+        "title",
+        "location",
+        "start_date",
+        "end_date",
+        "capacity",
+        "paid_registrations",
+        "places_left",
+        "price",
+        "currency",
+        "is_active",
+    )
     list_filter = ("is_active", "currency", "start_date", "location")
     search_fields = ("title", "location")
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.annotate(
+            paid_registrations_count=Count(
+                "registrations",
+                filter=Q(registrations__status="PAID"),
+            )
+        )
+
+    @admin.display(description="Paid")
+    def paid_registrations(self, obj):
+        return getattr(obj, "paid_registrations_count", obj.paid_count)
+
+    @admin.display(description="Places Left")
+    def places_left(self, obj):
+        paid = getattr(obj, "paid_registrations_count", obj.paid_count)
+        return max(obj.capacity - paid, 0)
 
 
 @admin.register(Registration)
@@ -57,7 +87,23 @@ class TrainingScheduleItemAdmin(admin.ModelAdmin):
 
 @admin.register(SiteSetting)
 class SiteSettingAdmin(admin.ModelAdmin):
-    list_display = ("site_name", "venue_address", "donation_url", "student_discount_percent", "updated_at")
+    list_display = (
+        "site_name",
+        "venue_address",
+        "donation_url",
+        "student_discount_percent",
+        "has_material_pdf_one",
+        "has_material_pdf_two",
+        "updated_at",
+    )
+
+    @admin.display(description="Material 1")
+    def has_material_pdf_one(self, obj):
+        return bool(obj.registration_material_pdf_one)
+
+    @admin.display(description="Material 2")
+    def has_material_pdf_two(self, obj):
+        return bool(obj.registration_material_pdf_two)
 
 
 @admin.register(Speaker)

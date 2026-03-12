@@ -18,6 +18,7 @@ urlpatterns = [
     path("donation/cancel", views.donation_cancel, name="donation_cancel"),
     path("donation/manage/<str:token>/", views.donation_manage, name="donation_manage"),
     path("webhooks/stripe", views.stripe_webhook, name="stripe_webhook"),
+    path("webhooks/stripe/", views.stripe_webhook, name="stripe_webhook_slash"),
     path("webhooks/donorelf", views.donor_elf_webhook, name="donor_elf_webhook"),
     path("dashboard/login/", auth_views.LoginView.as_view(template_name="intensive/login.html"), name="login"),
     path("dashboard/logout/", views.dashboard_logout, name="logout"),

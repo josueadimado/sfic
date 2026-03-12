@@ -30,7 +30,7 @@
     <section class="admin-main">
         <button type="button" class="sidebar-toggle" data-sidebar-toggle aria-label="Close sidebar menu" title="Close menu">✕</button>
         <h1>Site Settings</h1>
-        <p class="admin-subtitle">Set your public site name, venue, donation URL, and student discount percent for event registration.</p>
+        <p class="admin-subtitle">Set your public site name, venue, donation URL, student discount percent, and optional materials (PDF, Word, or PowerPoint) sent after registration payment.</p>
         {% if messages %}
             <div class="alerts">
                 {% for message in messages %}
@@ -38,10 +38,97 @@
                 {% endfor %}
             </div>
         {% endif %}
+        {% if form.errors %}
+            <div class="alerts">
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <p class="alert">{{ field.label }}: {{ error }}</p>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <p class="alert">{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
 
-        <form method="post" class="admin-form-grid" style="max-width: 780px;">
+        <form method="post" enctype="multipart/form-data" class="admin-form-grid" style="max-width: 780px;">
             {% csrf_token %}
-            {{ form.as_p }}
+            <p>
+                <label for="{{ form.site_name.id_for_label }}">{{ form.site_name.label }}</label>
+                {{ form.site_name }}
+                {% if form.site_name.help_text %}<small class="helptext">{{ form.site_name.help_text }}</small>{% endif %}
+                {% for error in form.site_name.errors %}<small class="helptext">{{ error }}</small>{% endfor %}
+            </p>
+
+            <p>
+                <label for="{{ form.venue_address.id_for_label }}">{{ form.venue_address.label }}</label>
+                {{ form.venue_address }}
+                {% if form.venue_address.help_text %}<small class="helptext">{{ form.venue_address.help_text }}</small>{% endif %}
+                {% for error in form.venue_address.errors %}<small class="helptext">{{ error }}</small>{% endfor %}
+            </p>
+
+            <p>
+                <label for="{{ form.donation_url.id_for_label }}">{{ form.donation_url.label }}</label>
+                {{ form.donation_url }}
+                {% if form.donation_url.help_text %}<small class="helptext">{{ form.donation_url.help_text }}</small>{% endif %}
+                {% for error in form.donation_url.errors %}<small class="helptext">{{ error }}</small>{% endfor %}
+            </p>
+
+            <p>
+                <label for="{{ form.student_discount_percent.id_for_label }}">{{ form.student_discount_percent.label }}</label>
+                {{ form.student_discount_percent }}
+                {% if form.student_discount_percent.help_text %}<small class="helptext">{{ form.student_discount_percent.help_text }}</small>{% endif %}
+                {% for error in form.student_discount_percent.errors %}<small class="helptext">{{ error }}</small>{% endfor %}
+            </p>
+
+            <div class="admin-file-field">
+                <label for="id_registration_material_pdf_one">{{ form.registration_material_pdf_one.label }}</label>
+                {% if form.instance and form.instance.registration_material_pdf_one %}
+                    <p class="admin-file-current">
+                        Current:
+                        <a href="{{ form.instance.registration_material_pdf_one.url }}" target="_blank" rel="noopener noreferrer">
+                            {{ form.instance.registration_material_pdf_one.name }}
+                        </a>
+                    </p>
+                    <label class="admin-file-clear">
+                        <input type="checkbox" name="registration_material_pdf_one-clear" id="registration_material_pdf_one-clear">
+                        Remove current file
+                    </label>
+                {% endif %}
+                <input
+                    type="file"
+                    name="registration_material_pdf_one"
+                    id="id_registration_material_pdf_one"
+                    accept=".pdf,.doc,.docx,.ppt,.pptx"
+                >
+                {% if form.registration_material_pdf_one.help_text %}<small class="helptext">{{ form.registration_material_pdf_one.help_text }}</small>{% endif %}
+                {% for error in form.registration_material_pdf_one.errors %}<small class="helptext">{{ error }}</small>{% endfor %}
+            </div>
+
+            <div class="admin-file-field">
+                <label for="id_registration_material_pdf_two">{{ form.registration_material_pdf_two.label }}</label>
+                {% if form.instance and form.instance.registration_material_pdf_two %}
+                    <p class="admin-file-current">
+                        Current:
+                        <a href="{{ form.instance.registration_material_pdf_two.url }}" target="_blank" rel="noopener noreferrer">
+                            {{ form.instance.registration_material_pdf_two.name }}
+                        </a>
+                    </p>
+                    <label class="admin-file-clear">
+                        <input type="checkbox" name="registration_material_pdf_two-clear" id="registration_material_pdf_two-clear">
+                        Remove current file
+                    </label>
+                {% endif %}
+                <input
+                    type="file"
+                    name="registration_material_pdf_two"
+                    id="id_registration_material_pdf_two"
+                    accept=".pdf,.doc,.docx,.ppt,.pptx"
+                >
+                {% if form.registration_material_pdf_two.help_text %}<small class="helptext">{{ form.registration_material_pdf_two.help_text }}</small>{% endif %}
+                {% for error in form.registration_material_pdf_two.errors %}<small class="helptext">{{ error }}</small>{% endfor %}
+            </div>
+
             <div class="admin-actions">
                 <button class="btn btn-accent" type="submit">Save Settings</button>
             </div>

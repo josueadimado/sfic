@@ -82,6 +82,16 @@ class SiteSetting(models.Model):
         default=0,
         help_text="Student discount percent for registration (0-95).",
     )
+    registration_material_pdf_one = models.FileField(
+        upload_to="registration_materials/",
+        blank=True,
+        help_text="Optional PDF attached to registration confirmation emails.",
+    )
+    registration_material_pdf_two = models.FileField(
+        upload_to="registration_materials/",
+        blank=True,
+        help_text="Optional second PDF attached to registration confirmation emails.",
+    )
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -144,6 +154,7 @@ class Registration(models.Model):
     payment_ref = models.CharField(max_length=200, blank=True)
     amount_paid = models.PositiveIntegerField(default=0)
     confirmation_email_sent = models.BooleanField(default=False)
+    admin_paid_notification_sent = models.BooleanField(default=False)
     currency = models.CharField(max_length=8, default="USD")
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)

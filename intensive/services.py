@@ -1,6 +1,7 @@
 import logging
 import json
 import os
+import mimetypes
 from urllib import request as urllib_request
 from io import BytesIO
 
@@ -13,7 +14,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 
-from .models import Donation, Registration, Session
+from .models import Donation, Registration, Session, SiteSetting
 
 logger = logging.getLogger(__name__)
 DONATION_MANAGE_SALT = "sfic-donation-manage"
@@ -87,6 +88,27 @@ def send_registration_confirmation(registration: Registration) -> bool:
         pdf_bytes = _build_confirmation_pdf(registration, session, amount_paid)
         filename = f"freedom-intensive-confirmation-{registration.id}.pdf"
         email.attach(filename, pdf_bytes, "application/pdf")
+
+        site_settings = SiteSetting.objects.first()
+        if site_settings:
+            for material in (
+                site_settings.registration_material_pdf_one,
+                site_settings.registration_material_pdf_two,
+            ):
+                if not material:
+                    continue
+                try:
+                    attachment_name = material.name.split("/")[-1] or "registration-material.pdf"
+                    mime_type, _ = mimetypes.guess_type(attachment_name)
+                    content_type = mime_type or "application/octet-stream"
+                    with material.open("rb") as handle:
+                        email.attach(attachment_name, handle.read(), content_type)
+                except Exception:
+                    logger.exception(
+                        "Failed to attach registration material '%s' for %s",
+                        getattr(material, "name", ""),
+                        registration.id,
+                    )
         email.send(fail_silently=False)
     except Exception:
         logger.exception("Failed to send registration confirmation email for %s", registration.id)
@@ -150,6 +172,38 @@ def send_admin_new_registration_notification(registration: Registration) -> bool
         email.send(fail_silently=False)
     except Exception:
         logger.exception("Failed to send admin new registration email for %s", registration.id)
+        return False
+    return True
+
+
+def send_admin_paid_registration_notification(registration: Registration) -> bool:
+    admin_email = (settings.ADMIN_NOTIFICATION_EMAIL or "").strip()
+    if not admin_email:
+        return False
+
+    session: Session = registration.session
+    amount_paid = f"{registration.amount_paid / 100:.2f} {registration.currency.upper()}"
+    dashboard_url = f"{settings.SITE_BASE_URL}/dashboard/registrations/{registration.id}/"
+    context = {
+        "registration": registration,
+        "session": session,
+        "amount_paid": amount_paid,
+        "dashboard_url": dashboard_url,
+    }
+    subject = f"Payment confirmed: {registration.full_name}"
+    text_message = render_to_string("intensive/emails/admin_registration_paid.txt", context)
+    html_message = render_to_string("intensive/emails/admin_registration_paid.html", context)
+    try:
+        email = EmailMultiAlternatives(
+            subject=subject,
+            body=text_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[admin_email],
+        )
+        email.attach_alternative(html_message, "text/html")
+        email.send(fail_silently=False)
+    except Exception:
+        logger.exception("Failed to send admin paid-registration email for %s", registration.id)
         return False
     return True
 
