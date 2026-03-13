@@ -4,6 +4,7 @@ import os
 import secrets
 import string
 import re
+from datetime import timedelta
 from decimal import Decimal, ROUND_UP
 
 import stripe
@@ -249,7 +250,11 @@ def _mark_donation_completed_from_checkout(donation: Donation, checkout, note: s
 
 
 def _sync_pending_donation_from_stripe(donation: Donation, note: str) -> bool:
-    if donation.status == DonationStatus.COMPLETED or not donation.stripe_checkout_id or not settings.STRIPE_SECRET_KEY:
+    if (
+        donation.status in {DonationStatus.COMPLETED, DonationStatus.CANCELED, DonationStatus.FAILED}
+        or not donation.stripe_checkout_id
+        or not settings.STRIPE_SECRET_KEY
+    ):
         return False
     try:
         checkout = stripe.checkout.Session.retrieve(donation.stripe_checkout_id)
@@ -259,6 +264,13 @@ def _sync_pending_donation_from_stripe(donation: Donation, note: str) -> bool:
     checkout_status = str(checkout.get("status", "")).lower()
     if payment_status == "paid" or checkout_status == "complete":
         _mark_donation_completed_from_checkout(donation, checkout, note)
+        return True
+    if checkout_status == "expired":
+        donation.status = DonationStatus.CANCELED
+        donation.note = "Donation checkout expired before payment completion."
+        donation.raw_payload = checkout
+        donation.save(update_fields=["status", "note", "raw_payload", "updated_at"])
+        forward_donation_to_donor_elf(donation)
         return True
     return False
 
@@ -293,14 +305,14 @@ def _build_checkout_session(registration: Registration, session: Session) -> str
 
 
 def _build_donation_checkout_session(donation: Donation) -> stripe.checkout.Session:
-    line_item = {
-        "price_data": {
-            "currency": donation.currency.lower(),
-            "unit_amount": donation.amount,
-            "product_data": {"name": "Donation - Set Free In Christ Mission"},
-        },
-        "quantity": 1,
+    price_data = {
+        "currency": donation.currency.lower(),
+        "unit_amount": donation.amount,
+        "product_data": {"name": "Donation - Set Free In Christ Mission"},
     }
+    if donation.frequency == DonationFrequency.MONTHLY:
+        price_data["recurring"] = {"interval": "month"}
+    line_item = {"price_data": price_data, "quantity": 1}
     common = {
         "customer_email": donation.donor_email or None,
         "line_items": [line_item],
@@ -747,7 +759,38 @@ def create_donation_checkout(request: HttpRequest) -> HttpResponse:
             "checkout_amount_cents": amount_cents,
         },
     )
-    checkout_session = _build_donation_checkout_session(donation)
+    try:
+        checkout_session = _build_donation_checkout_session(donation)
+    except stripe.error.StripeError as exc:
+        error_message = (
+            getattr(exc, "user_message", None)
+            or str(exc)
+            or "Stripe could not start the donation checkout."
+        )
+        donation.status = DonationStatus.FAILED
+        donation.note = f"Stripe checkout creation failed: {error_message}"
+        donation.raw_payload = {
+            "base_amount_cents": base_amount_cents,
+            "cover_processing_fee": True,
+            "processing_fee_cents": processing_fee_cents,
+            "checkout_amount_cents": amount_cents,
+            "stripe_error": error_message,
+        }
+        donation.save(update_fields=["status", "note", "raw_payload", "updated_at"])
+        values = {
+            "amount": request.POST.get("amount", ""),
+            "frequency": request.POST.get("frequency", DonationFrequency.ONE_TIME),
+            "is_anonymous": request.POST.get("is_anonymous", ""),
+            "full_name": request.POST.get("full_name", ""),
+            "email": request.POST.get("email", ""),
+            "message": request.POST.get("message", ""),
+        }
+        messages.error(
+            request,
+            "We could not start the donation checkout. Please try again or use one-time donation for now.",
+        )
+        return render(request, "intensive/donate.html", _donation_context(values))
+
     donation.provider_ref = checkout_session.id
     donation.stripe_checkout_id = checkout_session.id
     donation.save(update_fields=["provider_ref", "stripe_checkout_id", "updated_at"])
@@ -1279,11 +1322,21 @@ def dashboard_registrations_sync_pending(request: HttpRequest) -> HttpResponse:
 @require_GET
 def dashboard_donations(request: HttpRequest) -> HttpResponse:
     # Keep dashboard trustworthy even when webhook delivery is delayed or missed.
+    stale_without_checkout = (
+        Donation.objects.filter(status=DonationStatus.PENDING, stripe_checkout_id="")
+        .filter(created_at__lte=timezone.now() - timedelta(minutes=10))
+        .order_by("-created_at")[:120]
+    )
+    for item in stale_without_checkout:
+        item.status = DonationStatus.FAILED
+        item.note = "Donation checkout was not completed."
+        item.save(update_fields=["status", "note", "updated_at"])
+
     if settings.STRIPE_SECRET_KEY:
         pending = (
             Donation.objects.filter(status=DonationStatus.PENDING)
             .exclude(stripe_checkout_id="")
-            .order_by("-created_at")[:40]
+            .order_by("-created_at")[:200]
         )
         for item in pending:
             _sync_pending_donation_from_stripe(item, note="Donation completed from dashboard sync.")
