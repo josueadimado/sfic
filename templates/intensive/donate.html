@@ -42,8 +42,6 @@
                     <option value="MONTHLY" {% if donation_form.frequency == 'MONTHLY' %}selected{% endif %}>Monthly recurring donation</option>
                 </select>
 
-                <p class="donation-help-text" id="donation-fee-estimate"></p>
-
                 <label for="donation_full_name">Full Name</label>
                 <input
                     id="donation_full_name"
@@ -92,12 +90,10 @@
 <script>
     (function () {
         const anon = document.getElementById("donation_is_anonymous");
-        const amountInput = document.getElementById("donation_amount");
-        const feeEstimate = document.getElementById("donation-fee-estimate");
         const nameInput = document.getElementById("donation_full_name");
         const emailInput = document.getElementById("donation_email");
         const messageInput = document.getElementById("donation_message");
-        if (!anon || !amountInput || !feeEstimate || !nameInput || !emailInput || !messageInput) return;
+        if (!anon || !nameInput || !emailInput || !messageInput) return;
 
         function syncAnonymousState() {
             const on = anon.checked;
@@ -115,21 +111,6 @@
 
         anon.addEventListener("change", syncAnonymousState);
         syncAnonymousState();
-
-        function updateFeeEstimate() {
-            const amount = parseFloat(amountInput.value || "0");
-            if (amount <= 0) {
-                feeEstimate.textContent = "";
-                return;
-            }
-            const baseCents = Math.round(amount * 100);
-            const grossCents = Math.ceil((baseCents + 30) / (1 - 0.029));
-            const feeCents = Math.max(grossCents - baseCents, 0);
-            feeEstimate.textContent = "Estimated processing fee: $" + (feeCents / 100).toFixed(2) + " (estimated total charge $" + (grossCents / 100).toFixed(2) + ")";
-        }
-
-        amountInput.addEventListener("input", updateFeeEstimate);
-        updateFeeEstimate();
     })();
 </script>
 {% endblock %}
