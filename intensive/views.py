@@ -272,6 +272,16 @@ def _sync_pending_donation_from_stripe(donation: Donation, note: str) -> bool:
         donation.save(update_fields=["status", "note", "raw_payload", "updated_at"])
         forward_donation_to_donor_elf(donation)
         return True
+    if checkout_status in {"open", ""}:
+        # Stripe can keep abandoned sessions "open" for a long time.
+        # Mark old open sessions as canceled so dashboard status is clearer.
+        if donation.created_at <= timezone.now() - timedelta(minutes=45):
+            donation.status = DonationStatus.CANCELED
+            donation.note = "Donation was abandoned before payment completion."
+            donation.raw_payload = checkout
+            donation.save(update_fields=["status", "note", "raw_payload", "updated_at"])
+            forward_donation_to_donor_elf(donation)
+            return True
     return False
 
 
