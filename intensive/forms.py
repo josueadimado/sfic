@@ -39,6 +39,7 @@ class RegistrationForm(forms.Form):
     is_student = forms.BooleanField(required=False)
     student_id = forms.CharField(max_length=6, required=False)
     student_discount_code = forms.CharField(max_length=32, required=False)
+    discount_code = forms.CharField(max_length=32, required=False, label="Free registration code")
     session_id = forms.UUIDField()
 
     def clean_session_id(self):
@@ -82,6 +83,9 @@ class RegistrationForm(forms.Form):
 
     def clean_student_discount_code(self):
         return (self.cleaned_data.get("student_discount_code") or "").strip().upper()
+
+    def clean_discount_code(self):
+        return (self.cleaned_data.get("discount_code") or "").strip().upper()
 
     def clean(self):
         cleaned = super().clean()

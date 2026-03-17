@@ -444,6 +444,18 @@
                     placeholder="e.g. Set Free Church"
                 >
 
+                <label for="discount_code">Registration code or discount code (Optional)</label>
+                <input
+                    id="discount_code"
+                    name="discount_code"
+                    type="text"
+                    value="{{ reg_form.discount_code|default:'' }}"
+                    maxlength="32"
+                    placeholder="Enter a discount code"
+                    autocomplete="off"
+                >
+                <p class="donation-help-text">Enter a discount code</p>
+
                 <label class="donation-anon-row" for="is_student">
                     <input id="is_student" type="checkbox" name="is_student" value="1" {% if reg_form.is_student %}checked{% endif %}>
                     <span>I am an Andrews University student</span>
@@ -619,6 +631,7 @@
         const paymentPreview = document.getElementById("payment-preview");
         const studentCheck = document.getElementById("is_student");
         const studentCodeInput = document.getElementById("student_discount_code");
+        const discountCodeInput = document.getElementById("discount_code");
         const discountPercent = Number("{{ student_discount_percent|default:0 }}");
         if (!registerSelect) return;
 
@@ -635,10 +648,13 @@
             const baseAmount = Number(priceRaw) / 100;
             let totalAmount = baseAmount;
             let discountAmount = 0;
-            const codeEntered = studentCodeInput && studentCodeInput.value.trim().length > 0;
+            const discountCodeEntered = discountCodeInput && discountCodeInput.value.trim().length > 0;
+            const studentCodeEntered = studentCodeInput && studentCodeInput.value.trim().length > 0;
             const studentSelected = studentCheck && studentCheck.checked;
 
-            if (studentSelected && codeEntered && discountPercent > 0) {
+            if (discountCodeEntered) {
+                totalAmount = 0;
+            } else if (studentSelected && studentCodeEntered && discountPercent > 0) {
                 discountAmount = (baseAmount * discountPercent) / 100;
                 if (discountAmount >= baseAmount) {
                     discountAmount = Math.max(baseAmount - 0.01, 0);
@@ -649,7 +665,9 @@
             const baseFormatted = `${baseAmount.toFixed(2)} ${currency}`;
             const totalFormatted = `${totalAmount.toFixed(2)} ${currency}`;
             paymentPreview.classList.remove("is-empty");
-            if (studentSelected && codeEntered && discountPercent > 0) {
+            if (discountCodeEntered) {
+                paymentPreview.textContent = `Amount to Pay: 0.00 ${currency} (100% discount code applied)`;
+            } else if (studentSelected && studentCodeEntered && discountPercent > 0) {
                 paymentPreview.textContent = `Amount to Pay: ${totalFormatted} (Student discount ${discountPercent}% applied from ${baseFormatted})`;
             } else {
                 paymentPreview.textContent = `Amount to Pay: ${baseFormatted}`;
@@ -669,6 +687,7 @@
         registerSelect.addEventListener("change", updatePaymentPreview);
         if (studentCheck) studentCheck.addEventListener("change", updatePaymentPreview);
         if (studentCodeInput) studentCodeInput.addEventListener("input", updatePaymentPreview);
+        if (discountCodeInput) discountCodeInput.addEventListener("input", updatePaymentPreview);
         updatePaymentPreview();
     })();
 

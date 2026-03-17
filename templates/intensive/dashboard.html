@@ -13,6 +13,7 @@
             <a href="{% url 'dashboard' %}" class="{% if admin_page == 'registrations' %}is-active{% endif %}"><span class="menu-icon icon-registrations" aria-hidden="true"></span>Registrations</a>
             <a href="{% url 'dashboard_transactions' %}" class="{% if admin_page == 'transactions' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Transactions</a>
             <a href="{% url 'dashboard_donations' %}" class="{% if admin_page == 'donations' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Donations</a>
+            <a href="{% url 'dashboard_free_codes' %}" class="{% if admin_page == 'free_codes' %}is-active{% endif %}"><span class="menu-icon icon-settings" aria-hidden="true"></span>Free Codes</a>
             <a href="{% url 'dashboard_sessions' %}" class="{% if admin_page == 'sessions' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Training Sessions</a>
             <a href="{% url 'dashboard_schedule' %}" class="{% if admin_page == 'schedule' %}is-active{% endif %}"><span class="menu-icon icon-schedule" aria-hidden="true"></span>Training Schedule</a>
             <a href="{% url 'dashboard_speakers' %}" class="{% if admin_page == 'speakers' %}is-active{% endif %}"><span class="menu-icon icon-speakers" aria-hidden="true"></span>Speakers</a>
@@ -100,7 +101,9 @@
                             </td>
                             <td>{{ item.student_id|default:"-" }}</td>
                             <td>
-                                {% if item.discount_amount %}
+                                {% if item.free_registration_code %}
+                                    <span class="status-pill status-paid">Free Code</span>
+                                {% elif item.discount_amount %}
                                     <strong>{{ item.display_discount_amount }}</strong>
                                     {% if item.student_discount_code %}
                                         <br><small>Code: {{ item.student_discount_code }}</small>

@@ -23,6 +23,7 @@ urlpatterns = [
     path("dashboard/login/", auth_views.LoginView.as_view(template_name="intensive/login.html"), name="login"),
     path("dashboard/logout/", views.dashboard_logout, name="logout"),
     path("dashboard/", views.dashboard, name="dashboard"),
+    path("dashboard/free-codes/", views.dashboard_free_codes, name="dashboard_free_codes"),
     path(
         "dashboard/registrations/sync-pending/",
         views.dashboard_registrations_sync_pending,

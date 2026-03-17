@@ -35,6 +35,7 @@ from .models import (
     Donation,
     DonationFrequency,
     DonationStatus,
+    FreeRegistrationCode,
     PaymentTransaction,
     PaymentProvider,
     Registration,
@@ -123,6 +124,18 @@ def _generate_student_discount_code(length: int = 8) -> str:
     while True:
         code = "".join(secrets.choice(alphabet) for _ in range(length))
         if not StudentDiscountCode.objects.filter(code=code).exists():
+            return code
+
+
+def _generate_free_registration_code(length: int = 10) -> str:
+    """Generate a unique code for FreeRegistrationCode (avoid StudentDiscountCode collisions)."""
+    alphabet = string.ascii_uppercase + string.digits
+    while True:
+        code = "".join(secrets.choice(alphabet) for _ in range(length))
+        if (
+            not FreeRegistrationCode.objects.filter(code=code).exists()
+            and not StudentDiscountCode.objects.filter(code=code).exists()
+        ):
             return code
 
 
@@ -457,6 +470,7 @@ def create_checkout(request: HttpRequest) -> HttpResponse:
             "is_student": raw.get("is_student", ""),
             "student_id": raw.get("student_id", ""),
             "student_discount_code": raw.get("student_discount_code", ""),
+            "discount_code": raw.get("discount_code", ""),
             "session_id": raw.get("session_id", ""),
         }
         return render(request, "intensive/home.html", _home_context(form_values, focus_register=True))
@@ -477,7 +491,7 @@ def create_checkout(request: HttpRequest) -> HttpResponse:
         )
         if existing_paid.payment_ref:
             return redirect(f"{reverse('success')}?ref={existing_paid.payment_ref}")
-        return redirect("home")
+        return redirect(f"{reverse('success')}?reg_id={existing_paid.id}")
 
     existing_unpaid = Registration.objects.filter(
         session=session,
@@ -509,6 +523,71 @@ def create_checkout(request: HttpRequest) -> HttpResponse:
             "is_student": form.cleaned_data.get("is_student", False),
             "student_id": form.cleaned_data.get("student_id", ""),
             "student_discount_code": form.cleaned_data.get("student_discount_code", ""),
+            "discount_code": form.cleaned_data.get("discount_code", ""),
+            "session_id": str(form.cleaned_data["session_id"]),
+        }
+        return render(request, "intensive/home.html", _home_context(form_values, focus_register=True))
+
+    # Free registration code: 100% discount, no Stripe. One-time use only.
+    discount_code = form.cleaned_data.get("discount_code", "").strip().upper()
+    if discount_code:
+        with transaction.atomic():
+            free_code = FreeRegistrationCode.objects.filter(
+                code=discount_code,
+                is_used=False,
+            ).select_for_update().first()
+            if free_code:
+                registration = Registration.objects.create(
+                    full_name=form.cleaned_data["full_name"],
+                    email=form.cleaned_data["email"],
+                    phone=form.cleaned_data["phone"],
+                    city=form.cleaned_data["city"],
+                    country=form.cleaned_data["country"],
+                    church=form.cleaned_data["church"],
+                    is_student=False,
+                    student_id="",
+                    student_discount_code="",
+                    discount_amount=session.price,
+                    session=session,
+                    status=RegistrationStatus.PAID,
+                    payment_provider=PaymentProvider.FREE_CODE,
+                    payment_ref="",
+                    amount_paid=0,
+                    currency=session.currency,
+                    free_registration_code=free_code,
+                )
+                free_code.is_used = True
+                free_code.used_at = timezone.now()
+                free_code.used_registration = registration
+                free_code.save(update_fields=["is_used", "used_at", "used_registration"])
+                _create_payment_transaction_once(
+                    registration=registration,
+                    session=session,
+                    transaction_type=TransactionType.PAYMENT_COMPLETED,
+                    status=RegistrationStatus.PAID,
+                    provider=PaymentProvider.FREE_CODE,
+                    amount=0,
+                    currency=session.currency.upper(),
+                    payment_ref=f"FREE-{registration.id}",
+                    note="100% discount via free registration code.",
+                )
+                send_admin_new_registration_notification(registration)
+                _ensure_registration_confirmation_email(registration)
+                _ensure_admin_paid_registration_notification(registration)
+                return redirect(f"{reverse('success')}?reg_id={registration.id}")
+
+        messages.error(request, "Invalid or already-used discount code.")
+        form_values = {
+            "full_name": form.cleaned_data["full_name"],
+            "email": form.cleaned_data["email"],
+            "phone": form.cleaned_data["phone"],
+            "city": form.cleaned_data["city"],
+            "country": form.cleaned_data["country"],
+            "church": form.cleaned_data["church"],
+            "is_student": form.cleaned_data.get("is_student", False),
+            "student_id": form.cleaned_data.get("student_id", ""),
+            "student_discount_code": form.cleaned_data.get("student_discount_code", ""),
+            "discount_code": discount_code,
             "session_id": str(form.cleaned_data["session_id"]),
         }
         return render(request, "intensive/home.html", _home_context(form_values, focus_register=True))
@@ -1155,8 +1234,17 @@ def stripe_webhook(request: HttpRequest) -> HttpResponse:
 @require_GET
 def success(request: HttpRequest) -> HttpResponse:
     ref = request.GET.get("ref")
+    reg_id = request.GET.get("reg_id")
     registration = None
-    if ref:
+    # Free registration flow uses reg_id instead of Stripe ref
+    if reg_id:
+        try:
+            registration = Registration.objects.filter(
+                id=reg_id, status=RegistrationStatus.PAID
+            ).select_related("session").first()
+        except (ValueError, TypeError):
+            registration = None
+    if not registration and ref:
         registration = Registration.objects.filter(payment_ref=ref).select_related("session").first()
         if not registration and settings.STRIPE_SECRET_KEY:
             try:
@@ -1326,6 +1414,27 @@ def dashboard_registrations_sync_pending(request: HttpRequest) -> HttpResponse:
     else:
         messages.info(request, "No pending registrations were ready to sync.")
     return redirect("dashboard")
+
+
+@login_required
+def dashboard_free_codes(request: HttpRequest) -> HttpResponse:
+    """Generate and list one-time free registration codes. POST generates 10 new codes."""
+    if request.method == "POST":
+        count = 10
+        codes = []
+        for _ in range(count):
+            code = _generate_free_registration_code()
+            obj = FreeRegistrationCode.objects.create(code=code)
+            codes.append(obj.code)
+        messages.success(request, f"Generated {len(codes)} new free registration codes.")
+        return redirect("dashboard_free_codes")
+
+    codes = FreeRegistrationCode.objects.select_related("used_registration").order_by("-created_at")[:200]
+    context = {
+        "codes": codes,
+        "admin_page": "free_codes",
+    }
+    return render(request, "intensive/dashboard_free_codes.html", context)
 
 
 @login_required

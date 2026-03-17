@@ -1,0 +1,88 @@
+{% extends "intensive/base.html" %}
+
+{% block title %}Free Registration Codes{% endblock %}
+
+{% block body %}
+<main class="admin-layout-page">
+    <aside class="admin-sidebar">
+        <div class="admin-sidebar-head">
+            <p class="eyebrow">Set Free In Christ</p>
+            <h2>Admin Panel</h2>
+        </div>
+        <nav class="admin-menu">
+            <a href="{% url 'dashboard' %}" class="{% if admin_page == 'registrations' %}is-active{% endif %}"><span class="menu-icon icon-registrations" aria-hidden="true"></span>Registrations</a>
+            <a href="{% url 'dashboard_transactions' %}" class="{% if admin_page == 'transactions' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Transactions</a>
+            <a href="{% url 'dashboard_donations' %}" class="{% if admin_page == 'donations' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Donations</a>
+            <a href="{% url 'dashboard_free_codes' %}" class="{% if admin_page == 'free_codes' %}is-active{% endif %}"><span class="menu-icon icon-settings" aria-hidden="true"></span>Free Registration Codes</a>
+            <a href="{% url 'dashboard_sessions' %}" class="{% if admin_page == 'sessions' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Training Sessions</a>
+            <a href="{% url 'dashboard_schedule' %}" class="{% if admin_page == 'schedule' %}is-active{% endif %}"><span class="menu-icon icon-schedule" aria-hidden="true"></span>Training Schedule</a>
+            <a href="{% url 'dashboard_speakers' %}" class="{% if admin_page == 'speakers' %}is-active{% endif %}"><span class="menu-icon icon-speakers" aria-hidden="true"></span>Speakers</a>
+            <a href="{% url 'dashboard_site_settings' %}" class="{% if admin_page == 'settings' %}is-active{% endif %}"><span class="menu-icon icon-settings" aria-hidden="true"></span>Site Settings</a>
+        </nav>
+        <div class="admin-sidebar-foot">
+            <a class="btn btn-outline btn-with-icon" href="{% url 'home' %}" target="_blank" rel="noreferrer">View Site <span class="btn-icon" aria-hidden="true">&#8599;</span></a>
+            <form method="post" action="{% url 'logout' %}" class="inline-form">
+                {% csrf_token %}
+                <button class="btn btn-outline btn-with-icon" type="submit">Logout <span class="btn-icon" aria-hidden="true">&#10132;</span></button>
+            </form>
+        </div>
+    </aside>
+
+    <section class="admin-main">
+        <button type="button" class="sidebar-toggle" data-sidebar-toggle aria-label="Close sidebar menu" title="Close menu">✕</button>
+        <h1>Free Registration Codes</h1>
+        <p class="admin-subtitle">One-time codes that grant 100% free registration. Each code can only be used once.</p>
+        {% if messages %}
+            <div class="alerts">
+                {% for message in messages %}
+                    <p class="alert">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'dashboard_free_codes' %}" class="admin-filters">
+            {% csrf_token %}
+            <button class="btn btn-accent" type="submit">Generate 10 New Codes</button>
+        </form>
+
+        <div class="table-wrap admin-table-wrap">
+            <table class="admin-registrations-table">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Status</th>
+                        <th>Used By</th>
+                        <th>Used At</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for code in codes %}
+                        <tr class="{% if code.is_used %}is-faded{% else %}is-paid{% endif %}">
+                            <td><code>{{ code.code }}</code></td>
+                            <td>
+                                {% if code.is_used %}
+                                    <span class="status-pill status-canceled">Used</span>
+                                {% else %}
+                                    <span class="status-pill status-paid">Available</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if code.used_registration %}
+                                    {{ code.used_registration.full_name }} ({{ code.used_registration.email }})
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ code.used_at|default:"-" }}</td>
+                            <td>{{ code.created_at }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="5">No codes yet. Click "Generate 10 New Codes" to create codes.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+{% endblock %}

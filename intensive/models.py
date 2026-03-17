@@ -12,6 +12,7 @@ class RegistrationStatus(models.TextChoices):
 
 class PaymentProvider(models.TextChoices):
     STRIPE = "STRIPE", "Stripe"
+    FREE_CODE = "FREE_CODE", "Free Registration Code"
 
 
 class TransactionType(models.TextChoices):
@@ -125,6 +126,30 @@ class Speaker(models.Model):
         return self.full_name
 
 
+class FreeRegistrationCode(models.Model):
+    """One-time codes for 100% free registration. Once used, the code is invalid."""
+
+    code = models.CharField(max_length=32, unique=True, db_index=True)
+    is_used = models.BooleanField(default=False)
+    used_at = models.DateTimeField(null=True, blank=True)
+    used_registration = models.ForeignKey(
+        "Registration",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="free_codes_used",
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["is_used"])]
+
+    def __str__(self) -> str:
+        status = "used" if self.is_used else "available"
+        return f"{self.code} ({status})"
+
+
 class Registration(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     full_name = models.CharField(max_length=160)
@@ -142,6 +167,14 @@ class Registration(models.Model):
     )
     session = models.ForeignKey(
         Session, on_delete=models.PROTECT, related_name="registrations"
+    )
+    free_registration_code = models.ForeignKey(
+        "FreeRegistrationCode",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="registrations",
+        help_text="One-time free registration code used, if any.",
     )
     status = models.CharField(
         max_length=16,
