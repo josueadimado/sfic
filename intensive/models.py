@@ -83,15 +83,10 @@ class SiteSetting(models.Model):
         default=0,
         help_text="Student discount percent for registration (0-95).",
     )
-    registration_material_pdf_one = models.FileField(
+    event_program_pdf = models.FileField(
         upload_to="registration_materials/",
         blank=True,
-        help_text="Optional PDF attached to registration confirmation emails.",
-    )
-    registration_material_pdf_two = models.FileField(
-        upload_to="registration_materials/",
-        blank=True,
-        help_text="Optional second PDF attached to registration confirmation emails.",
+        help_text="Event program PDF: shown as download link on homepage and attached to confirmation emails.",
     )
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
@@ -102,6 +97,20 @@ class SiteSetting(models.Model):
 
     def __str__(self) -> str:
         return self.site_name
+
+
+class RegistrationMaterial(models.Model):
+    """Additional PDF/document attached to confirmation emails (not the event program)."""
+
+    file = models.FileField(upload_to="registration_materials/")
+    display_order = models.PositiveIntegerField(default=1)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["display_order", "id"]
+
+    def __str__(self) -> str:
+        return self.file.name.split("/")[-1] if self.file else "Material"
 
 
 class Speaker(models.Model):

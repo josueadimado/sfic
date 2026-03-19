@@ -30,7 +30,7 @@
     <section class="admin-main">
         <button type="button" class="sidebar-toggle" data-sidebar-toggle aria-label="Close sidebar menu" title="Close menu">✕</button>
         <h1>Site Settings</h1>
-        <p class="admin-subtitle">Set your public site name, venue, donation URL, student discount percent, and optional materials (PDF, Word, or PowerPoint) sent after registration payment.</p>
+        <p class="admin-subtitle">Set your public site name, venue, donation URL, student discount percent, event program PDF, and additional materials attached to confirmation emails.</p>
         {% if messages %}
             <div class="alerts">
                 {% for message in messages %}
@@ -51,7 +51,7 @@
             </div>
         {% endif %}
 
-        <form method="post" enctype="multipart/form-data" class="admin-form-grid" style="max-width: 780px;">
+        <form method="post" action="{% url 'dashboard_site_settings' %}" enctype="multipart/form-data" class="admin-form-grid" style="max-width: 780px;" id="site-settings-form">
             {% csrf_token %}
             <p>
                 <label for="{{ form.site_name.id_for_label }}">{{ form.site_name.label }}</label>
@@ -82,57 +82,39 @@
             </p>
 
             <div class="admin-file-field">
-                <label for="id_registration_material_pdf_one">{{ form.registration_material_pdf_one.label }}</label>
-                {% if form.instance and form.instance.registration_material_pdf_one %}
-                    <p class="admin-file-current">
-                        Current:
-                        <a href="{{ form.instance.registration_material_pdf_one.url }}" target="_blank" rel="noopener noreferrer">
-                            {{ form.instance.registration_material_pdf_one.name }}
-                        </a>
-                    </p>
-                    <label class="admin-file-clear">
-                        <input type="checkbox" name="registration_material_pdf_one-clear" id="registration_material_pdf_one-clear">
-                        Remove current file
-                    </label>
-                {% endif %}
-                <input
-                    type="file"
-                    name="registration_material_pdf_one"
-                    id="id_registration_material_pdf_one"
-                    accept=".pdf,.doc,.docx,.ppt,.pptx"
-                >
-                {% if form.registration_material_pdf_one.help_text %}<small class="helptext">{{ form.registration_material_pdf_one.help_text }}</small>{% endif %}
-                {% for error in form.registration_material_pdf_one.errors %}<small class="helptext">{{ error }}</small>{% endfor %}
-            </div>
-
-            <div class="admin-file-field">
-                <label for="id_registration_material_pdf_two">{{ form.registration_material_pdf_two.label }}</label>
-                {% if form.instance and form.instance.registration_material_pdf_two %}
-                    <p class="admin-file-current">
-                        Current:
-                        <a href="{{ form.instance.registration_material_pdf_two.url }}" target="_blank" rel="noopener noreferrer">
-                            {{ form.instance.registration_material_pdf_two.name }}
-                        </a>
-                    </p>
-                    <label class="admin-file-clear">
-                        <input type="checkbox" name="registration_material_pdf_two-clear" id="registration_material_pdf_two-clear">
-                        Remove current file
-                    </label>
-                {% endif %}
-                <input
-                    type="file"
-                    name="registration_material_pdf_two"
-                    id="id_registration_material_pdf_two"
-                    accept=".pdf,.doc,.docx,.ppt,.pptx"
-                >
-                {% if form.registration_material_pdf_two.help_text %}<small class="helptext">{{ form.registration_material_pdf_two.help_text }}</small>{% endif %}
-                {% for error in form.registration_material_pdf_two.errors %}<small class="helptext">{{ error }}</small>{% endfor %}
+                <label for="id_event_program_pdf">{{ form.event_program_pdf.label }}</label>
+                {{ form.event_program_pdf }}
+                {% if form.event_program_pdf.help_text %}<small class="helptext">{{ form.event_program_pdf.help_text }}</small>{% endif %}
+                {% for error in form.event_program_pdf.errors %}<span class="helptext">{{ error }}</span>{% endfor %}
             </div>
 
             <div class="admin-actions">
                 <button class="btn btn-accent" type="submit">Save Settings</button>
             </div>
         </form>
+
+        <div class="admin-materials-section" style="margin-top: 2rem;">
+            <h3>Additional materials</h3>
+            <p class="helptext">Extra documents (PDF, DOC, DOCX, PPT, PPTX) attached to confirmation emails only. Add as many as you need.</p>
+            <div class="admin-materials-list">
+                {% for mat in registration_materials %}
+                    <div class="admin-material-row">
+                        <a href="{{ mat.file.url }}" target="_blank" rel="noreferrer">{{ mat }}</a>
+                        <form method="post" action="{% url 'dashboard_material_delete' mat.id %}" class="inline-form" style="display:inline;" data-confirm-message="Remove this material?">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline btn-small btn-danger">Remove</button>
+                        </form>
+                    </div>
+                {% empty %}
+                    <p class="helptext">No additional materials yet.</p>
+                {% endfor %}
+            </div>
+            <form method="post" action="{% url 'dashboard_material_add' %}" enctype="multipart/form-data" class="admin-add-material">
+                {% csrf_token %}
+                <input type="file" name="file" accept=".pdf,.doc,.docx,.ppt,.pptx">
+                <button type="submit" class="btn btn-outline">Add material</button>
+            </form>
+        </div>
     </section>
 </main>
 {% endblock %}

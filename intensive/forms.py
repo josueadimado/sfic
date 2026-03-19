@@ -202,10 +202,8 @@ class SiteSettingForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["registration_material_pdf_one"].label = "Registration material file one"
-        self.fields["registration_material_pdf_two"].label = "Registration material file two"
-        self.fields["registration_material_pdf_one"].help_text = "Optional file (PDF, DOC, DOCX, PPT, or PPTX) attached to registration confirmation emails."
-        self.fields["registration_material_pdf_two"].help_text = "Optional second file (PDF, DOC, DOCX, PPT, or PPTX) attached to registration confirmation emails."
+        self.fields["event_program_pdf"].label = "Event program PDF"
+        self.fields["event_program_pdf"].help_text = "Event program PDF: shown as download link on homepage and attached to confirmation emails. Different from additional materials below."
 
     class Meta:
         model = SiteSetting
@@ -214,8 +212,7 @@ class SiteSettingForm(forms.ModelForm):
             "venue_address",
             "donation_url",
             "student_discount_percent",
-            "registration_material_pdf_one",
-            "registration_material_pdf_two",
+            "event_program_pdf",
         ]
 
     def clean_student_discount_percent(self):
@@ -224,32 +221,22 @@ class SiteSettingForm(forms.ModelForm):
             raise forms.ValidationError("Student discount percent must be between 0 and 95.")
         return value
 
-    def clean_registration_material_pdf_one(self):
-        file = self.cleaned_data.get("registration_material_pdf_one")
+    def clean_event_program_pdf(self):
+        file = self.cleaned_data.get("event_program_pdf")
         if not file:
             return file
         file_name = str(getattr(file, "name", ""))
         content_type = str(getattr(file, "content_type", "")).lower()
         file_ext = Path(file_name).suffix.lower()
-        if (
-            file_ext not in self.ALLOWED_MATERIAL_EXTENSIONS
-            and content_type not in self.ALLOWED_MATERIAL_CONTENT_TYPES
-        ):
-            raise forms.ValidationError("Material 1 must be a PDF, DOC, DOCX, PPT, or PPTX file.")
-        return file
-
-    def clean_registration_material_pdf_two(self):
-        file = self.cleaned_data.get("registration_material_pdf_two")
-        if not file:
-            return file
-        file_name = str(getattr(file, "name", ""))
-        content_type = str(getattr(file, "content_type", "")).lower()
-        file_ext = Path(file_name).suffix.lower()
-        if (
-            file_ext not in self.ALLOWED_MATERIAL_EXTENSIONS
-            and content_type not in self.ALLOWED_MATERIAL_CONTENT_TYPES
-        ):
-            raise forms.ValidationError("Material 2 must be a PDF, DOC, DOCX, PPT, or PPTX file.")
+        # Allow by extension OR content-type; some systems send application/x-pdf or application/octet-stream
+        ext_ok = file_ext in self.ALLOWED_MATERIAL_EXTENSIONS
+        ct_ok = content_type in self.ALLOWED_MATERIAL_CONTENT_TYPES or content_type in (
+            "application/x-pdf",  # alternate PDF MIME type
+        )
+        if content_type == "application/octet-stream" and ext_ok:
+            ct_ok = True
+        if not ext_ok and not ct_ok:
+            raise forms.ValidationError("Event program must be a PDF, DOC, DOCX, PPT, or PPTX file.")
         return file
 
 
@@ -275,5 +262,6 @@ class SpeakerForm(forms.ModelForm):
         ]
         widgets = {
             "sessions": forms.SelectMultiple(attrs={"size": 6}),
+            "role_title": forms.Textarea(attrs={"rows": 2, "placeholder": "Use Enter for a line break (e.g. Set Free in Christ\\nMission)"}),
             "role_subtitle": forms.Textarea(attrs={"rows": 3}),
         }

@@ -91,22 +91,37 @@ def send_registration_confirmation(registration: Registration) -> bool:
 
         site_settings = SiteSetting.objects.first()
         if site_settings:
-            for material in (
-                site_settings.registration_material_pdf_one,
-                site_settings.registration_material_pdf_two,
-            ):
-                if not material:
-                    continue
+            # Event program PDF
+            program_pdf = site_settings.event_program_pdf
+            if program_pdf:
                 try:
-                    attachment_name = material.name.split("/")[-1] or "registration-material.pdf"
+                    attachment_name = program_pdf.name.split("/")[-1] or "event-program.pdf"
                     mime_type, _ = mimetypes.guess_type(attachment_name)
                     content_type = mime_type or "application/octet-stream"
-                    with material.open("rb") as handle:
+                    with program_pdf.open("rb") as handle:
                         email.attach(attachment_name, handle.read(), content_type)
                 except Exception:
                     logger.exception(
-                        "Failed to attach registration material '%s' for %s",
-                        getattr(material, "name", ""),
+                        "Failed to attach event program '%s' for %s",
+                        getattr(program_pdf, "name", ""),
+                        registration.id,
+                    )
+            # Additional registration materials
+            from .models import RegistrationMaterial
+
+            for material in RegistrationMaterial.objects.order_by("display_order", "id"):
+                if not material.file:
+                    continue
+                try:
+                    attachment_name = material.file.name.split("/")[-1] or "material.pdf"
+                    mime_type, _ = mimetypes.guess_type(attachment_name)
+                    content_type = mime_type or "application/octet-stream"
+                    with material.file.open("rb") as handle:
+                        email.attach(attachment_name, handle.read(), content_type)
+                except Exception:
+                    logger.exception(
+                        "Failed to attach material '%s' for %s",
+                        getattr(material.file, "name", ""),
                         registration.id,
                     )
         email.send(fail_silently=False)

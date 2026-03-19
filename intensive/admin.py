@@ -5,6 +5,7 @@ from .models import (
     Donation,
     PaymentTransaction,
     Registration,
+    RegistrationMaterial,
     Session,
     SiteSetting,
     Speaker,
@@ -92,18 +93,20 @@ class SiteSettingAdmin(admin.ModelAdmin):
         "venue_address",
         "donation_url",
         "student_discount_percent",
-        "has_material_pdf_one",
-        "has_material_pdf_two",
+        "has_event_program_pdf",
         "updated_at",
     )
 
-    @admin.display(description="Material 1")
-    def has_material_pdf_one(self, obj):
-        return bool(obj.registration_material_pdf_one)
+    @admin.display(description="Event Program")
+    def has_event_program_pdf(self, obj):
+        return bool(obj.event_program_pdf)
 
-    @admin.display(description="Material 2")
-    def has_material_pdf_two(self, obj):
-        return bool(obj.registration_material_pdf_two)
+
+@admin.register(RegistrationMaterial)
+class RegistrationMaterialAdmin(admin.ModelAdmin):
+    list_display = ("id", "file", "display_order", "created_at")
+    list_editable = ("display_order",)
+    ordering = ("display_order", "id")
 
 
 @admin.register(Speaker)

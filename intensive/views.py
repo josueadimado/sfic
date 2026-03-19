@@ -16,6 +16,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.core import signing
 from django.db import transaction
+from django.db.models import Max
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -39,6 +40,7 @@ from .models import (
     PaymentTransaction,
     PaymentProvider,
     Registration,
+    RegistrationMaterial,
     RegistrationStatus,
     Session,
     SiteSetting,
@@ -377,6 +379,7 @@ def _home_context(reg_form: dict | None = None, focus_register: bool = False) ->
         if session_speakers.exists():
             speakers = session_speakers
     site_setting = SiteSetting.objects.first()
+    program_pdf = site_setting.event_program_pdf if site_setting else None
     return {
         "sessions": sessions,
         "schedule_items": schedule_items,
@@ -386,6 +389,7 @@ def _home_context(reg_form: dict | None = None, focus_register: bool = False) ->
         "venue_address": site_setting.venue_address if site_setting else DEFAULT_VENUE_ADDRESS,
         "donation_url": site_setting.donation_url if site_setting and site_setting.donation_url else "",
         "student_discount_percent": site_setting.student_discount_percent if site_setting else 0,
+        "program_pdf_url": program_pdf.url if program_pdf else "",
         "stripe_publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
         "reg_form": reg_form or {},
         "focus_register": focus_register,
@@ -1613,6 +1617,8 @@ def dashboard_schedule_delete(request: HttpRequest, item_id: int) -> HttpRespons
 @login_required
 def dashboard_site_settings(request: HttpRequest) -> HttpResponse:
     instance = SiteSetting.objects.first()
+    if instance is None:
+        instance = SiteSetting.objects.create(site_name="Set Free In Christ")
 
     if request.method == "POST":
         form = SiteSettingForm(request.POST, request.FILES, instance=instance)
@@ -1634,9 +1640,38 @@ def dashboard_site_settings(request: HttpRequest) -> HttpResponse:
 
     context = {
         "form": form,
+        "registration_materials": RegistrationMaterial.objects.order_by("display_order", "id"),
         "admin_page": "settings",
     }
     return render(request, "intensive/dashboard_site_settings.html", context)
+
+
+@login_required
+@require_POST
+def dashboard_settings_material_add(request: HttpRequest) -> HttpResponse:
+    """Add a registration material (PDF/doc attached to confirmation emails)."""
+    ALLOWED = {".pdf", ".doc", ".docx", ".ppt", ".pptx"}
+    file = request.FILES.get("file")
+    if not file:
+        messages.error(request, "Please select a file to upload.")
+        return redirect("dashboard_site_settings")
+    ext = (file.name or "").lower().split(".")[-1] if "." in (file.name or "") else ""
+    if f".{ext}" not in ALLOWED:
+        messages.error(request, "File must be PDF, DOC, DOCX, PPT, or PPTX.")
+        return redirect("dashboard_site_settings")
+    max_order = RegistrationMaterial.objects.aggregate(m=Max("display_order"))["m"] or 0
+    RegistrationMaterial.objects.create(file=file, display_order=max_order + 1)
+    messages.success(request, "Material added. It will be attached to confirmation emails.")
+    return redirect("dashboard_site_settings")
+
+
+@login_required
+@require_POST
+def dashboard_settings_material_delete(request: HttpRequest, material_id: int) -> HttpResponse:
+    material = get_object_or_404(RegistrationMaterial, id=material_id)
+    material.delete()
+    messages.success(request, "Material removed.")
+    return redirect("dashboard_site_settings")
 
 
 @login_required
