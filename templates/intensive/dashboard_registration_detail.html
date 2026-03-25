@@ -80,6 +80,24 @@
             </table>
         </div>
 
+        {% if registration.status != "PAID" %}
+            <h2 class="admin-side-title" style="margin-top: 1.25rem;">Incomplete registration</h2>
+            <p class="admin-subtitle" style="margin-top: 0.35rem;">
+                If this person never finished payment (or a free code did not go through), you can remove their record so their email is treated as new on the next signup.
+                Any linked student discount code will be marked unused again.
+            </p>
+            <form
+                method="post"
+                action="{% url 'dashboard_registration_delete' registration.id %}"
+                class="inline-form"
+                style="margin-top: 0.75rem;"
+                data-confirm-message="Delete this incomplete registration for {{ registration.email }}? They can register again afterward. This cannot be undone."
+            >
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline" style="border-color: #c44;">Delete incomplete registration</button>
+            </form>
+        {% endif %}
+
         <div class="admin-actions" style="margin-top: 0.9rem;">
             <a class="btn btn-outline" href="{% url 'dashboard' %}">Back to Registrations</a>
             <a class="btn btn-accent" href="{% url 'dashboard_transactions' %}">Open Transactions Page</a>

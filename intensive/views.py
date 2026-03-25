@@ -1480,6 +1480,34 @@ def dashboard_donations(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
+@require_POST
+def dashboard_registration_delete(request: HttpRequest, item_id: str) -> HttpResponse:
+    """Remove a non-PAID registration so the person can sign up again (e.g. retry with a free code)."""
+    registration = get_object_or_404(Registration.objects.select_related("session"), id=item_id)
+    if registration.status == RegistrationStatus.PAID:
+        messages.error(
+            request,
+            "Paid registrations cannot be deleted. If something is wrong, handle it outside this tool or contact support.",
+        )
+        return redirect("dashboard_registration_detail", item_id=item_id)
+
+    full_name = registration.full_name
+    email = registration.email
+    with transaction.atomic():
+        StudentDiscountCode.objects.filter(used_registration_id=registration.id).update(
+            is_used=False,
+            used_at=None,
+            used_registration=None,
+        )
+        registration.delete()
+    messages.success(
+        request,
+        f"Deleted incomplete registration for {full_name} ({email}). They can register again from the public form.",
+    )
+    return redirect("dashboard")
+
+
+@login_required
 @require_GET
 def dashboard_registration_detail(request: HttpRequest, item_id: str) -> HttpResponse:
     registration = get_object_or_404(

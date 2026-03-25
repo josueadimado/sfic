@@ -30,6 +30,11 @@ urlpatterns = [
         name="dashboard_registrations_sync_pending",
     ),
     path("dashboard/donations/", views.dashboard_donations, name="dashboard_donations"),
+    path(
+        "dashboard/registrations/<uuid:item_id>/delete/",
+        views.dashboard_registration_delete,
+        name="dashboard_registration_delete",
+    ),
     path("dashboard/registrations/<uuid:item_id>/", views.dashboard_registration_detail, name="dashboard_registration_detail"),
     path("dashboard/sessions/", views.dashboard_sessions, name="dashboard_sessions"),
     path("dashboard/sessions/new/", views.dashboard_session_create, name="dashboard_session_create"),
