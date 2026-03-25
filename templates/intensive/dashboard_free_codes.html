@@ -40,10 +40,20 @@
             </div>
         {% endif %}
 
-        <form method="post" action="{% url 'dashboard_free_codes' %}" class="admin-filters">
-            {% csrf_token %}
-            <button class="btn btn-accent" type="submit">Generate 10 New Codes</button>
-        </form>
+        <div class="admin-filters" style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center;">
+            <form method="post" action="{% url 'dashboard_free_codes' %}" class="inline-form">
+                {% csrf_token %}
+                <button class="btn btn-accent" type="submit">Generate 10 New Codes</button>
+            </form>
+            <form method="post" action="{% url 'dashboard_free_codes' %}" class="inline-form" data-confirm-message="Reset free codes that are marked 'used' but no longer have a registration? Use this if someone deleted a registration and the code stayed stuck.">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="fix_orphan_codes">
+                <button class="btn btn-outline" type="submit">Fix stuck codes</button>
+            </form>
+        </div>
+        <p class="admin-subtitle" style="margin-top:0.5rem;">
+            If the site says a code is already used but the list shows <strong>Used</strong> with no name, or codes got stuck after removing a registration, click <strong>Fix stuck codes</strong>.
+        </p>
 
         <div class="table-wrap admin-table-wrap">
             <table class="admin-registrations-table">
@@ -61,7 +71,10 @@
                         <tr class="{% if code.is_used %}is-faded{% else %}is-paid{% endif %}">
                             <td><code>{{ code.code }}</code></td>
                             <td>
-                                {% if code.is_used %}
+                                {% if code.is_used and not code.used_registration %}
+                                    <span class="status-pill status-canceled">Stuck</span>
+                                    <span class="admin-subtitle" style="display:block;margin-top:0.25rem;">No registration linked—use Fix stuck codes.</span>
+                                {% elif code.is_used %}
                                     <span class="status-pill status-canceled">Used</span>
                                 {% else %}
                                     <span class="status-pill status-paid">Available</span>

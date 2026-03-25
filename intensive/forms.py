@@ -85,7 +85,9 @@ class RegistrationForm(forms.Form):
         return (self.cleaned_data.get("student_discount_code") or "").strip().upper()
 
     def clean_discount_code(self):
-        return (self.cleaned_data.get("discount_code") or "").strip().upper()
+        # Allow pasting with spaces or dashes; stored codes are alphanumeric only.
+        raw = (self.cleaned_data.get("discount_code") or "").strip().upper()
+        return re.sub(r"[\s\-]+", "", raw)
 
     def clean(self):
         cleaned = super().clean()

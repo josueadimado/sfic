@@ -580,7 +580,24 @@ def create_checkout(request: HttpRequest) -> HttpResponse:
                 _ensure_admin_paid_registration_notification(registration)
                 return redirect(f"{reverse('success')}?reg_id={registration.id}")
 
-        messages.error(request, "Invalid or already-used discount code.")
+        existing_row = FreeRegistrationCode.objects.filter(code=discount_code).first()
+        if existing_row is None:
+            messages.error(
+                request,
+                "That code is not a free registration code. Copy it from Dashboard → Free "
+                "Registration Codes. (Student codes from email go in the student field only.)",
+            )
+        elif existing_row.is_used:
+            messages.error(
+                request,
+                "This free registration code has already been used. Each code works only once—"
+                "pick an unused one from your list or generate new codes.",
+            )
+        else:
+            messages.error(
+                request,
+                "This code could not be applied right now. Try again, or use another unused code.",
+            )
         form_values = {
             "full_name": form.cleaned_data["full_name"],
             "email": form.cleaned_data["email"],
@@ -1424,6 +1441,20 @@ def dashboard_registrations_sync_pending(request: HttpRequest) -> HttpResponse:
 def dashboard_free_codes(request: HttpRequest) -> HttpResponse:
     """Generate and list one-time free registration codes. POST generates 10 new codes."""
     if request.method == "POST":
+        if request.POST.get("action") == "fix_orphan_codes":
+            fixed = FreeRegistrationCode.objects.filter(
+                is_used=True,
+                used_registration__isnull=True,
+            ).update(is_used=False, used_at=None)
+            if fixed:
+                messages.success(
+                    request,
+                    f"Reset {fixed} stuck code(s). They show as Available again (registration had been removed).",
+                )
+            else:
+                messages.info(request, "No stuck codes needed fixing.")
+            return redirect("dashboard_free_codes")
+
         count = 10
         codes = []
         for _ in range(count):
