@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 # YouTube video ids are typically 11 chars ([A-Za-z0-9_-]).
 _YT_ID = re.compile(r"^[\w-]{11}$")
@@ -48,6 +49,29 @@ def _ensure_youtube_iframe_embed(url: str) -> str:
             return f"https://www.youtube.com/embed/{m.group(1)}"
 
     return u
+
+
+def _append_youtube_embed_display_params(url: str) -> str:
+    """
+    Add query parameters that *reduce* on-player clutter.
+
+    YouTube no longer allows hiding the title/channel strip on embeds (removed showinfo).
+    modestbranding + rel + iv_load_policy only tone things down slightly.
+    """
+    u = (url or "").strip()
+    if not u:
+        return u
+    low = u.lower()
+    if "youtube.com/embed/" not in low and "youtube-nocookie.com/embed/" not in low:
+        return u
+    parsed = urlparse(u)
+    qs = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    qs.setdefault("modestbranding", "1")
+    qs.setdefault("rel", "0")
+    qs.setdefault("playsinline", "1")
+    qs.setdefault("iv_load_policy", "3")
+    new_q = urlencode(qs)
+    return urlunparse((parsed.scheme, parsed.netloc, parsed.path, parsed.params, new_q, parsed.fragment))
 
 
 def normalize_portal_external_url(raw: str) -> str:
@@ -111,6 +135,10 @@ def iframe_src_for_external_video(raw: str) -> str:
     URL for <iframe src="..."> on the participant video page.
 
     Runs full normalization plus a final YouTube watch→embed pass so old database
-    rows and odd URLs still play inline.
+    rows and odd URLs still play inline. Appends modest YouTube embed parameters
+    (does not remove the channel/title bar — YouTube does not allow that).
     """
-    return normalize_portal_external_url(raw) if (raw or "").strip() else ""
+    if not (raw or "").strip():
+        return ""
+    base = normalize_portal_external_url(raw)
+    return _append_youtube_embed_display_params(base)

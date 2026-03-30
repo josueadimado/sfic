@@ -12,7 +12,8 @@
         <h1>{% if edit_obj %}Edit video{% else %}Add video{% endif %}</h1>
         <p class="admin-subtitle">
             For <strong>{{ session.title }}</strong> only. {% if edit_obj %}Keep or replace the URL or upload — at least one is required.{% else %}Lower order numbers appear first in the hub.{% endif %}
-            Very large uploads may be blocked by your web server (413 error). You can use a YouTube or Vimeo link instead, or ask your host to allow bigger uploads (often <code style="font-size:0.85em;">client_max_body_size</code> on Nginx/OpenResty).
+            <strong>Learner experience:</strong> YouTube/Vimeo links always show channel name and title on the player — that is required by those sites. For a <strong>clean player</strong> with only your video, upload an <strong>MP4</strong> (may need a higher upload limit on your host).
+            Very large uploads may be blocked by your web server (413 error); links avoid that limit.
         </p>
         {% if messages %}
             <div class="alerts">
