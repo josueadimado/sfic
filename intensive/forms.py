@@ -261,6 +261,21 @@ class SiteSettingForm(forms.ModelForm):
 class PortalVideoForm(forms.ModelForm):
     """Training videos shown to logged-in participants in the learning hub."""
 
+    external_url = forms.CharField(
+        required=False,
+        max_length=500,
+        label="External video (YouTube / Vimeo)",
+        help_text=(
+            "Paste a normal YouTube link, youtu.be, the 11-character video ID, a Vimeo link, "
+            "or an embed URL. The learning hub shows it in a player — you do not need the long embed address."
+        ),
+        widget=forms.TextInput(
+            attrs={
+                "placeholder": "e.g. dQw4w9WgXcQ or youtu.be/… or youtube.com/watch?v=…",
+            }
+        ),
+    )
+
     class Meta:
         model = PortalVideo
         fields = [
@@ -279,13 +294,26 @@ class PortalVideoForm(forms.ModelForm):
                     "placeholder": "Short description (optional)",
                 }
             ),
-            "external_url": forms.URLInput(
-                attrs={
-                    "placeholder": "https://www.youtube.com/embed/xxxxxxxxxxx",
-                }
-            ),
             "video_file": forms.ClearableFileInput(),
         }
+
+    def clean_external_url(self):
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        from django.core.validators import URLValidator
+
+        from .video_urls import normalize_portal_external_url
+
+        raw = (self.cleaned_data.get("external_url") or "").strip()
+        if not raw:
+            return ""
+        out = normalize_portal_external_url(raw)
+        try:
+            URLValidator()(out)
+        except DjangoValidationError:
+            raise forms.ValidationError(
+                "Enter a valid YouTube or Vimeo link, the 11-character YouTube video ID, or another https URL."
+            )
+        return out
 
     def clean(self):
         cleaned = super().clean()
@@ -299,7 +327,7 @@ class PortalVideoForm(forms.ModelForm):
             has_file = bool(self.instance.pk and self.instance.video_file)
         if not has_file and not url:
             raise forms.ValidationError(
-                "Add either an external URL (YouTube/Vimeo embed link) or upload a video file."
+                "Add either an external video link (YouTube/Vimeo) or upload a video file."
             )
         return cleaned
 

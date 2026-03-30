@@ -154,7 +154,10 @@ class PortalVideo(models.Model):
     )
     external_url = models.URLField(
         blank=True,
-        help_text="Optional: YouTube/Vimeo or other link. If set, viewers watch here without file upload.",
+        help_text=(
+            "Optional: YouTube or Vimeo. Paste a normal watch link, youtu.be link, the 11-character "
+            "YouTube ID, or an embed URL — it is stored as a hub-safe embed link."
+        ),
     )
     display_order = models.PositiveIntegerField(default=1)
     is_active = models.BooleanField(default=True)
@@ -170,6 +173,11 @@ class PortalVideo(models.Model):
     def clean(self) -> None:
         from django.core.exceptions import ValidationError
 
+        from .video_urls import normalize_portal_external_url
+
+        u = (self.external_url or "").strip()
+        if u:
+            self.external_url = normalize_portal_external_url(u)
         if not self.video_file and not (self.external_url or "").strip():
             raise ValidationError("Add a video file or an external URL.")
 
