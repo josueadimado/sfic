@@ -1,0 +1,20 @@
+{# One downloadable file row. Context: item (from download_sections items). #}
+<li class="participant-download-files__cell">
+    {% if item.type == "program" %}
+        <a class="participant-download-row" href="{% url 'participant_download_program' item.preg.session.id %}">
+            <span class="participant-download-row__text">
+                <span class="participant-download-row__title">{{ item.label }}</span>
+                <span class="participant-download-row__meta">{{ item.ext_badge|upper }} · Event program</span>
+            </span>
+            <span class="participant-download-row__action">Download</span>
+        </a>
+    {% else %}
+        <a class="participant-download-row" href="{% url 'participant_download_material' item.mat.id %}">
+            <span class="participant-download-row__text">
+                <span class="participant-download-row__title">{{ item.label }}</span>
+                <span class="participant-download-row__meta">{{ item.ext_badge|upper }} · Resource</span>
+            </span>
+            <span class="participant-download-row__action">Download</span>
+        </a>
+    {% endif %}
+</li>

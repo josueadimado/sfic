@@ -58,7 +58,7 @@
                 Downloads
             </h2>
             {% if allow_file_downloads %}
-                <p class="participant-dash-card__intro">PDFs and documents for your <strong>completed</strong> intensive — grouped by session. Save files to your device.</p>
+                <p class="participant-dash-card__intro">Materials for your <strong>completed</strong> intensive — one simple list per session. Tap a row to download. Busy sessions show the first few files; use <strong>Show more</strong> to see the rest.</p>
                 <div class="participant-download-bundles">
                     {% for section in download_sections %}
                         <section class="participant-download-bundle" aria-label="Downloads for {{ section.session.title }}">
@@ -66,31 +66,34 @@
                                 <h3 class="participant-download-bundle__title">{{ section.session.title }}</h3>
                                 <p class="participant-download-bundle__meta">{{ section.session.start_date|date:"M j, Y" }} — {{ section.session.end_date|date:"M j, Y" }}</p>
                             </header>
+                            {# After show_first files, the rest sit behind Show more. If you change show_first, update add:"-5" in hidden count to match. #}
+                            {% with show_first=5 %}
                             <ul class="participant-download-files">
                                 {% for item in section.items %}
-                                    <li class="participant-download-files__cell">
-                                        {% if item.type == "program" %}
-                                            <a class="participant-download-file" href="{% url 'participant_download_program' item.preg.session.id %}">
-                                                <span class="participant-download-file__icon" aria-hidden="true">{% if item.ext_badge == "pdf" %}PDF{% else %}↓{% endif %}</span>
-                                                <span class="participant-download-file__body">
-                                                    <span class="participant-download-file__name">{{ item.label }}</span>
-                                                    <span class="participant-download-file__sub">Official event program</span>
-                                                </span>
-                                                <span class="participant-download-file__badge">{{ item.ext_badge|upper }}</span>
-                                            </a>
-                                        {% else %}
-                                            <a class="participant-download-file" href="{% url 'participant_download_material' item.mat.id %}">
-                                                <span class="participant-download-file__icon" aria-hidden="true">{{ item.ext_badge|slice:":4"|upper }}</span>
-                                                <span class="participant-download-file__body">
-                                                    <span class="participant-download-file__name">{{ item.label }}</span>
-                                                    <span class="participant-download-file__sub">Resource</span>
-                                                </span>
-                                                <span class="participant-download-file__badge">{{ item.ext_badge|upper }}</span>
-                                            </a>
-                                        {% endif %}
-                                    </li>
+                                    {% if forloop.counter <= show_first %}
+                                        {% include "intensive/participant/_participant_download_row.html" %}
+                                    {% endif %}
                                 {% endfor %}
+                                {% if section.items|length > show_first %}
+                                    <li class="participant-download-files__cell participant-download-files__cell--more">
+                                        <details class="participant-download-more">
+                                            <summary class="participant-download-more__summary">
+                                                {% with hidden=section.items|length|add:"-5" %}
+                                                <span class="participant-download-more__text">Show {{ hidden }} more file{% if hidden != 1 %}s{% endif %}…</span>
+                                                {% endwith %}
+                                            </summary>
+                                            <ul class="participant-download-files participant-download-files--nested">
+                                                {% for item in section.items %}
+                                                    {% if forloop.counter > show_first %}
+                                                        {% include "intensive/participant/_participant_download_row.html" %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </ul>
+                                        </details>
+                                    </li>
+                                {% endif %}
                             </ul>
+                            {% endwith %}
                         </section>
                     {% empty %}
                         <p class="participant-dash-empty" role="status">No downloads here yet — check back soon.</p>
@@ -114,6 +117,9 @@
                 Training videos
             </h2>
             <p class="participant-dash-card__intro">Watch in the browser, on Zoom (when provided), or both. Use Wi‑Fi for best quality.</p>
+            <p class="participant-hub-video-notice participant-hub-video-notice--compact" role="note">
+                <strong>Do not share</strong> your hub sign-in, passcodes, or video links — they are for your registration only.
+            </p>
             {% if videos %}
                 <ul class="participant-dash-video-list">
                     {% for v in videos %}
