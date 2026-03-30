@@ -159,6 +159,16 @@ class PortalVideo(models.Model):
             "YouTube ID, or an embed URL — it is stored as a hub-safe embed link."
         ),
     )
+    zoom_recording_url = models.URLField(
+        max_length=500,
+        blank=True,
+        help_text="Optional: Zoom cloud recording share URL. Shown only to participants while their hub access is active (same as other hub content).",
+    )
+    zoom_passcode = models.CharField(
+        max_length=64,
+        blank=True,
+        help_text="Recording passcode if Zoom requires it. Shown only on the signed-in hub.",
+    )
     display_order = models.PositiveIntegerField(default=1)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(default=timezone.now)
@@ -178,8 +188,15 @@ class PortalVideo(models.Model):
         u = (self.external_url or "").strip()
         if u:
             self.external_url = normalize_portal_external_url(u)
-        if not self.video_file and not (self.external_url or "").strip():
-            raise ValidationError("Add a video file or an external URL.")
+        has_zoom = bool((self.zoom_recording_url or "").strip())
+        if (
+            not self.video_file
+            and not (self.external_url or "").strip()
+            and not has_zoom
+        ):
+            raise ValidationError(
+                "Add a video file, an external video URL (YouTube/Vimeo), or a Zoom recording link."
+            )
 
 
 class Speaker(models.Model):

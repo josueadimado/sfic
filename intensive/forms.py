@@ -283,6 +283,8 @@ class PortalVideoForm(forms.ModelForm):
             "description",
             "external_url",
             "video_file",
+            "zoom_recording_url",
+            "zoom_passcode",
             "display_order",
             "is_active",
         ]
@@ -295,6 +297,17 @@ class PortalVideoForm(forms.ModelForm):
                 }
             ),
             "video_file": forms.ClearableFileInput(),
+            "zoom_recording_url": forms.URLInput(
+                attrs={
+                    "placeholder": "https://zoom.us/rec/share/…",
+                }
+            ),
+            "zoom_passcode": forms.TextInput(
+                attrs={
+                    "placeholder": "Recording passcode (if required)",
+                    "autocomplete": "off",
+                }
+            ),
         }
 
     def clean_external_url(self):
@@ -319,15 +332,21 @@ class PortalVideoForm(forms.ModelForm):
         cleaned = super().clean()
         file = cleaned.get("video_file")
         url = (cleaned.get("external_url") or "").strip()
+        zoom = (cleaned.get("zoom_recording_url") or "").strip()
+        zp = cleaned.get("zoom_passcode")
+        if zp is not None:
+            zp = zp.strip()
+            cleaned["zoom_passcode"] = zp
+        cleaned["zoom_recording_url"] = zoom
         if file is False:
             has_file = False
         elif file:
             has_file = True
         else:
             has_file = bool(self.instance.pk and self.instance.video_file)
-        if not has_file and not url:
+        if not has_file and not url and not zoom:
             raise forms.ValidationError(
-                "Add either an external video link (YouTube/Vimeo) or upload a video file."
+                "Add a video file, a YouTube/Vimeo link, or a Zoom recording link."
             )
         return cleaned
 

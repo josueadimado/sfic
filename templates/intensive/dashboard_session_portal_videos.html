@@ -16,7 +16,7 @@
             <span class="admin-session-videos-dates">{{ session.start_date }} — {{ session.end_date }}</span>
         </p>
         <p class="admin-subtitle">
-            Only paid registrants for <em>this</em> intensive see these in their hub. Use a YouTube or Vimeo link (or just the YouTube video ID), or upload MP4.
+            Only paid registrants for <em>this</em> intensive see these in their hub. Add a YouTube/Vimeo link, a Zoom recording link + passcode, or upload an MP4.
         </p>
         {% if messages %}
             <div class="alerts">
@@ -42,11 +42,16 @@
                         <p class="admin-portal-video-card__desc">{{ item.description|truncatewords:28 }}</p>
                     {% endif %}
                     <p class="admin-portal-video-card__meta">
-                        {% if item.external_url %}
-                            <span class="admin-portal-video-card__badge admin-portal-video-card__badge--url">External URL</span>
-                        {% elif item.video_file %}
+                        {% if item.video_file %}
                             <span class="admin-portal-video-card__badge admin-portal-video-card__badge--file">Uploaded</span>
-                        {% else %}
+                        {% endif %}
+                        {% if item.external_url %}
+                            <span class="admin-portal-video-card__badge admin-portal-video-card__badge--url">YouTube/Vimeo</span>
+                        {% endif %}
+                        {% if item.zoom_recording_url %}
+                            <span class="admin-portal-video-card__badge admin-portal-video-card__badge--zoom">Zoom</span>
+                        {% endif %}
+                        {% if not item.video_file and not item.external_url and not item.zoom_recording_url %}
                             <span class="admin-portal-video-card__badge">—</span>
                         {% endif %}
                         {% if item.is_active %}

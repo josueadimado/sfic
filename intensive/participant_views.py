@@ -271,7 +271,11 @@ def participant_portal_video_watch(request, video_id: int):
     video = get_object_or_404(PortalVideo, pk=video_id, is_active=True)
     if not _participant_may_view_video(regs, video):
         raise Http404("Video not available.")
-    if not video.video_file and not (video.external_url or "").strip():
+    if (
+        not video.video_file
+        and not (video.external_url or "").strip()
+        and not (video.zoom_recording_url or "").strip()
+    ):
         raise Http404()
     video_iframe_src = ""
     if (video.external_url or "").strip():

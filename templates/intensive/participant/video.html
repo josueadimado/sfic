@@ -19,8 +19,25 @@
             <p class="participant-dash-card__intro">{{ video.description }}</p>
         {% endif %}
 
+        {% if video.zoom_recording_url %}
+            <div class="participant-zoom-recording">
+                <h2 class="participant-zoom-recording__heading">Watch on Zoom</h2>
+                <p class="participant-zoom-recording__lede">Open the recording in a new tab. This page is only available while your learning hub access is active.</p>
+                <a class="btn btn-accent participant-zoom-recording__cta" href="{{ video.zoom_recording_url }}" target="_blank" rel="noopener noreferrer">Open Zoom recording</a>
+                {% if video.zoom_passcode %}
+                    <div class="participant-zoom-recording__pass">
+                        <label class="participant-zoom-recording__label" for="zoom-pass-input">Recording passcode</label>
+                        <div class="participant-zoom-recording__pass-row">
+                            <input id="zoom-pass-input" class="participant-zoom-recording__input" type="text" readonly value="{{ video.zoom_passcode }}">
+                            <button type="button" class="btn btn-outline participant-zoom-recording__copy" data-copy-target="zoom-pass-input" aria-label="Copy passcode">Copy</button>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+
         {% if video.external_url and video_iframe_src %}
-            <div class="participant-video-frame participant-video-frame--embed">
+            <div class="participant-video-frame participant-video-frame--embed{% if video.zoom_recording_url %} participant-video-frame--after-zoom{% endif %}">
                 <iframe
                     src="{{ video_iframe_src }}"
                     title="{{ video.title }}"
@@ -30,25 +47,54 @@
                     referrerpolicy="strict-origin-when-cross-origin"
                 ></iframe>
             </div>
-            <p class="participant-dash-footnote">YouTube and Vimeo always show some channel or title information on embedded players — that cannot be turned off. For a <strong>plain player</strong> with only your video (no YouTube account line), upload an <strong>MP4 file</strong> for this lesson in the admin instead of using a link.</p>
         {% elif video.external_url %}
             <p class="participant-dash-footnote participant-dash-footnote--warn" role="alert">
                 This video link could not be prepared for embedded playback. Ask your organizer to use a normal YouTube or Vimeo link, or edit the video in the admin and save again.
             </p>
-        {% elif video.video_file %}
-            <video
-                class="participant-dash-native-video"
-                controls
-                controlsList="nodownload"
-                disablePictureInPicture
-                playsinline
-                preload="metadata"
-                src="{% url 'participant_portal_video_stream' video.id %}"
-            >
-                Your browser does not support embedded video.
-            </video>
-            <p class="participant-dash-footnote">Streaming only — please do not share or redistribute recordings.</p>
+        {% endif %}
+
+        {% if video.video_file %}
+            <div class="{% if video.zoom_recording_url or video.external_url %}participant-video-native-wrap{% endif %}">
+                <video
+                    class="participant-dash-native-video"
+                    controls
+                    controlsList="nodownload"
+                    disablePictureInPicture
+                    playsinline
+                    preload="metadata"
+                    src="{% url 'participant_portal_video_stream' video.id %}"
+                >
+                    Your browser does not support embedded video.
+                </video>
+                <p class="participant-dash-footnote">Streaming only — please do not share or redistribute recordings.</p>
+            </div>
         {% endif %}
     </article>
 </div>
+<script>
+(function () {
+    document.querySelectorAll("[data-copy-target]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            var id = btn.getAttribute("data-copy-target");
+            var el = document.getElementById(id);
+            if (!el || !el.value) return;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(el.value).then(function () {
+                    var o = btn.textContent;
+                    btn.textContent = "Copied!";
+                    setTimeout(function () { btn.textContent = o; }, 1600);
+                });
+                return;
+            }
+            el.select();
+            try {
+                document.execCommand("copy");
+                var o = btn.textContent;
+                btn.textContent = "Copied!";
+                setTimeout(function () { btn.textContent = o; }, 1600);
+            } catch (e) {}
+        });
+    });
+})();
+</script>
 {% endblock %}

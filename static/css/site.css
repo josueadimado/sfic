@@ -2565,6 +2565,16 @@ section[id] {
     color: #5a736c;
 }
 
+.participant-dash-video__kind {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #2f5f9a;
+}
+
 .participant-dash-video__chev {
     flex-shrink: 0;
     font-weight: 700;
@@ -2674,6 +2684,83 @@ section[id] {
     width: 100%;
     height: 100%;
     border: 0;
+}
+
+.participant-video-frame--after-zoom {
+    margin-top: 1.35rem;
+}
+
+.participant-video-native-wrap {
+    margin-top: 1.35rem;
+}
+
+.participant-zoom-recording {
+    padding: 1.1rem 1.15rem 1.2rem;
+    border-radius: 14px;
+    border: 1px solid #c5ddd4;
+    background: linear-gradient(180deg, #f6fbfa 0%, #eef6f3 100%);
+    margin-bottom: 0.25rem;
+}
+
+.participant-zoom-recording__heading {
+    margin: 0 0 0.35rem;
+    font-family: "Oswald", "Arial Narrow", sans-serif;
+    font-size: 1rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #0c2e2a;
+}
+
+.participant-zoom-recording__lede {
+    margin: 0 0 0.85rem;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    color: #4a635c;
+}
+
+.participant-zoom-recording__cta {
+    display: inline-flex;
+    margin-bottom: 0.85rem;
+}
+
+.participant-zoom-recording__pass {
+    margin-top: 0.5rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid rgba(12, 46, 42, 0.1);
+}
+
+.participant-zoom-recording__label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #506a63;
+    margin-bottom: 0.4rem;
+}
+
+.participant-zoom-recording__pass-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: stretch;
+}
+
+.participant-zoom-recording__input {
+    flex: 1 1 12rem;
+    min-width: 0;
+    font: inherit;
+    font-size: 0.95rem;
+    padding: 0.55rem 0.65rem;
+    border: 1px solid #c9d4cf;
+    border-radius: 10px;
+    background: #fff;
+    color: #0f221f;
+}
+
+.participant-zoom-recording__copy {
+    flex-shrink: 0;
+    align-self: center;
 }
 
 .participant-dash-native-video {
@@ -3665,6 +3752,12 @@ th {
     background: rgba(26, 92, 82, 0.1);
     border-color: rgba(26, 92, 82, 0.28);
     color: #1a5c52;
+}
+
+.admin-portal-video-card__badge--zoom {
+    background: rgba(45, 111, 193, 0.12);
+    border-color: rgba(45, 111, 193, 0.35);
+    color: #1e4a8a;
 }
 
 .admin-portal-video-card__badge--on {

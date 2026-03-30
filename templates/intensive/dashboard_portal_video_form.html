@@ -11,9 +11,8 @@
         <p class="admin-breadcrumb"><a href="{% url 'dashboard_sessions' %}">Sessions</a> · <a href="{% url 'dashboard_session_portal_videos' session.id %}">Videos — {{ session.title }}</a></p>
         <h1>{% if edit_obj %}Edit video{% else %}Add video{% endif %}</h1>
         <p class="admin-subtitle">
-            For <strong>{{ session.title }}</strong> only. {% if edit_obj %}Keep or replace the URL or upload — at least one is required.{% else %}Lower order numbers appear first in the hub.{% endif %}
-            <strong>Learner experience:</strong> YouTube/Vimeo links always show channel name and title on the player — that is required by those sites. For a <strong>clean player</strong> with only your video, upload an <strong>MP4</strong> (may need a higher upload limit on your host).
-            Very large uploads may be blocked by your web server (413 error); links avoid that limit.
+            For <strong>{{ session.title }}</strong> only. {% if edit_obj %}Keep at least one delivery method: upload, YouTube/Vimeo link, or Zoom recording link.{% else %}Lower order numbers appear first in the hub.{% endif %}
+            <strong>Zoom:</strong> paste the share URL and passcode — learners only see them while signed in and within their hub access window. Very large MP4 uploads may hit your host limit (413); links avoid that.
         </p>
         {% if messages %}
             <div class="alerts">

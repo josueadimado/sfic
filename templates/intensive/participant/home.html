@@ -113,7 +113,7 @@
                 <span class="participant-dash-card__icon" aria-hidden="true">▶</span>
                 Training videos
             </h2>
-            <p class="participant-dash-card__intro">Stream in your browser (no download on our player). Use Wi‑Fi for best quality.</p>
+            <p class="participant-dash-card__intro">Watch in the browser, on Zoom (when provided), or both. Use Wi‑Fi for best quality.</p>
             {% if videos %}
                 <ul class="participant-dash-video-list">
                     {% for v in videos %}
@@ -127,6 +127,9 @@
                                     {% endif %}
                                     {% if v.description %}
                                         <span class="participant-dash-video__desc">{{ v.description|truncatewords:22 }}</span>
+                                    {% endif %}
+                                    {% if v.zoom_recording_url %}
+                                        <span class="participant-dash-video__kind">Includes Zoom recording</span>
                                     {% endif %}
                                 </span>
                                 <span class="participant-dash-video__chev" aria-hidden="true">→</span>
