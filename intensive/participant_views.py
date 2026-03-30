@@ -20,6 +20,7 @@ from .models import (
     Session,
     SiteSetting,
 )
+from .participant_downloads import build_participant_download_sections
 from .services import reset_and_email_portal_password
 
 
@@ -169,6 +170,7 @@ def participant_portal_home(request):
     welcome_name = first_reg.full_name if first_reg else "Participant"
     allow_file_downloads, downloads_unlock_after = _portal_downloads_context(regs)
     program_download_regs = _participant_program_download_regs(regs)
+    download_sections = build_participant_download_sections(program_download_regs, materials)
 
     return render(
         request,
@@ -180,6 +182,7 @@ def participant_portal_home(request):
             "videos": videos,
             "latest_access_until": latest_until,
             "program_download_regs": program_download_regs,
+            "download_sections": download_sections,
             "allow_file_downloads": allow_file_downloads,
             "downloads_unlock_after": downloads_unlock_after,
             "dashboard_section": "home",

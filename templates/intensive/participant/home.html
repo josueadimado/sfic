@@ -33,7 +33,7 @@
         </div>
     </section>
 
-    <section class="participant-dashboard__grid" aria-label="Your enrollments">
+    <section class="participant-dashboard__grid participant-dashboard__grid--hub" aria-label="Your enrollments">
         <article class="participant-dash-card participant-dash-card--sessions">
             <h2 class="participant-dash-card__title">
                 <span class="participant-dash-card__icon" aria-hidden="true">◎</span>
@@ -58,28 +58,44 @@
                 Downloads
             </h2>
             {% if allow_file_downloads %}
-                <p class="participant-dash-card__intro">PDFs and documents for your <strong>completed</strong> intensive — save a copy to your device.</p>
-                <ul class="participant-dash-actions">
-                    {% for preg in program_download_regs %}
-                        <li>
-                            <a class="participant-dash-action" href="{% url 'participant_download_program' preg.session.id %}">
-                                <span class="participant-dash-action__label">Event program · {{ preg.session.title }}</span>
-                                <span class="participant-dash-action__hint">PDF</span>
-                            </a>
-                        </li>
+                <p class="participant-dash-card__intro">PDFs and documents for your <strong>completed</strong> intensive — grouped by session. Save files to your device.</p>
+                <div class="participant-download-bundles">
+                    {% for section in download_sections %}
+                        <section class="participant-download-bundle" aria-label="Downloads for {{ section.session.title }}">
+                            <header class="participant-download-bundle__head">
+                                <h3 class="participant-download-bundle__title">{{ section.session.title }}</h3>
+                                <p class="participant-download-bundle__meta">{{ section.session.start_date|date:"M j, Y" }} — {{ section.session.end_date|date:"M j, Y" }}</p>
+                            </header>
+                            <ul class="participant-download-files">
+                                {% for item in section.items %}
+                                    <li class="participant-download-files__cell">
+                                        {% if item.type == "program" %}
+                                            <a class="participant-download-file" href="{% url 'participant_download_program' item.preg.session.id %}">
+                                                <span class="participant-download-file__icon" aria-hidden="true">{% if item.ext_badge == "pdf" %}PDF{% else %}↓{% endif %}</span>
+                                                <span class="participant-download-file__body">
+                                                    <span class="participant-download-file__name">{{ item.label }}</span>
+                                                    <span class="participant-download-file__sub">Official event program</span>
+                                                </span>
+                                                <span class="participant-download-file__badge">{{ item.ext_badge|upper }}</span>
+                                            </a>
+                                        {% else %}
+                                            <a class="participant-download-file" href="{% url 'participant_download_material' item.mat.id %}">
+                                                <span class="participant-download-file__icon" aria-hidden="true">{{ item.ext_badge|slice:":4"|upper }}</span>
+                                                <span class="participant-download-file__body">
+                                                    <span class="participant-download-file__name">{{ item.label }}</span>
+                                                    <span class="participant-download-file__sub">Resource</span>
+                                                </span>
+                                                <span class="participant-download-file__badge">{{ item.ext_badge|upper }}</span>
+                                            </a>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </section>
+                    {% empty %}
+                        <p class="participant-dash-empty" role="status">No downloads here yet — check back soon.</p>
                     {% endfor %}
-                    {% for mat in materials %}
-                        <li>
-                            <a class="participant-dash-action" href="{% url 'participant_download_material' mat.id %}">
-                                <span class="participant-dash-action__label">{{ mat }}</span>
-                                <span class="participant-dash-action__hint">{{ mat.session.title }}</span>
-                            </a>
-                        </li>
-                    {% endfor %}
-                    {% if not program_download_regs and not materials %}
-                        <li class="participant-dash-empty">No downloads here yet — check back soon.</li>
-                    {% endif %}
-                </ul>
+                </div>
             {% else %}
                 <p class="participant-dash-card__intro participant-dash-downloads-pending">
                     For <strong>upcoming</strong> intensives, the <strong>event program PDF</strong> and other documents stay closed until the live intensive has finished. Then you can download them here for the <strong>same session you paid for</strong>, until your 30-day hub access ends.

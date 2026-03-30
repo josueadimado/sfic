@@ -2191,6 +2191,166 @@ section[id] {
     align-items: start;
 }
 
+/* Learning hub: sessions (left) + downloads (wide right) on desktop; videos full width below */
+.participant-dashboard__grid.participant-dashboard__grid--hub {
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 960px) {
+    .participant-dashboard__grid.participant-dashboard__grid--hub {
+        grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+        grid-template-rows: auto auto;
+    }
+
+    .participant-dashboard__grid.participant-dashboard__grid--hub .participant-dash-card--sessions {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .participant-dashboard__grid.participant-dashboard__grid--hub .participant-dash-card--downloads {
+        grid-column: 2;
+        grid-row: 1;
+        min-width: 0;
+    }
+
+    .participant-dashboard__grid.participant-dashboard__grid--hub .participant-dash-card--videos {
+        grid-column: 1 / -1;
+        grid-row: 2;
+    }
+}
+
+.participant-download-bundles {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.participant-download-bundle {
+    margin: 0;
+    padding: 0;
+    border: 1px solid rgba(12, 46, 42, 0.1);
+    border-radius: 14px;
+    background: linear-gradient(180deg, #fafcfb 0%, #f4f9f7 100%);
+    overflow: hidden;
+}
+
+.participant-download-bundle__head {
+    padding: 0.85rem 1rem 0.65rem;
+    border-bottom: 1px solid rgba(12, 46, 42, 0.08);
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.participant-download-bundle__title {
+    margin: 0;
+    font-family: "Oswald", "Arial Narrow", sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: #0c2e2a;
+}
+
+.participant-download-bundle__meta {
+    margin: 0.25rem 0 0;
+    font-size: 0.82rem;
+    color: #5f776f;
+}
+
+.participant-download-files {
+    list-style: none;
+    margin: 0;
+    padding: 0.75rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 0.65rem;
+}
+
+.participant-download-files__cell {
+    margin: 0;
+    min-width: 0;
+}
+
+.participant-download-file {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    min-height: 100%;
+    padding: 0.8rem 0.85rem;
+    background: #fff;
+    border: 1px solid #c5ddd4;
+    border-radius: 12px;
+    text-decoration: none;
+    color: #0c2e2a;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease;
+    box-sizing: border-box;
+}
+
+.participant-download-file:hover {
+    border-color: #423224;
+    box-shadow: 0 4px 14px rgba(15, 34, 31, 0.08);
+    transform: translateY(-1px);
+}
+
+.participant-download-file:focus-visible {
+    outline: 2px solid #1a5c52;
+    outline-offset: 2px;
+}
+
+.participant-download-file__icon {
+    flex: 0 0 auto;
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    font-size: 0.52rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    line-height: 1.1;
+    text-align: center;
+    background: rgba(47, 122, 108, 0.12);
+    color: #1a5c52;
+}
+
+.participant-download-file__body {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.participant-download-file__name {
+    font-weight: 600;
+    font-size: 0.92rem;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.participant-download-file__sub {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6a857d;
+}
+
+.participant-download-file__badge {
+    flex: 0 0 auto;
+    align-self: flex-start;
+    margin-top: 0.1rem;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: #2f7a6c;
+    background: #e8f5f0;
+    padding: 0.2rem 0.45rem;
+    border-radius: 6px;
+}
+
 .participant-dash-card {
     background: #fff;
     border-radius: 16px;
@@ -2618,7 +2778,7 @@ section[id] {
 }
 
 @media (max-width: 640px) {
-    .participant-dashboard__grid {
+    .participant-dashboard__grid:not(.participant-dashboard__grid--hub) {
         grid-template-columns: 1fr;
     }
 }
