@@ -123,9 +123,22 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# Allow larger file uploads (e.g. event program PDF) - default 2.5MB can be too small
-DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
-FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
+# --- Upload size (Django) vs "413 Request Entity Too Large" (web server) ---------------
+#
+# A 413 error means the REVERSE PROXY (Nginx, OpenResty, Cloudflare, or your host) rejected
+# the request body BEFORE it reached Django. Changing the values below does NOT fix 413.
+#
+# Fix 413 where your site is actually served:
+#   • Nginx / OpenResty: set client_max_body_size (e.g. 500m) in http { }, server { }, or
+#     location { }, then reload:  nginx -s reload
+#   • PythonAnywhere: limits are set by the platform; check their docs / support / plan.
+#   • Cloudflare: free/proxy tiers limit upload size; use a direct origin URL or higher tier,
+#     or host large files elsewhere (YouTube/Vimeo/S3) and use a link in the admin form.
+#
+# The settings below only apply AFTER the request is allowed through to Django: they control
+# how much of the request/file is held in memory vs spooled to disk (still keep these set).
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # non-file parts of POST; 10 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # buffer before streaming to temp file; 10 MB
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -150,3 +163,13 @@ STATIC_VERSION = os.getenv("STATIC_VERSION", str(int(time.time())))
 LOGIN_URL = "/dashboard/login/"
 LOGIN_REDIRECT_URL = "/dashboard/"
 LOGOUT_REDIRECT_URL = "/"
+
+# Sessions: log out after this many minutes of *inactivity* (no page loads / requests).
+# SESSION_SAVE_EVERY_REQUEST extends the deadline on each request, so only idle time counts.
+_idle_minutes = int(os.getenv("SESSION_IDLE_TIMEOUT_MINUTES", "15"))
+SESSION_COOKIE_AGE = max(60, _idle_minutes * 60)  # at least 1 minute; value is in seconds
+SESSION_SAVE_EVERY_REQUEST = True
+
+# On HTTPS (production), set SESSION_COOKIE_SECURE=True so the cookie is not sent over HTTP.
+SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "False").lower() == "true"
+SESSION_COOKIE_HTTPONLY = True
