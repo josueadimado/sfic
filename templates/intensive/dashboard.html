@@ -17,6 +17,7 @@
             <a href="{% url 'dashboard_sessions' %}" class="{% if admin_page == 'sessions' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Training Sessions</a>
             <a href="{% url 'dashboard_schedule' %}" class="{% if admin_page == 'schedule' %}is-active{% endif %}"><span class="menu-icon icon-schedule" aria-hidden="true"></span>Training Schedule</a>
             <a href="{% url 'dashboard_speakers' %}" class="{% if admin_page == 'speakers' %}is-active{% endif %}"><span class="menu-icon icon-speakers" aria-hidden="true"></span>Speakers</a>
+            <a href="{% url 'dashboard_portal_videos' %}" class="{% if admin_page == 'portal_videos' %}is-active{% endif %}"><span class="menu-icon icon-videos" aria-hidden="true"></span>Portal videos</a>
             <a href="{% url 'dashboard_site_settings' %}" class="{% if admin_page == 'settings' %}is-active{% endif %}"><span class="menu-icon icon-settings" aria-hidden="true"></span>Site Settings</a>
         </nav>
         <div class="admin-sidebar-foot">
@@ -39,28 +40,47 @@
                 {% endfor %}
             </div>
         {% endif %}
-        <form method="get" class="filters admin-filters">
-            <select name="session" class="admin-select">
-                <option value="">All sessions</option>
-                {% for session in sessions %}
-                    <option value="{{ session.id }}" {% if selected_session == session.id|stringformat:"s" %}selected{% endif %}>
-                        {{ session.title }}
-                    </option>
-                {% endfor %}
-            </select>
-            <select name="status" class="admin-select">
-                <option value="">All statuses</option>
-                {% for value, label in status_choices %}
-                    <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-            <button class="btn btn-accent" type="submit">Apply Filters</button>
-            <a class="btn btn-outline" href="{% url 'export_csv' %}?session={{ selected_session }}&status={{ selected_status }}">Export CSV</a>
-        </form>
-        <form method="post" action="{% url 'dashboard_registrations_sync_pending' %}" class="filters admin-filters" data-confirm-message="Sync pending registrations from Stripe now?">
-            {% csrf_token %}
-            <button class="btn btn-outline" type="submit">Sync Pending from Stripe</button>
-        </form>
+        <div class="admin-registrations-toolbar" aria-label="Filters and actions">
+            <form method="get" class="admin-toolbar-get">
+                <div class="admin-toolbar-get__filters">
+                    <label class="admin-toolbar-sr-only" for="reg-filter-session">Session</label>
+                    <select id="reg-filter-session" name="session" class="admin-select" title="Filter by session">
+                        <option value="">All sessions</option>
+                        {% for session in sessions %}
+                            <option value="{{ session.id }}" {% if selected_session == session.id|stringformat:"s" %}selected{% endif %}>
+                                {{ session.title }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <label class="admin-toolbar-sr-only" for="reg-filter-status">Status</label>
+                    <select id="reg-filter-status" name="status" class="admin-select" title="Filter by status">
+                        <option value="">All statuses</option>
+                        {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="admin-toolbar-get__actions">
+                    <button class="btn btn-accent" type="submit">Apply filters</button>
+                    <div class="admin-toolbar-export-btns" role="group" aria-label="Export">
+                        <a class="btn btn-outline" href="{% url 'export_csv' %}?session={{ selected_session|default_if_none:'' }}&status={{ selected_status }}" title="UTF-8 CSV, opens cleanly in Excel">Export CSV</a>
+                        <a class="btn btn-outline" href="{% url 'export_csv' %}?session={{ selected_session|default_if_none:'' }}&status={{ selected_status }}&format=xlsx" title="Microsoft Excel workbook">Export .xlsx</a>
+                    </div>
+                </div>
+            </form>
+            <div class="admin-toolbar-post">
+                <form method="post" action="{% url 'dashboard_send_portal_invites' %}" class="inline-form admin-toolbar-post__form" data-confirm-message="Send portal invitation emails (login + access details) to PAID registrants who do not have a portal password yet, for the selected session (or all sessions if none selected)?">
+                    {% csrf_token %}
+                    <input type="hidden" name="session" value="{{ selected_session|default_if_none:'' }}">
+                    <button class="btn btn-outline" type="submit">Send portal invites</button>
+                </form>
+                <form method="post" action="{% url 'dashboard_registrations_sync_pending' %}" class="inline-form admin-toolbar-post__form" data-confirm-message="Sync pending registrations from Stripe now?">
+                    {% csrf_token %}
+                    <button class="btn btn-outline" type="submit">Sync pending from Stripe</button>
+                </form>
+            </div>
+            <p class="admin-toolbar-hint">Portal invites only go to <strong>paid</strong> rows without a password yet. Use <strong>View Info</strong> on a person to resend or reset their portal password.</p>
+        </div>
 
         <div class="table-wrap admin-table-wrap">
             <table class="admin-registrations-table">

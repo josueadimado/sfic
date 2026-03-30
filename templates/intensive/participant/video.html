@@ -1,0 +1,49 @@
+{% extends "intensive/participant/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}{{ video.title }} | Learning hub{% endblock %}
+
+{% block participant_content %}
+<div class="participant-dashboard__container participant-dashboard__container--narrow">
+    <nav class="participant-dashboard__breadcrumb" aria-label="Breadcrumb">
+        <a href="{% url 'participant_portal_home' %}">Dashboard</a>
+        <span aria-hidden="true">/</span>
+        <span>Videos</span>
+        <span aria-hidden="true">/</span>
+        <span class="participant-dashboard__breadcrumb-current">{{ video.title }}</span>
+    </nav>
+
+    <article class="participant-dash-card participant-dash-card--player">
+        <h1 class="participant-dashboard__video-heading">{{ video.title }}</h1>
+        {% if video.description %}
+            <p class="participant-dash-card__intro">{{ video.description }}</p>
+        {% endif %}
+
+        {% if video.external_url %}
+            <div class="participant-video-frame participant-video-frame--embed">
+                <iframe
+                    src="{{ video.external_url }}"
+                    title="{{ video.title }}"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                    loading="lazy"
+                ></iframe>
+            </div>
+            <p class="participant-dash-footnote">Playback is hosted by the provider (e.g. YouTube or Vimeo). Use their controls for quality and captions.</p>
+        {% elif video.video_file %}
+            <video
+                class="participant-dash-native-video"
+                controls
+                controlsList="nodownload"
+                disablePictureInPicture
+                playsinline
+                preload="metadata"
+                src="{% url 'participant_portal_video_stream' video.id %}"
+            >
+                Your browser does not support embedded video.
+            </video>
+            <p class="participant-dash-footnote">Streaming only — please do not share or redistribute recordings.</p>
+        {% endif %}
+    </article>
+</div>
+{% endblock %}

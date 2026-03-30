@@ -1,7 +1,7 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path
 
-from . import views
+from . import participant_views, views
 
 urlpatterns = [
     path("", views.home, name="home"),
@@ -13,6 +13,29 @@ urlpatterns = [
     path("donate/checkout/", views.create_donation_checkout, name="create_donation_checkout"),
     path("checkout/resume/<uuid:registration_id>/", views.resume_checkout, name="resume_checkout"),
     path("success", views.success, name="success"),
+    path("portal/login/", participant_views.participant_portal_login, name="participant_portal_login"),
+    path("portal/logout/", participant_views.participant_portal_logout, name="participant_portal_logout"),
+    path("portal/", participant_views.participant_portal_home, name="participant_portal_home"),
+    path(
+        "portal/downloads/program/",
+        participant_views.participant_download_program,
+        name="participant_download_program",
+    ),
+    path(
+        "portal/downloads/material/<int:material_id>/",
+        participant_views.participant_download_material,
+        name="participant_download_material",
+    ),
+    path(
+        "portal/videos/<int:video_id>/",
+        participant_views.participant_portal_video_watch,
+        name="participant_portal_video_watch",
+    ),
+    path(
+        "portal/videos/<int:video_id>/stream/",
+        participant_views.participant_portal_video_stream,
+        name="participant_portal_video_stream",
+    ),
     path("cancel", views.cancel, name="cancel"),
     path("donation/success", views.donation_success, name="donation_success"),
     path("donation/cancel", views.donation_cancel, name="donation_cancel"),
@@ -35,7 +58,17 @@ urlpatterns = [
         views.dashboard_registration_delete,
         name="dashboard_registration_delete",
     ),
+    path(
+        "dashboard/registrations/<uuid:item_id>/portal-email/",
+        views.dashboard_registration_portal_email,
+        name="dashboard_registration_portal_email",
+    ),
     path("dashboard/registrations/<uuid:item_id>/", views.dashboard_registration_detail, name="dashboard_registration_detail"),
+    path(
+        "dashboard/send-portal-invites/",
+        views.dashboard_send_portal_invites,
+        name="dashboard_send_portal_invites",
+    ),
     path("dashboard/sessions/", views.dashboard_sessions, name="dashboard_sessions"),
     path("dashboard/sessions/new/", views.dashboard_session_create, name="dashboard_session_create"),
     path(
@@ -62,11 +95,11 @@ urlpatterns = [
     ),
     path("dashboard/settings/", views.dashboard_site_settings, name="dashboard_site_settings"),
     path("dashboard/settings/materials/add/", views.dashboard_settings_material_add, name="dashboard_material_add"),
-    path("dashboard/settings/materials/<int:material_id>/delete/", views.dashboard_settings_material_delete, name="dashboard_material_delete"),
-    path("dashboard/settings/materials/add/", views.dashboard_settings_material_add, name="dashboard_material_add"),
-    path("dashboard/settings/materials/<int:material_id>/delete/", views.dashboard_settings_material_delete, name="dashboard_material_delete"),
-    path("dashboard/settings/materials/add/", views.dashboard_settings_material_add, name="dashboard_material_add"),
-    path("dashboard/settings/materials/<int:material_id>/delete/", views.dashboard_settings_material_delete, name="dashboard_material_delete"),
+    path(
+        "dashboard/settings/materials/<int:material_id>/delete/",
+        views.dashboard_settings_material_delete,
+        name="dashboard_material_delete",
+    ),
     path("dashboard/transactions/", views.dashboard_transactions, name="dashboard_transactions"),
     path("dashboard/transactions/backfill/", views.dashboard_transactions_backfill, name="dashboard_transactions_backfill"),
     path("dashboard/speakers/", views.dashboard_speakers, name="dashboard_speakers"),
@@ -80,6 +113,18 @@ urlpatterns = [
         "dashboard/speakers/<int:item_id>/delete/",
         views.dashboard_speaker_delete,
         name="dashboard_speaker_delete",
+    ),
+    path("dashboard/portal-videos/", views.dashboard_portal_videos, name="dashboard_portal_videos"),
+    path("dashboard/portal-videos/new/", views.dashboard_portal_video_create, name="dashboard_portal_video_create"),
+    path(
+        "dashboard/portal-videos/<int:item_id>/edit/",
+        views.dashboard_portal_video_edit,
+        name="dashboard_portal_video_edit",
+    ),
+    path(
+        "dashboard/portal-videos/<int:item_id>/delete/",
+        views.dashboard_portal_video_delete,
+        name="dashboard_portal_video_delete",
     ),
     path("dashboard/export.csv", views.export_csv, name="export_csv"),
 ]

@@ -5,7 +5,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from django import forms
 import pycountry
 
-from .models import DonationFrequency, Session, SiteSetting, Speaker, TrainingScheduleItem
+from .models import DonationFrequency, PortalVideo, Session, SiteSetting, Speaker, TrainingScheduleItem
 
 
 def _flag_emoji(alpha_2: str) -> str:
@@ -240,6 +240,52 @@ class SiteSettingForm(forms.ModelForm):
         if not ext_ok and not ct_ok:
             raise forms.ValidationError("Event program must be a PDF, DOC, DOCX, PPT, or PPTX file.")
         return file
+
+
+class PortalVideoForm(forms.ModelForm):
+    """Training videos shown to logged-in participants in the learning hub."""
+
+    class Meta:
+        model = PortalVideo
+        fields = [
+            "title",
+            "description",
+            "external_url",
+            "video_file",
+            "display_order",
+            "is_active",
+        ]
+        widgets = {
+            "title": forms.TextInput(attrs={"placeholder": "e.g. Session 1 – Opening teaching"}),
+            "description": forms.Textarea(
+                attrs={
+                    "rows": 3,
+                    "placeholder": "Short description (optional)",
+                }
+            ),
+            "external_url": forms.URLInput(
+                attrs={
+                    "placeholder": "https://www.youtube.com/embed/xxxxxxxxxxx",
+                }
+            ),
+            "video_file": forms.ClearableFileInput(),
+        }
+
+    def clean(self):
+        cleaned = super().clean()
+        file = cleaned.get("video_file")
+        url = (cleaned.get("external_url") or "").strip()
+        if file is False:
+            has_file = False
+        elif file:
+            has_file = True
+        else:
+            has_file = bool(self.instance.pk and self.instance.video_file)
+        if not has_file and not url:
+            raise forms.ValidationError(
+                "Add either an external URL (YouTube/Vimeo embed link) or upload a video file."
+            )
+        return cleaned
 
 
 class SpeakerForm(forms.ModelForm):

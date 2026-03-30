@@ -23,6 +23,7 @@
                 <p><strong>Date:</strong> {{ registration.updated_at|date:"F j, Y g:i A" }}</p>
             </div>
             <p class="result-note">A confirmation email has been sent to <strong>{{ registration.email }}</strong>.</p>
+            <p class="result-note">A separate email includes your <strong>participant portal</strong> password (30 days of access to downloads and videos). <a href="{% url 'participant_portal_login' %}">Sign in to the portal</a></p>
         {% else %}
             <p class="result-intro">Your payment is being verified. If you do not get an email soon, contact support.</p>
         {% endif %}

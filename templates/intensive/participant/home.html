@@ -1,0 +1,110 @@
+{% extends "intensive/participant/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Dashboard | Learning hub{% endblock %}
+
+{% block participant_content %}
+<div class="participant-dashboard__container">
+    <section class="participant-dashboard__welcome" aria-labelledby="dash-welcome-title">
+        <div class="participant-dashboard__welcome-text">
+            <p class="participant-dashboard__eyebrow">Welcome back</p>
+            <h1 class="participant-dashboard__title" id="dash-welcome-title">{{ welcome_name }}</h1>
+            <p class="participant-dashboard__lede">
+                Your session materials and training videos are below. Downloads are yours to keep; videos are for watching on this site during your access period.
+            </p>
+        </div>
+        <div class="participant-dashboard__welcome-meta">
+            <div class="participant-dashboard__stat">
+                <span class="participant-dashboard__stat-label">Access active until</span>
+                <span class="participant-dashboard__stat-value">{{ latest_access_until|date:"M j, Y" }}</span>
+                <span class="participant-dashboard__stat-hint">{{ latest_access_until|date:"g:i A" }}</span>
+            </div>
+            <div class="participant-dashboard__stat">
+                <span class="participant-dashboard__stat-label">Registrations</span>
+                <span class="participant-dashboard__stat-value">{{ registration_count }}</span>
+                <span class="participant-dashboard__stat-hint">paid seat(s)</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="participant-dashboard__grid" aria-label="Your enrollments">
+        <article class="participant-dash-card participant-dash-card--sessions">
+            <h2 class="participant-dash-card__title">
+                <span class="participant-dash-card__icon" aria-hidden="true">◎</span>
+                Your sessions
+            </h2>
+            <ul class="participant-dash-list">
+                {% for reg in registrations %}
+                    <li class="participant-dash-list__item">
+                        <div class="participant-dash-list__main">
+                            <strong class="participant-dash-list__title">{{ reg.session.title }}</strong>
+                            <span class="participant-dash-list__meta">{{ reg.session.start_date }} — {{ reg.session.end_date }}</span>
+                        </div>
+                        <span class="participant-dash-pill">Until {{ reg.portal_access_until|date:"M j, Y" }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        </article>
+
+        <article class="participant-dash-card participant-dash-card--downloads" id="resources-downloads">
+            <h2 class="participant-dash-card__title">
+                <span class="participant-dash-card__icon" aria-hidden="true">↓</span>
+                Downloads
+            </h2>
+            <p class="participant-dash-card__intro">PDFs and documents — save a copy to your device.</p>
+            <ul class="participant-dash-actions">
+                {% if has_program_pdf %}
+                    <li>
+                        <a class="participant-dash-action" href="{% url 'participant_download_program' %}">
+                            <span class="participant-dash-action__label">Event program</span>
+                            <span class="participant-dash-action__hint">PDF</span>
+                        </a>
+                    </li>
+                {% endif %}
+                {% for mat in materials %}
+                    <li>
+                        <a class="participant-dash-action" href="{% url 'participant_download_material' mat.id %}">
+                            <span class="participant-dash-action__label">{{ mat }}</span>
+                            <span class="participant-dash-action__hint">Download</span>
+                        </a>
+                    </li>
+                {% empty %}
+                    {% if not has_program_pdf %}
+                        <li class="participant-dash-empty">No materials uploaded yet — check back soon.</li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </article>
+
+        <article class="participant-dash-card participant-dash-card--videos participant-dash-card--wide" id="resources-videos">
+            <h2 class="participant-dash-card__title">
+                <span class="participant-dash-card__icon" aria-hidden="true">▶</span>
+                Training videos
+            </h2>
+            <p class="participant-dash-card__intro">Stream in your browser (no download on our player). Use Wi‑Fi for best quality.</p>
+            {% if videos %}
+                <ul class="participant-dash-video-list">
+                    {% for v in videos %}
+                        <li>
+                            <a class="participant-dash-video" href="{% url 'participant_portal_video_watch' v.id %}">
+                                <span class="participant-dash-video__play" aria-hidden="true">▶</span>
+                                <span class="participant-dash-video__body">
+                                    <span class="participant-dash-video__title">{{ v.title }}</span>
+                                    {% if v.description %}
+                                        <span class="participant-dash-video__desc">{{ v.description|truncatewords:22 }}</span>
+                                    {% endif %}
+                                </span>
+                                <span class="participant-dash-video__chev" aria-hidden="true">→</span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="participant-dash-video-empty" role="status">
+                    No training videos yet. Your team can add them anytime in the custom admin under <strong>Portal videos</strong> (same place as Registrations and Site Settings).
+                </p>
+            {% endif %}
+        </article>
+    </section>
+</div>
+{% endblock %}

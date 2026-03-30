@@ -8,7 +8,7 @@
     <title>{% block title %}Freedom Intensive{% endblock %}</title>
     {% with canonical=request.scheme|add:"://"|add:request.get_host|add:request.path %}
     <meta name="description" content="{% block meta_description %}Freedom Intensive registration and training by Set Free In Christ.{% endblock %}">
-    {% if request.path|slice:":10" == "/dashboard/" or request.path|slice:":7" == "/admin/" or request.path == "/success" or request.path == "/cancel" %}
+    {% if request.path|slice:":10" == "/dashboard/" or request.path|slice:":8" == "/portal/" or request.path|slice:":7" == "/admin/" or request.path == "/success" or request.path == "/cancel" %}
     <meta name="robots" content="noindex,nofollow">
     {% else %}
     <meta name="robots" content="{% block meta_robots %}index,follow{% endblock %}">
@@ -38,6 +38,7 @@
         </div>
     </div>
     {% block body %}{% endblock %}
+    <div class="admin-sidebar-backdrop" id="admin-sidebar-backdrop" hidden aria-hidden="true"></div>
     <script>
         (function () {
             const loader = document.getElementById("page-loader");
@@ -56,16 +57,15 @@
         (function () {
             const storageKey = "sfic-admin-sidebar-collapsed";
             const layouts = document.querySelectorAll(".admin-layout-page");
+            const backdrop = document.getElementById("admin-sidebar-backdrop");
+            const narrowMq = window.matchMedia("(max-width: 900px)");
+
             if (!layouts.length) return;
 
             const storedState = localStorage.getItem(storageKey);
-            const collapsed = storedState === null
-                ? window.matchMedia("(max-width: 900px)").matches
-                : storedState === "1";
+            const collapsed = storedState === null ? narrowMq.matches : storedState === "1";
             layouts.forEach((layout) => {
-                if (collapsed) {
-                    layout.classList.add("sidebar-collapsed");
-                }
+                if (collapsed) layout.classList.add("sidebar-collapsed");
             });
 
             function updateButtons() {
@@ -74,21 +74,56 @@
                     button.textContent = isCollapsed ? "☰" : "✕";
                     button.setAttribute("aria-label", isCollapsed ? "Open sidebar menu" : "Close sidebar menu");
                     button.setAttribute("title", isCollapsed ? "Open menu" : "Close menu");
+                    button.setAttribute("aria-expanded", isCollapsed ? "false" : "true");
                 });
+            }
+
+            function syncAdminBackdrop() {
+                if (!backdrop) return;
+                const isNarrow = narrowMq.matches;
+                const isCollapsed = layouts[0].classList.contains("sidebar-collapsed");
+                if (isNarrow && !isCollapsed) {
+                    backdrop.removeAttribute("hidden");
+                    backdrop.setAttribute("aria-hidden", "false");
+                    document.body.classList.add("admin-mobile-sidebar-open");
+                } else {
+                    backdrop.setAttribute("hidden", "");
+                    backdrop.setAttribute("aria-hidden", "true");
+                    document.body.classList.remove("admin-mobile-sidebar-open");
+                }
             }
 
             document.querySelectorAll("[data-sidebar-toggle]").forEach((button) => {
                 button.addEventListener("click", () => {
-                    layouts.forEach((layout) => {
-                        layout.classList.toggle("sidebar-collapsed");
-                    });
+                    layouts.forEach((layout) => layout.classList.toggle("sidebar-collapsed"));
                     const isCollapsed = layouts[0].classList.contains("sidebar-collapsed");
                     localStorage.setItem(storageKey, isCollapsed ? "1" : "0");
                     updateButtons();
+                    syncAdminBackdrop();
                 });
             });
 
+            if (backdrop) {
+                backdrop.addEventListener("click", () => {
+                    if (!narrowMq.matches) return;
+                    layouts.forEach((layout) => layout.classList.add("sidebar-collapsed"));
+                    localStorage.setItem(storageKey, "1");
+                    updateButtons();
+                    syncAdminBackdrop();
+                });
+            }
+
+            narrowMq.addEventListener("change", (e) => {
+                if (e.matches) {
+                    layouts.forEach((layout) => layout.classList.add("sidebar-collapsed"));
+                    localStorage.setItem(storageKey, "1");
+                    updateButtons();
+                }
+                syncAdminBackdrop();
+            });
+
             updateButtons();
+            syncAdminBackdrop();
         })();
 
         (function () {

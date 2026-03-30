@@ -16,6 +16,7 @@
             <a href="{% url 'dashboard_sessions' %}" class="{% if admin_page == 'sessions' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Training Sessions</a>
             <a href="{% url 'dashboard_schedule' %}" class="{% if admin_page == 'schedule' %}is-active{% endif %}"><span class="menu-icon icon-schedule" aria-hidden="true"></span>Training Schedule</a>
             <a href="{% url 'dashboard_speakers' %}" class="{% if admin_page == 'speakers' %}is-active{% endif %}"><span class="menu-icon icon-speakers" aria-hidden="true"></span>Speakers</a>
+            <a href="{% url 'dashboard_portal_videos' %}" class="{% if admin_page == 'portal_videos' %}is-active{% endif %}"><span class="menu-icon icon-videos" aria-hidden="true"></span>Portal videos</a>
             <a href="{% url 'dashboard_site_settings' %}" class="{% if admin_page == 'settings' %}is-active{% endif %}"><span class="menu-icon icon-settings" aria-hidden="true"></span>Site Settings</a>
         </nav>
         <div class="admin-sidebar-foot">
@@ -48,7 +49,32 @@
             <p><strong>Amount Paid:</strong> {{ registration.display_amount_paid }}</p>
             <p><strong>Payment Reference:</strong> {{ registration.payment_ref|default:"-" }}</p>
             <p><strong>Created:</strong> {{ registration.created_at }}</p>
+            {% if registration.status == "PAID" %}
+                <p><strong>Portal access until:</strong> {% if registration.portal_access_until %}{{ registration.portal_access_until|date:"F j, Y g:i A" }}{% else %}Not set{% endif %}</p>
+                <p><strong>Portal password:</strong> {% if registration.portal_password_hash %}Yes (stored securely){% else %}Not created yet{% endif %}</p>
+            {% endif %}
         </div>
+
+        {% if registration.status == "PAID" %}
+            <h2 class="admin-side-title" style="margin-top: 1.25rem;">Participant portal email</h2>
+            <p class="admin-subtitle">
+                Send the same message registrants get automatically: link to the portal, their email, password, and access end date.
+                <strong>First‑time invite</strong> only sends if they do not have a password yet.
+                <strong>Reset password</strong> creates a new password and emails it (all active registrations for this email share one password).
+            </p>
+            <div style="display:flex;flex-wrap:wrap;gap:0.75rem;margin-top:0.75rem;">
+                <form method="post" action="{% url 'dashboard_registration_portal_email' registration.id %}" class="inline-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="invite">
+                    <button type="submit" class="btn btn-accent">Send portal invite (new password only)</button>
+                </form>
+                <form method="post" action="{% url 'dashboard_registration_portal_email' registration.id %}" class="inline-form" data-confirm-message="Generate a new portal password and email it? Anyone with this email will need the new password.">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="reset">
+                    <button type="submit" class="btn btn-outline">Reset password and email login details</button>
+                </form>
+            </div>
+        {% endif %}
 
         <h2 class="admin-side-title" style="margin-top: 1rem;">Transaction Timeline</h2>
         <div class="table-wrap admin-table-wrap">

@@ -1,23 +1,191 @@
-import logging
 import json
-import os
+import logging
 import mimetypes
-from urllib import request as urllib_request
+import os
+import secrets
+import string
+from datetime import timedelta
 from io import BytesIO
+from urllib import request as urllib_request
 
 from django.conf import settings
+from django.contrib.auth.hashers import make_password
 from django.core import signing
 from django.core.mail import EmailMultiAlternatives
+from django.db import transaction
 from django.template.loader import render_to_string
 from django.urls import reverse
+from django.utils import timezone
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 
-from .models import Donation, Registration, Session, SiteSetting
+from .models import Donation, Registration, RegistrationStatus, Session, SiteSetting
+
+PORTAL_ACCESS_DAYS = 30
 
 logger = logging.getLogger(__name__)
 DONATION_MANAGE_SALT = "sfic-donation-manage"
+
+
+def _generate_portal_password(length: int = 12) -> str:
+    alphabet = string.ascii_letters + string.digits
+    return "".join(secrets.choice(alphabet) for _ in range(length))
+
+
+def send_portal_credentials_email(registration: Registration, plain_password: str) -> bool:
+    """Email portal login link, email, and one-time generated password."""
+    portal_url = f"{settings.SITE_BASE_URL}{reverse('participant_portal_login')}"
+    latest_until = (
+        Registration.objects.filter(
+            email__iexact=registration.email.strip().lower(),
+            status=RegistrationStatus.PAID,
+        )
+        .order_by("-portal_access_until")
+        .values_list("portal_access_until", flat=True)
+        .first()
+    )
+    site = SiteSetting.objects.first()
+    context = {
+        "registration": registration,
+        "plain_password": plain_password,
+        "portal_url": portal_url,
+        "access_until": latest_until,
+        "site_base_url": settings.SITE_BASE_URL,
+        "site_name": site.site_name if site else "Set Free In Christ",
+    }
+    subject = "Your participant portal — resources and training videos"
+    text_message = render_to_string("intensive/emails/portal_credentials.txt", context)
+    html_message = render_to_string("intensive/emails/portal_credentials.html", context)
+    try:
+        email = EmailMultiAlternatives(
+            subject=subject,
+            body=text_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[registration.email],
+        )
+        email.attach_alternative(html_message, "text/html")
+        email.send(fail_silently=False)
+    except Exception:
+        logger.exception("Failed to send portal credentials for %s", registration.id)
+        return False
+    return True
+
+
+def provision_portal_access(registration: Registration, *, send_email: bool = True) -> None:
+    """
+    For PAID registrations: set 30-day portal window (once), create or reuse password,
+    email plaintext password only when a new password is created for this person.
+    """
+    if registration.status != RegistrationStatus.PAID:
+        return
+
+    email_key = registration.email.strip().lower()
+    now = timezone.now()
+    plain: str | None = None
+
+    with transaction.atomic():
+        reg = Registration.objects.select_for_update().get(pk=registration.pk)
+        if reg.status != RegistrationStatus.PAID:
+            return
+
+        siblings = Registration.objects.select_for_update().filter(
+            email__iexact=email_key,
+            status=RegistrationStatus.PAID,
+        ).exclude(pk=reg.pk)
+
+        update_fields: list[str] = []
+
+        if reg.portal_access_until is None:
+            reg.portal_access_until = now + timedelta(days=PORTAL_ACCESS_DAYS)
+            update_fields.append("portal_access_until")
+
+        if not reg.portal_password_hash:
+            donor = siblings.filter(portal_password_hash__gt="").first()
+            if donor:
+                reg.portal_password_hash = donor.portal_password_hash
+            else:
+                plain = _generate_portal_password()
+                reg.portal_password_hash = make_password(plain)
+            update_fields.append("portal_password_hash")
+
+        if update_fields:
+            if "updated_at" not in update_fields:
+                update_fields.append("updated_at")
+            reg.save(update_fields=list(set(update_fields)))
+
+    if plain and send_email:
+        registration.refresh_from_db()
+        send_portal_credentials_email(registration, plain)
+
+
+def admin_extend_portal_if_needed(registration: Registration) -> None:
+    """Give or restore a 30-day window when sending portal emails from the admin."""
+    now = timezone.now()
+    if registration.portal_access_until is None or registration.portal_access_until <= now:
+        registration.portal_access_until = now + timedelta(days=PORTAL_ACCESS_DAYS)
+        registration.save(update_fields=["portal_access_until", "updated_at"])
+
+
+def admin_send_portal_invite_email(registration: Registration) -> tuple[bool, str]:
+    """
+    Email portal login details when this paid registrant does not have a portal password yet.
+    Does not rotate an existing password (use admin_reset_portal_password_email for that).
+    """
+    if registration.status != RegistrationStatus.PAID:
+        return False, "Only paid registrations can get portal access."
+    admin_extend_portal_if_needed(registration)
+    registration.refresh_from_db()
+    if registration.portal_password_hash:
+        return (
+            False,
+            "This person already has a portal password. Use ‘Reset password and email’ to send a new one.",
+        )
+    provision_portal_access(registration, send_email=True)
+    return True, "Portal invitation email sent with login details."
+
+
+def admin_reset_portal_password_email(registration: Registration) -> tuple[bool, str]:
+    """
+    Generate a new portal password and email it.
+    Applies to every active (non-expired) paid registration that shares this email.
+    """
+    if registration.status != RegistrationStatus.PAID:
+        return False, "Only paid registrations can use the portal."
+    admin_extend_portal_if_needed(registration)
+    registration.refresh_from_db()
+    if not reset_and_email_portal_password(registration.email):
+        return False, "Could not send email (no active portal access for this email)."
+    return (
+        True,
+        "New portal password emailed. If this email has multiple sessions, they all use the same new password.",
+    )
+
+
+def reset_and_email_portal_password(email: str) -> bool:
+    """Set a new portal password for every active (paid, non-expired) registration with this email."""
+    email_key = (email or "").strip().lower()
+    if not email_key:
+        return False
+    now = timezone.now()
+    active = list(
+        Registration.objects.filter(
+            email__iexact=email_key,
+            status=RegistrationStatus.PAID,
+            portal_access_until__gt=now,
+        )
+    )
+    if not active:
+        return False
+    plain = _generate_portal_password()
+    new_hash = make_password(plain)
+    Registration.objects.filter(
+        email__iexact=email_key,
+        status=RegistrationStatus.PAID,
+        portal_access_until__gt=now,
+    ).update(portal_password_hash=new_hash)
+    send_portal_credentials_email(active[0], plain)
+    return True
 
 
 def _build_confirmation_pdf(registration: Registration, session: Session, amount_paid: str) -> bytes:

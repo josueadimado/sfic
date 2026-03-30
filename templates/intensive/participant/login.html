@@ -1,0 +1,61 @@
+{% extends "intensive/base.html" %}
+{% load static %}
+
+{% block title %}Sign in | Learning hub{% endblock %}
+
+{% block body %}
+<div class="participant-dashboard participant-dashboard--gate">
+    <header class="participant-dashboard__header" role="banner">
+        <div class="participant-dashboard__header-inner">
+            <a href="{% url 'home' %}" class="participant-dashboard__brand">
+                <img src="{% static 'images/new logo set free.svg' %}" alt="" width="40" height="40" decoding="async" class="participant-dashboard__logo">
+                <span class="participant-dashboard__brand-text">
+                    <span class="participant-dashboard__brand-title">Set Free In Christ</span>
+                    <span class="participant-dashboard__brand-sub">Learning hub</span>
+                </span>
+            </a>
+            <a href="{% url 'home' %}" class="participant-dashboard__nav-link participant-dashboard__nav-link--external">← Main site</a>
+        </div>
+    </header>
+    <main class="participant-dashboard__gate-main" id="main-content">
+        <div class="participant-dashboard__gate-card">
+            <h1 class="participant-dashboard__gate-title">Sign in</h1>
+            <p class="participant-dashboard__gate-lede">
+                Use the email you registered with and the portal password from your email. Access lasts 30 days per paid registration.
+            </p>
+
+            {% if messages %}
+                <div class="alerts">
+                    {% for message in messages %}
+                        <p class="alert">{{ message }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% if error %}
+                <p class="alert">{{ error }}</p>
+            {% endif %}
+
+            <form method="post" action="{% url 'participant_portal_login' %}" class="participant-dashboard__form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="login">
+                <label class="participant-dashboard__label" for="email">Email</label>
+                <input class="participant-dashboard__input" id="email" name="email" type="email" autocomplete="email" required value="{{ email_value|default:'' }}">
+
+                <label class="participant-dashboard__label" for="password">Portal password</label>
+                <input class="participant-dashboard__input" id="password" name="password" type="password" autocomplete="current-password" required>
+
+                <button type="submit" class="btn btn-accent participant-dashboard__submit">Sign in</button>
+            </form>
+
+            <form method="post" action="{% url 'participant_portal_login' %}" class="participant-dashboard__form participant-dashboard__form--secondary">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="reset">
+                <label class="participant-dashboard__label" for="reset-email">Forgot password?</label>
+                <input class="participant-dashboard__input" id="reset-email" name="email" type="email" autocomplete="email" required placeholder="Your registration email">
+                <button type="submit" class="btn btn-outline participant-dashboard__submit">Email me a new password</button>
+            </form>
+        </div>
+    </main>
+</div>
+{% endblock %}

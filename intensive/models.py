@@ -113,6 +113,38 @@ class RegistrationMaterial(models.Model):
         return self.file.name.split("/")[-1] if self.file else "Material"
 
 
+class PortalVideo(models.Model):
+    """Training videos for paid registrants (stream on site only when using uploaded file)."""
+
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    video_file = models.FileField(
+        upload_to="portal_videos/",
+        blank=True,
+        help_text="Uploaded video (MP4 recommended). For very large files, use External URL instead.",
+    )
+    external_url = models.URLField(
+        blank=True,
+        help_text="Optional: YouTube/Vimeo or other link. If set, viewers watch here without file upload.",
+    )
+    display_order = models.PositiveIntegerField(default=1)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["display_order", "id"]
+
+    def __str__(self) -> str:
+        return self.title
+
+    def clean(self) -> None:
+        from django.core.exceptions import ValidationError
+
+        if not self.video_file and not (self.external_url or "").strip():
+            raise ValidationError("Add a video file or an external URL.")
+
+
 class Speaker(models.Model):
     full_name = models.CharField(max_length=140)
     role_title = models.CharField(max_length=180)
@@ -198,12 +230,26 @@ class Registration(models.Model):
     confirmation_email_sent = models.BooleanField(default=False)
     admin_paid_notification_sent = models.BooleanField(default=False)
     currency = models.CharField(max_length=8, default="USD")
+    portal_password_hash = models.CharField(
+        max_length=128,
+        blank=True,
+        help_text="Hashed password for the participant resource portal.",
+    )
+    portal_access_until = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="After this time, portal login and downloads stop for this registration.",
+    )
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["-created_at"]
-        indexes = [models.Index(fields=["email"]), models.Index(fields=["status"])]
+        indexes = [
+            models.Index(fields=["email"]),
+            models.Index(fields=["status"]),
+            models.Index(fields=["portal_access_until"], name="intensive_reg_portal_until"),
+        ]
 
     def __str__(self) -> str:
         return f"{self.full_name} - {self.session.title} ({self.status})"

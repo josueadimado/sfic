@@ -1,0 +1,179 @@
+{% extends "intensive/base.html" %}
+{% load static %}
+
+{# Logged-in participant: collapsible sidebar + main (overlay menu on small screens). #}
+{% block body %}
+<div class="participant-dashboard" id="participant-dashboard-root" data-participant-root>
+    <div class="participant-dashboard__backdrop" data-participant-sidebar-backdrop hidden aria-hidden="true"></div>
+
+    <div class="participant-dashboard__layout">
+        <aside class="participant-dashboard__sidebar" id="participant-dashboard-sidebar" data-participant-sidebar aria-label="Learning hub menu">
+            <div class="participant-dashboard__sidebar-head">
+                <a href="{% url 'participant_portal_home' %}" class="participant-dashboard__brand participant-dashboard__brand--sidebar">
+                    <img src="{% static 'images/new logo set free.svg' %}" alt="" width="40" height="40" decoding="async" class="participant-dashboard__logo">
+                    <span class="participant-dashboard__brand-text">
+                        <span class="participant-dashboard__brand-title">Set Free In Christ</span>
+                        <span class="participant-dashboard__brand-sub">Learning hub</span>
+                    </span>
+                </a>
+                <button type="button" class="participant-dashboard__sidebar-close" data-participant-sidebar-close aria-label="Close menu">✕</button>
+            </div>
+
+            <nav class="participant-dashboard__sidebar-nav" aria-label="Portal navigation">
+                <a
+                    href="{% url 'participant_portal_home' %}"
+                    class="participant-dashboard__sidebar-link {% if dashboard_section == 'home' %}is-active{% endif %}"
+                >Dashboard</a>
+                <a
+                    href="{% url 'participant_portal_home' %}#resources-downloads"
+                    class="participant-dashboard__sidebar-link"
+                >Downloads</a>
+                <a
+                    href="{% url 'participant_portal_home' %}#resources-videos"
+                    class="participant-dashboard__sidebar-link {% if dashboard_section == 'video' %}is-active{% endif %}"
+                >Videos</a>
+                <a
+                    href="{% url 'home' %}"
+                    class="participant-dashboard__sidebar-link participant-dashboard__sidebar-link--external"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >Main site</a>
+            </nav>
+
+            <div class="participant-dashboard__sidebar-foot">
+                {% if request.session.participant_email %}
+                    <span class="participant-dashboard__sidebar-email" title="Signed in with this email">{{ request.session.participant_email }}</span>
+                {% endif %}
+                <form method="post" action="{% url 'participant_portal_logout' %}" class="participant-dashboard__logout-form">
+                    {% csrf_token %}
+                    <button type="submit" class="participant-dashboard__btn-logout participant-dashboard__btn-logout--sidebar">Sign out</button>
+                </form>
+            </div>
+        </aside>
+
+        <div class="participant-dashboard__content">
+            <header class="participant-dashboard__topbar">
+                <button type="button" class="participant-dashboard__menu-toggle" data-participant-sidebar-toggle aria-expanded="true" aria-controls="participant-dashboard-sidebar">
+                    <span class="participant-dashboard__menu-toggle-bars" aria-hidden="true"></span>
+                    <span class="participant-dashboard__menu-toggle-text" data-participant-toggle-label>Menu</span>
+                </button>
+                <span class="participant-dashboard__topbar-title">Learning hub</span>
+            </header>
+
+            <main class="participant-dashboard__main" id="main-content">
+                {% block participant_content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    var root = document.querySelector("[data-participant-root]");
+    var sidebar = document.querySelector("[data-participant-sidebar]");
+    var toggle = document.querySelector("[data-participant-sidebar-toggle]");
+    var backdrop = document.querySelector("[data-participant-sidebar-backdrop]");
+    var closeBtn = document.querySelector("[data-participant-sidebar-close]");
+    var labelEl = document.querySelector("[data-participant-toggle-label]");
+    if (!root || !sidebar || !toggle) return;
+
+    var mqMobile = window.matchMedia("(max-width: 959px)");
+    var storageKey = "sfic-portal-sidebar-collapsed";
+
+    function isMobile() {
+        return mqMobile.matches;
+    }
+
+    function loadDesktopCollapsed() {
+        if (localStorage.getItem(storageKey) === "1") {
+            root.classList.add("participant-dashboard--sidebar-collapsed");
+        } else {
+            root.classList.remove("participant-dashboard--sidebar-collapsed");
+        }
+    }
+
+    function saveDesktopCollapsed(collapsed) {
+        localStorage.setItem(storageKey, collapsed ? "1" : "0");
+    }
+
+    function openMobileSheet() {
+        sidebar.classList.add("is-open");
+        if (backdrop) {
+            backdrop.removeAttribute("hidden");
+            backdrop.setAttribute("aria-hidden", "false");
+        }
+        document.body.classList.add("participant-dashboard--nav-open");
+        toggle.setAttribute("aria-expanded", "true");
+        if (labelEl) labelEl.textContent = "Close";
+    }
+
+    function closeMobileSheet() {
+        sidebar.classList.remove("is-open");
+        if (backdrop) {
+            backdrop.setAttribute("hidden", "");
+            backdrop.setAttribute("aria-hidden", "true");
+        }
+        document.body.classList.remove("participant-dashboard--nav-open");
+        toggle.setAttribute("aria-expanded", "false");
+        if (labelEl) labelEl.textContent = "Menu";
+    }
+
+    function toggleDesktopSidebar() {
+        var collapsed = root.classList.toggle("participant-dashboard--sidebar-collapsed");
+        saveDesktopCollapsed(collapsed);
+        toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+        if (labelEl) labelEl.textContent = collapsed ? "Menu" : "Hide menu";
+    }
+
+    function syncForViewport() {
+        if (isMobile()) {
+            root.classList.remove("participant-dashboard--sidebar-collapsed");
+            closeMobileSheet();
+        } else {
+            sidebar.classList.remove("is-open");
+            loadDesktopCollapsed();
+            var collapsed = root.classList.contains("participant-dashboard--sidebar-collapsed");
+            toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+            if (labelEl) labelEl.textContent = collapsed ? "Menu" : "Hide menu";
+        }
+    }
+
+    toggle.addEventListener("click", function () {
+        if (isMobile()) {
+            if (sidebar.classList.contains("is-open")) closeMobileSheet();
+            else openMobileSheet();
+        } else {
+            toggleDesktopSidebar();
+        }
+    });
+
+    if (backdrop) backdrop.addEventListener("click", closeMobileSheet);
+
+    if (closeBtn) {
+        closeBtn.addEventListener("click", function () {
+            if (isMobile()) closeMobileSheet();
+            else {
+                root.classList.add("participant-dashboard--sidebar-collapsed");
+                saveDesktopCollapsed(true);
+                toggle.setAttribute("aria-expanded", "false");
+                if (labelEl) labelEl.textContent = "Menu";
+            }
+        });
+    }
+
+    sidebar.querySelectorAll("a").forEach(function (a) {
+        a.addEventListener("click", function () {
+            if (isMobile()) closeMobileSheet();
+        });
+    });
+
+    mqMobile.addEventListener("change", syncForViewport);
+
+    document.addEventListener("keydown", function (e) {
+        if (e.key !== "Escape") return;
+        if (isMobile() && sidebar.classList.contains("is-open")) closeMobileSheet();
+    });
+
+    syncForViewport();
+})();
+</script>
+{% endblock %}

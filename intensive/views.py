@@ -1,10 +1,13 @@
 import csv
 import json
 import os
+from io import BytesIO
+import re
 import secrets
 import string
-import re
+import uuid
 from datetime import timedelta
+from urllib.parse import urlencode
 from decimal import Decimal, ROUND_UP
 
 import stripe
@@ -17,7 +20,7 @@ from django.core.validators import validate_email
 from django.core import signing
 from django.db import transaction
 from django.db.models import Max
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -26,6 +29,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from .forms import (
     DonationForm,
+    PortalVideoForm,
     RegistrationForm,
     SessionManageForm,
     SiteSettingForm,
@@ -39,6 +43,7 @@ from .models import (
     FreeRegistrationCode,
     PaymentTransaction,
     PaymentProvider,
+    PortalVideo,
     Registration,
     RegistrationMaterial,
     RegistrationStatus,
@@ -50,9 +55,13 @@ from .models import (
     TrainingScheduleItem,
 )
 from .services import (
+    admin_reset_portal_password_email,
+    admin_send_portal_invite_email,
     build_donation_manage_url,
     forward_donation_to_donor_elf,
     DONATION_MANAGE_SALT,
+    PORTAL_ACCESS_DAYS,
+    provision_portal_access,
     send_admin_donation_notification,
     send_admin_new_registration_notification,
     send_admin_paid_registration_notification,
@@ -241,6 +250,7 @@ def _sync_pending_registration_from_stripe(registration: Registration, note: str
 
     _ensure_registration_confirmation_email(registration)
     _ensure_admin_paid_registration_notification(registration)
+    provision_portal_access(registration)
     return True
 
 
@@ -535,6 +545,7 @@ def create_checkout(request: HttpRequest) -> HttpResponse:
     # Free registration code: 100% discount, no Stripe. One-time use only.
     discount_code = form.cleaned_data.get("discount_code", "").strip().upper()
     if discount_code:
+        free_reg_id: str | None = None
         with transaction.atomic():
             free_code = FreeRegistrationCode.objects.filter(
                 code=discount_code,
@@ -575,10 +586,14 @@ def create_checkout(request: HttpRequest) -> HttpResponse:
                     payment_ref=f"FREE-{registration.id}",
                     note="100% discount via free registration code.",
                 )
-                send_admin_new_registration_notification(registration)
-                _ensure_registration_confirmation_email(registration)
-                _ensure_admin_paid_registration_notification(registration)
-                return redirect(f"{reverse('success')}?reg_id={registration.id}")
+                free_reg_id = str(registration.id)
+        if free_reg_id:
+            paid_free = Registration.objects.select_related("session").get(id=free_reg_id)
+            send_admin_new_registration_notification(paid_free)
+            _ensure_registration_confirmation_email(paid_free)
+            _ensure_admin_paid_registration_notification(paid_free)
+            provision_portal_access(paid_free)
+            return redirect(f"{reverse('success')}?reg_id={free_reg_id}")
 
         existing_row = FreeRegistrationCode.objects.filter(code=discount_code).first()
         if existing_row is None:
@@ -1063,6 +1078,7 @@ def stripe_webhook(request: HttpRequest) -> HttpResponse:
         registration_id = checkout.get("metadata", {}).get("registration_id")
         if registration_id:
             try:
+                portal_followup_id: str | None = None
                 with transaction.atomic():
                     registration = Registration.objects.select_for_update().get(id=registration_id)
                     session = registration.session
@@ -1101,8 +1117,12 @@ def stripe_webhook(request: HttpRequest) -> HttpResponse:
                             stripe_payment_intent=str(checkout.get("payment_intent", "")),
                             note="Payment confirmed from webhook.",
                         )
-                        _ensure_registration_confirmation_email(registration)
-                        _ensure_admin_paid_registration_notification(registration)
+                        portal_followup_id = str(registration.id)
+                if portal_followup_id:
+                    paid_reg = Registration.objects.select_related("session").get(id=portal_followup_id)
+                    _ensure_registration_confirmation_email(paid_reg)
+                    _ensure_admin_paid_registration_notification(paid_reg)
+                    provision_portal_access(paid_reg)
             except Registration.DoesNotExist:
                 return HttpResponse(status=200)
     elif event["type"] == "checkout.session.expired":
@@ -1290,6 +1310,7 @@ def success(request: HttpRequest) -> HttpResponse:
         if registration and registration.status == RegistrationStatus.PAID:
             _ensure_registration_confirmation_email(registration)
             _ensure_admin_paid_registration_notification(registration)
+            provision_portal_access(registration)
     return render(
         request,
         "intensive/success.html",
@@ -1551,6 +1572,62 @@ def dashboard_registration_detail(request: HttpRequest, item_id: str) -> HttpRes
         "admin_page": "registrations",
     }
     return render(request, "intensive/dashboard_registration_detail.html", context)
+
+
+@login_required
+@require_POST
+def dashboard_registration_portal_email(request: HttpRequest, item_id: str) -> HttpResponse:
+    """Send portal login email (new password) or reset password and email."""
+    registration = get_object_or_404(Registration.objects.select_related("session"), id=item_id)
+    if request.POST.get("action") == "reset":
+        ok, msg = admin_reset_portal_password_email(registration)
+    else:
+        ok, msg = admin_send_portal_invite_email(registration)
+    if ok:
+        messages.success(request, msg)
+    else:
+        messages.error(request, msg)
+    return redirect("dashboard_registration_detail", item_id=item_id)
+
+
+@login_required
+@require_POST
+def dashboard_send_portal_invites(request: HttpRequest) -> HttpResponse:
+    """Bulk: email portal invites to paid registrants who do not have a portal password yet."""
+    session_id = (request.POST.get("session") or "").strip()
+    qs = Registration.objects.filter(
+        status=RegistrationStatus.PAID,
+    ).filter(portal_password_hash="")
+    if session_id:
+        try:
+            uuid.UUID(session_id)
+        except ValueError:
+            messages.error(request, "Invalid session filter.")
+            return redirect("dashboard")
+        qs = qs.filter(session_id=session_id)
+
+    now = timezone.now()
+    sent = 0
+    for reg in qs.iterator(chunk_size=100):
+        if reg.portal_access_until is None or reg.portal_access_until <= now:
+            reg.portal_access_until = now + timedelta(days=PORTAL_ACCESS_DAYS)
+            reg.save(update_fields=["portal_access_until", "updated_at"])
+        provision_portal_access(reg, send_email=True)
+        sent += 1
+    if sent:
+        messages.success(
+            request,
+            f"Portal invitation emails sent to {sent} registrant(s) without a password yet.",
+        )
+    else:
+        messages.info(
+            request,
+            "No matching paid registrants need an initial portal password (or adjust session filter).",
+        )
+    params: dict[str, str] = {"status": RegistrationStatus.PAID}
+    if session_id:
+        params["session"] = session_id
+    return redirect(f"{reverse('dashboard')}?{urlencode(params)}")
 
 
 @login_required
@@ -1877,18 +1954,166 @@ def dashboard_speaker_delete(request: HttpRequest, item_id: int) -> HttpResponse
 
 
 @login_required
+def dashboard_portal_videos(request: HttpRequest) -> HttpResponse:
+    items = PortalVideo.objects.order_by("display_order", "id")
+    return render(
+        request,
+        "intensive/dashboard_portal_videos.html",
+        {"items": items, "admin_page": "portal_videos"},
+    )
+
+
+@login_required
+def dashboard_portal_video_create(request: HttpRequest) -> HttpResponse:
+    if request.method == "POST":
+        form = PortalVideoForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Portal video added.")
+            return redirect("dashboard_portal_videos")
+    else:
+        form = PortalVideoForm()
+    return render(
+        request,
+        "intensive/dashboard_portal_video_form.html",
+        {"form": form, "edit_obj": None, "admin_page": "portal_videos"},
+    )
+
+
+@login_required
+def dashboard_portal_video_edit(request: HttpRequest, item_id: int) -> HttpResponse:
+    edit_obj = get_object_or_404(PortalVideo, id=item_id)
+    if request.method == "POST":
+        form = PortalVideoForm(request.POST, request.FILES, instance=edit_obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Portal video updated.")
+            return redirect("dashboard_portal_videos")
+    else:
+        form = PortalVideoForm(instance=edit_obj)
+    return render(
+        request,
+        "intensive/dashboard_portal_video_form.html",
+        {"form": form, "edit_obj": edit_obj, "admin_page": "portal_videos"},
+    )
+
+
+@login_required
+@require_POST
+def dashboard_portal_video_delete(request: HttpRequest, item_id: int) -> HttpResponse:
+    obj = get_object_or_404(PortalVideo, id=item_id)
+    obj.delete()
+    messages.success(request, "Portal video removed.")
+    return redirect("dashboard_portal_videos")
+
+
+def _export_registrations_filtered_qs(request: HttpRequest):
+    """
+    Match dashboard filters: ?status= missing => PAID only; ?status= (empty) => all statuses.
+    """
+    session_id = (request.GET.get("session") or "").strip()
+    raw_status = request.GET.get("status")
+    if raw_status is None:
+        status = RegistrationStatus.PAID
+    elif raw_status.strip() == "":
+        status = None
+    else:
+        status = raw_status.strip()
+
+    qs = Registration.objects.select_related("session", "free_registration_code").order_by("created_at")
+    if session_id:
+        try:
+            uuid.UUID(session_id)
+        except ValueError:
+            return None, "Invalid session id in export link."
+        qs = qs.filter(session_id=session_id)
+    if status:
+        qs = qs.filter(status=status)
+    return qs, None
+
+
+def _export_row_cells(row: Registration) -> list:
+    free_code = ""
+    if getattr(row, "free_registration_code", None):
+        free_code = row.free_registration_code.code or ""
+    portal_until = row.portal_access_until.isoformat() if row.portal_access_until else ""
+    return [
+        row.full_name or "",
+        row.email or "",
+        row.phone or "",
+        row.city or "",
+        row.country or "",
+        row.church or "",
+        "Yes" if row.is_student else "No",
+        row.student_id or "",
+        row.student_discount_code or "",
+        f"{row.discount_amount / 100:.2f}",
+        free_code,
+        row.session.title if row.session_id else "",
+        row.status or "",
+        row.payment_ref or "",
+        f"{row.amount_paid / 100:.2f}",
+        (row.currency or "").upper(),
+        portal_until,
+        row.created_at.isoformat() if row.created_at else "",
+    ]
+
+
+def _export_registrations_xlsx(qs) -> HttpResponse:
+    try:
+        from openpyxl import Workbook
+    except ImportError:
+        return HttpResponseBadRequest("Excel export requires the openpyxl package. Use CSV or run pip install openpyxl.")
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Registrations"
+    headers = [
+        "Full Name",
+        "Email",
+        "Phone",
+        "City",
+        "Country",
+        "Church",
+        "Is Student",
+        "Student ID",
+        "Discount Code",
+        "Discount Amount",
+        "Free Reg Code",
+        "Session",
+        "Status",
+        "Payment Ref",
+        "Amount Paid",
+        "Currency",
+        "Portal Access Until",
+        "Created At",
+    ]
+    ws.append(headers)
+    for row in qs.iterator(chunk_size=500):
+        ws.append(_export_row_cells(row))
+    buffer = BytesIO()
+    wb.save(buffer)
+    response = HttpResponse(
+        buffer.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    response["Content-Disposition"] = 'attachment; filename="registrations.xlsx"'
+    return response
+
+
+@login_required
 @require_GET
 def export_csv(request: HttpRequest) -> HttpResponse:
-    session_id = request.GET.get("session")
-    status = request.GET.get("status")
-    registrations = Registration.objects.select_related("session").all()
-    if session_id:
-        registrations = registrations.filter(session_id=session_id)
-    if status:
-        registrations = registrations.filter(status=status)
+    qs, err = _export_registrations_filtered_qs(request)
+    if err:
+        return HttpResponseBadRequest(err)
+    fmt = (request.GET.get("format") or "csv").lower().strip()
+    if fmt in ("xlsx", "excel"):
+        return _export_registrations_xlsx(qs)
 
-    response = HttpResponse(content_type="text/csv")
-    response["Content-Disposition"] = "attachment; filename=registrations.csv"
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = 'attachment; filename="registrations.csv"'
+    response.write("\ufeff")
     writer = csv.writer(response)
     writer.writerow(
         [
@@ -1902,33 +2127,16 @@ def export_csv(request: HttpRequest) -> HttpResponse:
             "Student ID",
             "Discount Code",
             "Discount Amount",
+            "Free Reg Code",
             "Session",
             "Status",
             "Payment Ref",
             "Amount Paid",
             "Currency",
+            "Portal Access Until",
             "Created At",
         ]
     )
-    for row in registrations:
-        writer.writerow(
-            [
-                row.full_name,
-                row.email,
-                row.phone,
-                row.city,
-                row.country,
-                row.church,
-                "Yes" if row.is_student else "No",
-                row.student_id,
-                row.student_discount_code,
-                f"{row.discount_amount / 100:.2f}",
-                row.session.title,
-                row.status,
-                row.payment_ref,
-                row.amount_paid,
-                row.currency,
-                row.created_at.isoformat(),
-            ]
-        )
+    for row in qs.iterator(chunk_size=500):
+        writer.writerow(_export_row_cells(row))
     return response
