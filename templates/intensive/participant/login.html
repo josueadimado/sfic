@@ -22,10 +22,17 @@
     <main class="participant-dashboard__gate-main" id="main-content">
         <div class="participant-dashboard__gate-card">
             <h1 class="participant-dashboard__gate-title">Sign in</h1>
-            <p class="participant-dashboard__gate-lede">
-                Use the email you paid with and the portal password from your invitation email.
-                Each paid seat includes <strong>30 days</strong> in the hub: streaming videos for every intensive; PDF downloads unlock <strong>after the live dates</strong> for upcoming sessions, and right away for on-demand (past) sessions.
+            <p class="participant-dashboard__gate-tagline">
+                Use the <strong>email you paid with</strong> and the <strong>portal password</strong> from your invitation.
             </p>
+
+            <div class="participant-dashboard__gate-aside" aria-label="What your hub includes">
+                <p class="participant-dashboard__gate-aside-title">Each paid seat gets <strong>30 days</strong> in the learning hub:</p>
+                <ul class="participant-dashboard__gate-list">
+                    <li><span class="participant-dashboard__gate-list-label">Videos</span> Stream training for every intensive you joined.</li>
+                    <li><span class="participant-dashboard__gate-list-label">Files</span> PDFs and documents unlock <strong>after the live dates</strong> for upcoming sessions, and right away for past (on‑demand) sessions.</li>
+                </ul>
+            </div>
 
             {% if messages %}
                 <div class="alerts">
@@ -54,7 +61,9 @@
             <form method="post" action="{% url 'participant_portal_login' %}" class="participant-dashboard__form participant-dashboard__form--secondary">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="reset">
-                <label class="participant-dashboard__label" for="reset-email">Forgot password?</label>
+                <h2 class="participant-dashboard__gate-subhead">Forgot your password?</h2>
+                <p class="participant-dashboard__gate-help">Enter the same email you use for the hub. We will send a new portal password.</p>
+                <label class="participant-dashboard__label" for="reset-email">Email</label>
                 <input class="participant-dashboard__input" id="reset-email" name="email" type="email" autocomplete="email" required placeholder="Your registration email">
                 <button type="submit" class="btn btn-outline participant-dashboard__submit">Email me a new password</button>
             </form>

@@ -33,6 +33,12 @@
         </div>
     </section>
 
+    <nav class="participant-dashboard__jump" aria-label="Jump to content on this page">
+        <span class="participant-dashboard__jump-label">Go to</span>
+        <a class="participant-dashboard__jump-link" href="#resources-videos">Videos</a>
+        <a class="participant-dashboard__jump-link" href="#resources-downloads">Downloads</a>
+    </nav>
+
     <section class="participant-dashboard__grid participant-dashboard__grid--hub" aria-label="Your enrollments">
         <article class="participant-dash-card participant-dash-card--sessions">
             <h2 class="participant-dash-card__title">
@@ -52,7 +58,46 @@
             </ul>
         </article>
 
-        <article class="participant-dash-card participant-dash-card--downloads" id="resources-downloads">
+        <article class="participant-dash-card participant-dash-card--videos" id="resources-videos">
+            <h2 class="participant-dash-card__title">
+                <span class="participant-dash-card__icon" aria-hidden="true">▶</span>
+                Training videos
+            </h2>
+            <p class="participant-dash-card__intro">Watch in the browser, on Zoom (when provided), or both. Use Wi‑Fi for best quality.</p>
+            <p class="participant-hub-video-notice participant-hub-video-notice--compact" role="note">
+                <strong>Do not share</strong> your hub sign-in, passcodes, or video links — they are for your registration only.
+            </p>
+            {% if videos %}
+                <ul class="participant-dash-video-list">
+                    {% for v in videos %}
+                        <li>
+                            <a class="participant-dash-video" href="{% url 'participant_portal_video_watch' v.id %}">
+                                <span class="participant-dash-video__play" aria-hidden="true">▶</span>
+                                <span class="participant-dash-video__body">
+                                    <span class="participant-dash-video__title">{{ v.title }}</span>
+                                    {% if hub_session_count > 1 %}
+                                        <span class="participant-dash-video__session">{{ v.session.title }}</span>
+                                    {% endif %}
+                                    {% if v.description %}
+                                        <span class="participant-dash-video__desc">{{ v.description|truncatewords:22 }}</span>
+                                    {% endif %}
+                                    {% if v.zoom_recording_url %}
+                                        <span class="participant-dash-video__kind">Includes Zoom recording</span>
+                                    {% endif %}
+                                </span>
+                                <span class="participant-dash-video__chev" aria-hidden="true">→</span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="participant-dash-video-empty" role="status">
+                    No training videos for your session(s) yet. Your team adds them in the admin under <strong>Training Sessions</strong> → edit your intensive → <strong>Manage videos</strong>.
+                </p>
+            {% endif %}
+        </article>
+
+        <article class="participant-dash-card participant-dash-card--downloads participant-dash-card--wide" id="resources-downloads">
             <h2 class="participant-dash-card__title">
                 <span class="participant-dash-card__icon" aria-hidden="true">↓</span>
                 Downloads
@@ -108,45 +153,6 @@
                         <strong>Earliest unlock:</strong> after {{ downloads_unlock_after|date:"F j, Y" }} (last day of your intensive).
                     </p>
                 {% endif %}
-            {% endif %}
-        </article>
-
-        <article class="participant-dash-card participant-dash-card--videos participant-dash-card--wide" id="resources-videos">
-            <h2 class="participant-dash-card__title">
-                <span class="participant-dash-card__icon" aria-hidden="true">▶</span>
-                Training videos
-            </h2>
-            <p class="participant-dash-card__intro">Watch in the browser, on Zoom (when provided), or both. Use Wi‑Fi for best quality.</p>
-            <p class="participant-hub-video-notice participant-hub-video-notice--compact" role="note">
-                <strong>Do not share</strong> your hub sign-in, passcodes, or video links — they are for your registration only.
-            </p>
-            {% if videos %}
-                <ul class="participant-dash-video-list">
-                    {% for v in videos %}
-                        <li>
-                            <a class="participant-dash-video" href="{% url 'participant_portal_video_watch' v.id %}">
-                                <span class="participant-dash-video__play" aria-hidden="true">▶</span>
-                                <span class="participant-dash-video__body">
-                                    <span class="participant-dash-video__title">{{ v.title }}</span>
-                                    {% if hub_session_count > 1 %}
-                                        <span class="participant-dash-video__session">{{ v.session.title }}</span>
-                                    {% endif %}
-                                    {% if v.description %}
-                                        <span class="participant-dash-video__desc">{{ v.description|truncatewords:22 }}</span>
-                                    {% endif %}
-                                    {% if v.zoom_recording_url %}
-                                        <span class="participant-dash-video__kind">Includes Zoom recording</span>
-                                    {% endif %}
-                                </span>
-                                <span class="participant-dash-video__chev" aria-hidden="true">→</span>
-                            </a>
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p class="participant-dash-video-empty" role="status">
-                    No training videos for your session(s) yet. Your team adds them in the admin under <strong>Training Sessions</strong> → edit your intensive → <strong>Manage videos</strong>.
-                </p>
             {% endif %}
         </article>
     </section>
