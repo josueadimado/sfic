@@ -1,10 +1,13 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="{% block html_root_class %}{% endblock %}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {# Portal login: skip full-screen loader + js-loading so the page is usable before fonts/CSS finish. #}
+    {% if not request.resolver_match or request.resolver_match.url_name != "participant_portal_login" %}
     <script>document.documentElement.classList.add("js-loading");</script>
+    {% endif %}
     <title>{% block title %}Freedom Intensive{% endblock %}</title>
     {% with canonical=request.scheme|add:"://"|add:request.get_host|add:request.path %}
     <meta name="description" content="{% block meta_description %}Freedom Intensive registration and training by Set Free In Christ.{% endblock %}">
@@ -24,19 +27,30 @@
     <meta name="twitter:description" content="{% block twitter_description %}Join the Freedom Intensive training and reserve your seat online.{% endblock %}">
     <meta name="twitter:image" content="{% block twitter_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/hero-main.jpg' %}{% endblock %}">
     {% endwith %}
+    {% if request.resolver_match and request.resolver_match.url_name == "participant_portal_login" %}
+    <style>
+        html.portal-gate-lite,
+        html.portal-gate-lite body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+    </style>
+    {% else %}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    {% endif %}
     <link rel="stylesheet" href="{% static 'css/site.css' %}?v={{ static_version }}">
     {% block head %}{% endblock %}
 </head>
 <body>
+    {% if not request.resolver_match or request.resolver_match.url_name != "participant_portal_login" %}
     <div class="page-loader" id="page-loader" aria-hidden="true">
         <div class="page-loader-inner">
             <span class="page-loader-ring"></span>
             <img src="{% static 'images/new logo set free.svg' %}" alt="Set Free In Christ" class="page-loader-logo">
         </div>
     </div>
+    {% endif %}
     {% block body %}{% endblock %}
     <div class="admin-sidebar-backdrop" id="admin-sidebar-backdrop" hidden aria-hidden="true"></div>
     <script>
