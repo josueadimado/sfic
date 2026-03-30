@@ -3,42 +3,172 @@
 import django.utils.timezone
 from django.db import migrations, models
 
+OLD_IDX = "intensive_fr_is_used_9f5e2a_idx"
+NEW_IDX = "intensive_f_is_used_b348f9_idx"
+
+
+def _mysql_drop_indexes_on_is_used(cursor, table: str) -> None:
+    cursor.execute(
+        """
+        SELECT DISTINCT INDEX_NAME FROM information_schema.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s
+          AND COLUMN_NAME = 'is_used' AND INDEX_NAME != 'PRIMARY'
+        """,
+        [table],
+    )
+    for (idx_name,) in cursor.fetchall():
+        cursor.execute(f"ALTER TABLE `{table}` DROP INDEX `{idx_name}`")
+
+
+def _sqlite_drop_indexes_on_is_used(cursor, table: str) -> None:
+    cursor.execute(f'PRAGMA index_list("{table}")')
+    for row in cursor.fetchall():
+        idx_name = row[1]
+        cursor.execute(f'PRAGMA index_info("{idx_name}")')
+        cols = [r[2] for r in cursor.fetchall()]
+        if cols == ["is_used"]:
+            cursor.execute(f'DROP INDEX IF EXISTS "{idx_name}"')
+
+
+def forwards_freereg_is_used_index(apps, schema_editor):
+    """Align DB with final index name; works even if migration state never had OLD_IDX."""
+    Model = apps.get_model("intensive", "FreeRegistrationCode")
+    table = Model._meta.db_table
+    connection = schema_editor.connection
+
+    with connection.cursor() as cursor:
+        if connection.vendor == "mysql":
+            _mysql_drop_indexes_on_is_used(cursor, table)
+            cursor.execute(
+                f"ALTER TABLE `{table}` ADD INDEX `{NEW_IDX}` (`is_used`)"
+            )
+        elif connection.vendor == "sqlite":
+            _sqlite_drop_indexes_on_is_used(cursor, table)
+            cursor.execute(
+                f'CREATE INDEX IF NOT EXISTS "{NEW_IDX}" ON "{table}" ("is_used")'
+            )
+        elif connection.vendor == "postgresql":
+            for name in (OLD_IDX, NEW_IDX):
+                cursor.execute(
+                    "DROP INDEX IF EXISTS %s CASCADE"
+                    % connection.ops.quote_name(name)
+                )
+            cursor.execute(
+                "CREATE INDEX %s ON %s (%s)"
+                % (
+                    connection.ops.quote_name(NEW_IDX),
+                    connection.ops.quote_name(table),
+                    connection.ops.quote_name("is_used"),
+                )
+            )
+        else:
+            raise NotImplementedError(
+                "Migration 0020 FreeRegistrationCode index fix is not implemented "
+                "for database vendor %r. Use MySQL, PostgreSQL, or SQLite."
+                % (connection.vendor,)
+            )
+
+
+def backwards_freereg_is_used_index(apps, schema_editor):
+    """Restore OLD_IDX for migration rollback."""
+    Model = apps.get_model("intensive", "FreeRegistrationCode")
+    table = Model._meta.db_table
+    connection = schema_editor.connection
+
+    with connection.cursor() as cursor:
+        if connection.vendor == "mysql":
+            _mysql_drop_indexes_on_is_used(cursor, table)
+            cursor.execute(
+                f"ALTER TABLE `{table}` ADD INDEX `{OLD_IDX}` (`is_used`)"
+            )
+        elif connection.vendor == "sqlite":
+            _sqlite_drop_indexes_on_is_used(cursor, table)
+            cursor.execute(
+                f'CREATE INDEX IF NOT EXISTS "{OLD_IDX}" ON "{table}" ("is_used")'
+            )
+        elif connection.vendor == "postgresql":
+            for name in (OLD_IDX, NEW_IDX):
+                cursor.execute(
+                    "DROP INDEX IF EXISTS %s CASCADE"
+                    % connection.ops.quote_name(name)
+                )
+            cursor.execute(
+                "CREATE INDEX %s ON %s (%s)"
+                % (
+                    connection.ops.quote_name(OLD_IDX),
+                    connection.ops.quote_name(table),
+                    connection.ops.quote_name("is_used"),
+                )
+            )
+
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('intensive', '0019_participant_portal_portalvideo_registration_portal_fields'),
+        ("intensive", "0019_participant_portal_portalvideo_registration_portal_fields"),
     ]
 
     operations = [
-        # RenameIndex can fail on MySQL (PythonAnywhere) if names differ slightly.
-        # Drop + recreate is equivalent for this single-field index.
-        migrations.RemoveIndex(
-            model_name='freeregistrationcode',
-            name='intensive_fr_is_used_9f5e2a_idx',
-        ),
-        migrations.AddIndex(
-            model_name='freeregistrationcode',
-            index=models.Index(fields=['is_used'], name='intensive_f_is_used_b348f9_idx'),
+        # RemoveIndex/RenameIndex run database_forwards() which requires the old index
+        # name in *migration state*. Some DBs were built without that name in history.
+        # state_operations only call state_forwards() (safe if the name is absent).
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunPython(
+                    forwards_freereg_is_used_index,
+                    backwards_freereg_is_used_index,
+                ),
+            ],
+            state_operations=[
+                migrations.RemoveIndex(
+                    model_name="freeregistrationcode",
+                    name=OLD_IDX,
+                ),
+                migrations.RemoveIndex(
+                    model_name="freeregistrationcode",
+                    name=NEW_IDX,
+                ),
+                migrations.AddIndex(
+                    model_name="freeregistrationcode",
+                    index=models.Index(
+                        fields=["is_used"],
+                        name=NEW_IDX,
+                    ),
+                ),
+            ],
         ),
         migrations.AlterField(
-            model_name='freeregistrationcode',
-            name='created_at',
+            model_name="freeregistrationcode",
+            name="created_at",
             field=models.DateTimeField(default=django.utils.timezone.now),
         ),
         migrations.AlterField(
-            model_name='paymenttransaction',
-            name='provider',
-            field=models.CharField(choices=[('STRIPE', 'Stripe'), ('FREE_CODE', 'Free Registration Code')], default='STRIPE', max_length=16),
+            model_name="paymenttransaction",
+            name="provider",
+            field=models.CharField(
+                choices=[
+                    ("STRIPE", "Stripe"),
+                    ("FREE_CODE", "Free Registration Code"),
+                ],
+                default="STRIPE",
+                max_length=16,
+            ),
         ),
         migrations.AlterField(
-            model_name='registration',
-            name='payment_provider',
-            field=models.CharField(choices=[('STRIPE', 'Stripe'), ('FREE_CODE', 'Free Registration Code')], default='STRIPE', max_length=16),
+            model_name="registration",
+            name="payment_provider",
+            field=models.CharField(
+                choices=[
+                    ("STRIPE", "Stripe"),
+                    ("FREE_CODE", "Free Registration Code"),
+                ],
+                default="STRIPE",
+                max_length=16,
+            ),
         ),
         migrations.AlterField(
-            model_name='registrationmaterial',
-            name='created_at',
+            model_name="registrationmaterial",
+            name="created_at",
             field=models.DateTimeField(default=django.utils.timezone.now),
         ),
     ]
