@@ -11,10 +11,15 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RenameIndex(
+        # RenameIndex can fail on MySQL (PythonAnywhere) if names differ slightly.
+        # Drop + recreate is equivalent for this single-field index.
+        migrations.RemoveIndex(
             model_name='freeregistrationcode',
-            new_name='intensive_f_is_used_b348f9_idx',
-            old_name='intensive_fr_is_used_9f5e2a_idx',
+            name='intensive_fr_is_used_9f5e2a_idx',
+        ),
+        migrations.AddIndex(
+            model_name='freeregistrationcode',
+            index=models.Index(fields=['is_used'], name='intensive_f_is_used_b348f9_idx'),
         ),
         migrations.AlterField(
             model_name='freeregistrationcode',
