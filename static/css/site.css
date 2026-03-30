@@ -2928,52 +2928,10 @@ section[id] {
 }
 
 .participant-dashboard__gate-tagline {
-    margin: 0 0 1rem;
+    margin: 0 0 1.25rem;
     font-size: 0.95rem;
     line-height: 1.55;
     color: #3d534d;
-}
-
-.participant-dashboard__gate-aside {
-    margin: 0 0 1.25rem;
-    padding: 0.85rem 1rem;
-    background: linear-gradient(180deg, #f4faf8 0%, #eef5f2 100%);
-    border: 1px solid #d0e4dc;
-    border-radius: 14px;
-}
-
-.participant-dashboard__gate-aside-title {
-    margin: 0 0 0.55rem;
-    font-size: 0.88rem;
-    line-height: 1.45;
-    color: #2f4c46;
-}
-
-.participant-dashboard__gate-list {
-    margin: 0;
-    padding: 0 0 0 1.15rem;
-    font-size: 0.86rem;
-    line-height: 1.5;
-    color: #3d534d;
-}
-
-.participant-dashboard__gate-list li {
-    margin-bottom: 0.45rem;
-}
-
-.participant-dashboard__gate-list li:last-child {
-    margin-bottom: 0;
-}
-
-.participant-dashboard__gate-list-label {
-    display: inline-block;
-    min-width: 3.6rem;
-    font-weight: 800;
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #1a5c52;
-    vertical-align: top;
 }
 
 .participant-dashboard__gate-subhead {
