@@ -12,6 +12,7 @@
         <h1>{% if edit_obj %}Edit video{% else %}Add video{% endif %}</h1>
         <p class="admin-subtitle">
             For <strong>{{ session.title }}</strong> only. {% if edit_obj %}Keep or replace the URL or upload — at least one is required.{% else %}Lower order numbers appear first in the hub.{% endif %}
+            Very large uploads may be blocked by your web server (413 error). You can use a YouTube or Vimeo link instead, or ask your host to allow bigger uploads (often <code style="font-size:0.85em;">client_max_body_size</code> on Nginx/OpenResty).
         </p>
         {% if messages %}
             <div class="alerts">
@@ -21,7 +22,7 @@
             </div>
         {% endif %}
 
-        <form method="post" enctype="multipart/form-data" class="admin-form-grid" style="max-width: 820px;">
+        <form id="portal-video-form" method="post" enctype="multipart/form-data" class="admin-form-grid" style="max-width: 820px;">
             {% csrf_token %}
             {% if edit_obj and edit_obj.video_file %}
                 <div class="admin-speaker-preview">
@@ -37,11 +38,125 @@
                 </div>
             {% endif %}
             {{ form.as_p }}
+            <div id="portal-upload-progress" class="portal-upload-progress" hidden role="status" aria-live="polite">
+                <div class="portal-upload-progress__track" aria-hidden="true">
+                    <div class="portal-upload-progress__bar" style="width: 0%;"></div>
+                </div>
+                <p class="portal-upload-progress__text">Preparing upload…</p>
+            </div>
+            <p id="portal-upload-error" class="portal-upload-error" hidden></p>
             <div class="admin-actions">
-                <button class="btn btn-accent" type="submit">{% if edit_obj %}Save changes{% else %}Add video{% endif %}</button>
+                <button class="btn btn-accent" type="submit" id="portal-video-submit">{% if edit_obj %}Save changes{% else %}Add video{% endif %}</button>
                 <a class="btn btn-outline" href="{% url 'dashboard_session_portal_videos' session.id %}">Back to videos</a>
             </div>
         </form>
     </section>
 </main>
+<script>
+(function () {
+    var form = document.getElementById("portal-video-form");
+    if (!form) return;
+    var fileInput = form.querySelector('input[type="file"][name="video_file"]');
+    var progressEl = document.getElementById("portal-upload-progress");
+    var progressBar = progressEl ? progressEl.querySelector(".portal-upload-progress__bar") : null;
+    var progressText = progressEl ? progressEl.querySelector(".portal-upload-progress__text") : null;
+    var errEl = document.getElementById("portal-upload-error");
+    var submitBtn = document.getElementById("portal-video-submit");
+
+    function fmtMb(bytes) {
+        if (bytes == null || bytes < 0) return "";
+        return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+    }
+
+    /** True if we landed on the session video list (success), not still on new/edit form. */
+    function isListSuccessUrl(href) {
+        try {
+            var p = new URL(href, window.location.origin).pathname.replace(/\/$/, "");
+            if (p.indexOf("/videos/new") !== -1) return false;
+            if (/\/videos\/\d+\/edit$/.test(p)) return false;
+            return /\/sessions\/[0-9a-fA-F-]{36}\/videos$/i.test(p);
+        } catch (e) {
+            return false;
+        }
+    }
+
+    form.addEventListener("submit", function (ev) {
+        if (!fileInput || !fileInput.files || fileInput.files.length === 0) return;
+        ev.preventDefault();
+
+        if (errEl) {
+            errEl.hidden = true;
+            errEl.textContent = "";
+        }
+        if (progressEl) progressEl.hidden = false;
+        if (progressBar) progressBar.style.width = "0%";
+        if (progressText) progressText.textContent = "Starting upload…";
+        if (submitBtn) submitBtn.disabled = true;
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", form.action || window.location.href, true);
+
+        xhr.upload.onprogress = function (e) {
+            if (!progressText || !progressBar) return;
+            if (e.lengthComputable && e.total > 0) {
+                var pct = Math.round((e.loaded / e.total) * 100);
+                progressBar.style.width = pct + "%";
+                progressText.textContent = "Uploading… " + fmtMb(e.loaded) + " / " + fmtMb(e.total) + " (" + pct + "%)";
+            } else {
+                progressBar.style.width = "100%";
+                progressText.textContent = "Uploading… " + fmtMb(e.loaded) + " (size unknown)";
+            }
+        };
+
+        xhr.onload = function () {
+            if (xhr.status === 413) {
+                if (progressEl) progressEl.hidden = true;
+                if (errEl) {
+                    errEl.hidden = false;
+                    errEl.textContent = "File too large for the server (413). Your host’s web server rejected the upload before Django saw it. Increase the limit (e.g. Nginx/OpenResty client_max_body_size), or paste a YouTube/Vimeo link instead of uploading.";
+                }
+                if (submitBtn) submitBtn.disabled = false;
+                return;
+            }
+            if (xhr.status === 0) {
+                if (progressEl) progressEl.hidden = true;
+                if (errEl) {
+                    errEl.hidden = false;
+                    errEl.textContent = "Upload failed (network or connection closed). Try a smaller file or an external link.";
+                }
+                if (submitBtn) submitBtn.disabled = false;
+                return;
+            }
+            var finalUrl = xhr.responseURL || window.location.href;
+            if (xhr.status >= 200 && xhr.status < 300 && isListSuccessUrl(finalUrl)) {
+                window.location.href = finalUrl;
+                return;
+            }
+            if (xhr.status >= 200 && xhr.status < 300 && xhr.responseText) {
+                document.open();
+                document.write(xhr.responseText);
+                document.close();
+                return;
+            }
+            if (progressEl) progressEl.hidden = true;
+            if (errEl) {
+                errEl.hidden = false;
+                errEl.textContent = "Something went wrong (HTTP " + xhr.status + "). Try again or use an external video link.";
+            }
+            if (submitBtn) submitBtn.disabled = false;
+        };
+
+        xhr.onerror = function () {
+            if (progressEl) progressEl.hidden = true;
+            if (errEl) {
+                errEl.hidden = false;
+                errEl.textContent = "Upload failed (network error). Check your connection or try an external video link.";
+            }
+            if (submitBtn) submitBtn.disabled = false;
+        };
+
+        xhr.send(new FormData(form));
+    });
+})();
+</script>
 {% endblock %}

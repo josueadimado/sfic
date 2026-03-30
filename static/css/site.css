@@ -3094,6 +3094,49 @@ th {
     padding: 0.3rem 0;
 }
 
+/* Portal video upload: progress bar (XHR upload) */
+.portal-upload-progress {
+    margin: 1rem 0 0.5rem;
+    padding: 1rem 1.1rem;
+    border-radius: 12px;
+    border: 1px solid #c5ddd4;
+    background: #f4faf7;
+}
+
+.portal-upload-progress__track {
+    height: 10px;
+    border-radius: 999px;
+    background: #dce8e2;
+    overflow: hidden;
+    margin-bottom: 0.6rem;
+}
+
+.portal-upload-progress__bar {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #1a5c52, #2a8f7d);
+    transition: width 0.12s ease-out;
+    max-width: 100%;
+}
+
+.portal-upload-progress__text {
+    margin: 0;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #21443e;
+}
+
+.portal-upload-error {
+    margin: 0.75rem 0 0;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    border: 1px solid #e0a8a8;
+    background: #fdf2f2;
+    color: #6b2c2c;
+    font-size: 0.92rem;
+    line-height: 1.45;
+}
+
 .admin-file-field {
     border: 1px solid #dce4df;
     border-radius: 10px;
