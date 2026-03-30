@@ -19,17 +19,22 @@
             <p class="participant-dash-card__intro">{{ video.description }}</p>
         {% endif %}
 
-        {% if video.external_url %}
+        {% if video.external_url and video_iframe_src %}
             <div class="participant-video-frame participant-video-frame--embed">
                 <iframe
-                    src="{{ video.external_url }}"
+                    src="{{ video_iframe_src }}"
                     title="{{ video.title }}"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowfullscreen
                     loading="lazy"
+                    referrerpolicy="strict-origin-when-cross-origin"
                 ></iframe>
             </div>
             <p class="participant-dash-footnote">Playback is hosted by the provider (e.g. YouTube or Vimeo). Use their controls for quality and captions.</p>
+        {% elif video.external_url %}
+            <p class="participant-dash-footnote participant-dash-footnote--warn" role="alert">
+                This video link could not be prepared for embedded playback. Ask your organizer to use a normal YouTube or Vimeo link, or edit the video in the admin and save again.
+            </p>
         {% elif video.video_file %}
             <video
                 class="participant-dash-native-video"

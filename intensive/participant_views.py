@@ -22,6 +22,7 @@ from .models import (
 )
 from .participant_downloads import build_participant_download_sections
 from .services import reset_and_email_portal_password
+from .video_urls import iframe_src_for_external_video
 
 
 def _participant_registrations(request):
@@ -272,11 +273,15 @@ def participant_portal_video_watch(request, video_id: int):
         raise Http404("Video not available.")
     if not video.video_file and not (video.external_url or "").strip():
         raise Http404()
+    video_iframe_src = ""
+    if (video.external_url or "").strip():
+        video_iframe_src = iframe_src_for_external_video(video.external_url)
     return render(
         request,
         "intensive/participant/video.html",
         {
             "video": video,
+            "video_iframe_src": video_iframe_src,
             "dashboard_section": "video",
         },
     )

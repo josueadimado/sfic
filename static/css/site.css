@@ -2689,6 +2689,15 @@ section[id] {
     color: #5f776f;
 }
 
+.participant-dash-footnote--warn {
+    padding: 0.85rem 1rem;
+    border-radius: 12px;
+    border: 1px solid #e0c4a8;
+    background: #fff8f0;
+    color: #5c3d1f;
+    line-height: 1.45;
+}
+
 /* Sign-in gate (matches hub chrome) */
 .participant-dashboard--gate {
     display: flex;
