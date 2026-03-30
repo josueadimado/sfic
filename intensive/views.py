@@ -1,6 +1,9 @@
 import csv
 import json
+import math
+import mimetypes
 import os
+from collections import defaultdict
 from io import BytesIO
 import re
 import secrets
@@ -19,8 +22,8 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.core import signing
 from django.db import transaction
-from django.db.models import Max
-from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest, JsonResponse
+from django.db.models import Count, Max, Q
+from django.http import FileResponse, Http404, HttpRequest, HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -377,11 +380,48 @@ def _build_donation_checkout_session(donation: Donation) -> stripe.checkout.Sess
     )
 
 
+def _next_scheduled_intensive_session() -> Session | None:
+    """Next active intensive by start date whose last day has not passed (local date)."""
+    today = timezone.localdate()
+    return (
+        Session.objects.filter(is_active=True, end_date__gte=today).order_by("start_date").first()
+    )
+
+
+@require_GET
+def public_event_program(request: HttpRequest, session_id: uuid.UUID) -> HttpResponse:
+    """
+    Serve the event program file only when the public site would show the download button.
+    Avoids exposing a guessable static media URL; checks are re-evaluated on every request.
+    """
+    session = get_object_or_404(Session, pk=session_id, is_active=True)
+    next_session = _next_scheduled_intensive_session()
+    if (
+        next_session is None
+        or next_session.pk != session.pk
+        or not session.allows_public_event_program_link()
+    ):
+        raise Http404("Program not available.")
+    pdf = session.event_program_pdf
+    if not pdf:
+        raise Http404("Program not available.")
+    name = pdf.name.split("/")[-1] if pdf.name else "event-program.pdf"
+    mime, _ = mimetypes.guess_type(name)
+    return FileResponse(
+        pdf.open("rb"),
+        as_attachment=True,
+        filename=name,
+        content_type=mime or "application/pdf",
+    )
+
+
 def _home_context(reg_form: dict | None = None, focus_register: bool = False) -> dict:
     sessions = Session.objects.filter(is_active=True).order_by("start_date")
     schedule_items = TrainingScheduleItem.objects.filter(is_active=True).order_by("display_order")
     today = timezone.localdate()
-    next_session = sessions.filter(start_date__gte=today).first()
+    upcoming_sessions = sessions.filter(end_date__gte=today)
+    past_sessions = sessions.filter(end_date__lt=today)
+    next_session = _next_scheduled_intensive_session()
     upcoming_session = next_session or sessions.first()
     speakers = Speaker.objects.filter(is_active=True).prefetch_related("sessions")
     if upcoming_session:
@@ -389,9 +429,13 @@ def _home_context(reg_form: dict | None = None, focus_register: bool = False) ->
         if session_speakers.exists():
             speakers = session_speakers
     site_setting = SiteSetting.objects.first()
-    program_pdf = site_setting.event_program_pdf if site_setting else None
+    public_program_session = None
+    if next_session and next_session.allows_public_event_program_link():
+        public_program_session = next_session
     return {
         "sessions": sessions,
+        "upcoming_sessions": upcoming_sessions,
+        "past_sessions": past_sessions,
         "schedule_items": schedule_items,
         "countdown_session": next_session,
         "speakers": speakers,
@@ -399,7 +443,7 @@ def _home_context(reg_form: dict | None = None, focus_register: bool = False) ->
         "venue_address": site_setting.venue_address if site_setting else DEFAULT_VENUE_ADDRESS,
         "donation_url": site_setting.donation_url if site_setting and site_setting.donation_url else "",
         "student_discount_percent": site_setting.student_discount_percent if site_setting else 0,
-        "program_pdf_url": program_pdf.url if program_pdf else "",
+        "public_program_session": public_program_session,
         "stripe_publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
         "reg_form": reg_form or {},
         "focus_register": focus_register,
@@ -1630,19 +1674,116 @@ def dashboard_send_portal_invites(request: HttpRequest) -> HttpResponse:
     return redirect(f"{reverse('dashboard')}?{urlencode(params)}")
 
 
+def _hub_days_span_label(until_list: list, now) -> str:
+    if not until_list:
+        return "—"
+    days_vals = []
+    for u in until_list:
+        if u and u > now:
+            days_vals.append(max(0, math.ceil((u - now).total_seconds() / 86400)))
+    if not days_vals:
+        return "—"
+    lo, hi = min(days_vals), max(days_vals)
+    return f"{lo}–{hi} d" if lo != hi else f"{lo} d"
+
+
 @login_required
 def dashboard_sessions(request: HttpRequest) -> HttpResponse:
-    context = {
-        "items": Session.objects.order_by("start_date", "title"),
-        "admin_page": "sessions",
-    }
+    now = timezone.now()
+    items = list(
+        Session.objects.annotate(
+            portal_video_n=Count("portal_videos"),
+            hub_open_n=Count(
+                "registrations",
+                filter=Q(
+                    registrations__status=RegistrationStatus.PAID,
+                    registrations__portal_access_until__gt=now,
+                ),
+            ),
+            hub_signed_in_n=Count(
+                "registrations",
+                filter=Q(
+                    registrations__status=RegistrationStatus.PAID,
+                    registrations__portal_access_until__gt=now,
+                    registrations__portal_last_login_at__isnull=False,
+                ),
+            ),
+        ).order_by("start_date", "title")
+    )
+    if items:
+        sid_list = [s.id for s in items]
+        open_until = Registration.objects.filter(
+            session_id__in=sid_list,
+            status=RegistrationStatus.PAID,
+            portal_access_until__gt=now,
+        ).values_list("session_id", "portal_access_until")
+        until_by_session = defaultdict(list)
+        for sess_id, until in open_until:
+            until_by_session[sess_id].append(until)
+        for s in items:
+            s.hub_days_span = _hub_days_span_label(until_by_session.get(s.id, []), now)
+    context = {"items": items, "admin_page": "sessions"}
     return render(request, "intensive/dashboard_sessions.html", context)
+
+
+@login_required
+def dashboard_session_hub_access(request: HttpRequest, session_id) -> HttpResponse:
+    session = get_object_or_404(Session, id=session_id)
+    now = timezone.now()
+    paid = (
+        Registration.objects.filter(session=session, status=RegistrationStatus.PAID)
+        .order_by("full_name", "email")
+    )
+    rows = []
+    for reg in paid:
+        hub_open = bool(reg.portal_access_until and reg.portal_access_until > now)
+        days_left = None
+        if hub_open and reg.portal_access_until:
+            days_left = max(0, math.ceil((reg.portal_access_until - now).total_seconds() / 86400))
+        rows.append(
+            {
+                "reg": reg,
+                "hub_open": hub_open,
+                "days_left": days_left,
+            }
+        )
+    return render(
+        request,
+        "intensive/dashboard_session_hub_access.html",
+        {
+            "session": session,
+            "rows": rows,
+            "admin_page": "sessions",
+        },
+    )
+
+
+@login_required
+@require_POST
+def dashboard_session_revoke_portal(request: HttpRequest, session_id, registration_id) -> HttpResponse:
+    session = get_object_or_404(Session, id=session_id)
+    reg = get_object_or_404(
+        Registration,
+        id=registration_id,
+        session=session,
+        status=RegistrationStatus.PAID,
+    )
+    now = timezone.now()
+    reg.portal_access_until = now
+    reg.portal_password_hash = ""
+    reg.portal_last_login_at = None
+    reg.save()
+    messages.warning(
+        request,
+        f"Hub access revoked for {reg.full_name}. They can be given a new window from Registrations if needed.",
+    )
+    return redirect("dashboard_session_hub_access", session_id=session.id)
 
 
 @login_required
 def dashboard_session_create(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
-        form = SessionManageForm(request.POST)
+        form = SessionManageForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
             messages.success(request, "Session created successfully.")
@@ -1664,7 +1805,7 @@ def dashboard_session_edit(request: HttpRequest, item_id: str) -> HttpResponse:
     edit_obj = get_object_or_404(Session, id=item_id)
 
     if request.method == "POST":
-        form = SessionManageForm(request.POST, instance=edit_obj)
+        form = SessionManageForm(request.POST, request.FILES, instance=edit_obj)
         if form.is_valid():
             form.save()
             messages.success(request, "Session updated successfully.")
@@ -1676,6 +1817,8 @@ def dashboard_session_edit(request: HttpRequest, item_id: str) -> HttpResponse:
     context = {
         "form": form,
         "edit_obj": edit_obj,
+        "session_materials": edit_obj.registration_materials.order_by("display_order", "id"),
+        "portal_video_count": edit_obj.portal_videos.count(),
         "admin_page": "sessions",
     }
     return render(request, "intensive/dashboard_session_form.html", context)
@@ -1776,7 +1919,6 @@ def dashboard_site_settings(request: HttpRequest) -> HttpResponse:
 
     context = {
         "form": form,
-        "registration_materials": RegistrationMaterial.objects.order_by("display_order", "id"),
         "admin_page": "settings",
     }
     return render(request, "intensive/dashboard_site_settings.html", context)
@@ -1784,30 +1926,34 @@ def dashboard_site_settings(request: HttpRequest) -> HttpResponse:
 
 @login_required
 @require_POST
-def dashboard_settings_material_add(request: HttpRequest) -> HttpResponse:
-    """Add a registration material (PDF/doc attached to confirmation emails)."""
+def dashboard_session_material_add(request: HttpRequest, session_id) -> HttpResponse:
+    """Add a PDF/doc for this session (confirmation email + learning hub when unlocked)."""
+    session = get_object_or_404(Session, id=session_id)
     ALLOWED = {".pdf", ".doc", ".docx", ".ppt", ".pptx"}
     file = request.FILES.get("file")
     if not file:
         messages.error(request, "Please select a file to upload.")
-        return redirect("dashboard_site_settings")
+        return redirect("dashboard_session_edit", item_id=session.id)
     ext = (file.name or "").lower().split(".")[-1] if "." in (file.name or "") else ""
     if f".{ext}" not in ALLOWED:
         messages.error(request, "File must be PDF, DOC, DOCX, PPT, or PPTX.")
-        return redirect("dashboard_site_settings")
-    max_order = RegistrationMaterial.objects.aggregate(m=Max("display_order"))["m"] or 0
-    RegistrationMaterial.objects.create(file=file, display_order=max_order + 1)
-    messages.success(request, "Material added. It will be attached to confirmation emails.")
-    return redirect("dashboard_site_settings")
+        return redirect("dashboard_session_edit", item_id=session.id)
+    max_order = (
+        RegistrationMaterial.objects.filter(session=session).aggregate(m=Max("display_order"))["m"] or 0
+    )
+    RegistrationMaterial.objects.create(session=session, file=file, display_order=max_order + 1)
+    messages.success(request, "Material added for this session.")
+    return redirect("dashboard_session_edit", item_id=session.id)
 
 
 @login_required
 @require_POST
-def dashboard_settings_material_delete(request: HttpRequest, material_id: int) -> HttpResponse:
-    material = get_object_or_404(RegistrationMaterial, id=material_id)
+def dashboard_session_material_delete(request: HttpRequest, session_id, material_id: int) -> HttpResponse:
+    session = get_object_or_404(Session, id=session_id)
+    material = get_object_or_404(RegistrationMaterial, id=material_id, session=session)
     material.delete()
     messages.success(request, "Material removed.")
-    return redirect("dashboard_site_settings")
+    return redirect("dashboard_session_edit", item_id=session.id)
 
 
 @login_required
@@ -1954,57 +2100,85 @@ def dashboard_speaker_delete(request: HttpRequest, item_id: int) -> HttpResponse
 
 
 @login_required
-def dashboard_portal_videos(request: HttpRequest) -> HttpResponse:
-    items = PortalVideo.objects.order_by("display_order", "id")
+def dashboard_portal_videos_legacy_redirect(request: HttpRequest) -> HttpResponse:
+    """Old global URL — videos are managed per training session."""
+    messages.info(
+        request,
+        "Hub videos are set per training session. Open a session, then use “Hub videos” on that session’s page.",
+    )
+    return redirect("dashboard_sessions")
+
+
+@login_required
+def dashboard_session_portal_videos(request: HttpRequest, session_id) -> HttpResponse:
+    session = get_object_or_404(Session, id=session_id)
+    items = session.portal_videos.order_by("display_order", "id")
     return render(
         request,
-        "intensive/dashboard_portal_videos.html",
-        {"items": items, "admin_page": "portal_videos"},
+        "intensive/dashboard_session_portal_videos.html",
+        {"session": session, "items": items, "admin_page": "sessions"},
     )
 
 
 @login_required
-def dashboard_portal_video_create(request: HttpRequest) -> HttpResponse:
+def dashboard_session_portal_video_create(request: HttpRequest, session_id) -> HttpResponse:
+    session = get_object_or_404(Session, id=session_id)
     if request.method == "POST":
         form = PortalVideoForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
-            messages.success(request, "Portal video added.")
-            return redirect("dashboard_portal_videos")
+            video = form.save(commit=False)
+            video.session = session
+            video.save()
+            messages.success(request, "Video added for this session.")
+            return redirect("dashboard_session_portal_videos", session_id=session.id)
+        messages.error(request, "Please fix the errors below.")
     else:
         form = PortalVideoForm()
     return render(
         request,
         "intensive/dashboard_portal_video_form.html",
-        {"form": form, "edit_obj": None, "admin_page": "portal_videos"},
+        {
+            "form": form,
+            "edit_obj": None,
+            "session": session,
+            "admin_page": "sessions",
+        },
     )
 
 
 @login_required
-def dashboard_portal_video_edit(request: HttpRequest, item_id: int) -> HttpResponse:
-    edit_obj = get_object_or_404(PortalVideo, id=item_id)
+def dashboard_session_portal_video_edit(request: HttpRequest, session_id, item_id: int) -> HttpResponse:
+    session = get_object_or_404(Session, id=session_id)
+    edit_obj = get_object_or_404(PortalVideo, id=item_id, session=session)
     if request.method == "POST":
         form = PortalVideoForm(request.POST, request.FILES, instance=edit_obj)
         if form.is_valid():
             form.save()
-            messages.success(request, "Portal video updated.")
-            return redirect("dashboard_portal_videos")
+            messages.success(request, "Video updated.")
+            return redirect("dashboard_session_portal_videos", session_id=session.id)
+        messages.error(request, "Please fix the errors below.")
     else:
         form = PortalVideoForm(instance=edit_obj)
     return render(
         request,
         "intensive/dashboard_portal_video_form.html",
-        {"form": form, "edit_obj": edit_obj, "admin_page": "portal_videos"},
+        {
+            "form": form,
+            "edit_obj": edit_obj,
+            "session": session,
+            "admin_page": "sessions",
+        },
     )
 
 
 @login_required
 @require_POST
-def dashboard_portal_video_delete(request: HttpRequest, item_id: int) -> HttpResponse:
-    obj = get_object_or_404(PortalVideo, id=item_id)
+def dashboard_session_portal_video_delete(request: HttpRequest, session_id, item_id: int) -> HttpResponse:
+    session = get_object_or_404(Session, id=session_id)
+    obj = get_object_or_404(PortalVideo, id=item_id, session=session)
     obj.delete()
-    messages.success(request, "Portal video removed.")
-    return redirect("dashboard_portal_videos")
+    messages.success(request, "Video removed.")
+    return redirect("dashboard_session_portal_videos", session_id=session.id)
 
 
 def _export_registrations_filtered_qs(request: HttpRequest):

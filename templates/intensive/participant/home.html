@@ -10,7 +10,13 @@
             <p class="participant-dashboard__eyebrow">Welcome back</p>
             <h1 class="participant-dashboard__title" id="dash-welcome-title">{{ welcome_name }}</h1>
             <p class="participant-dashboard__lede">
-                Your session materials and training videos are below. Downloads are yours to keep; videos are for watching on this site during your access period.
+                {% if allow_file_downloads %}
+                    Your <strong>30-day learning hub</strong> is open: stream training videos below and download PDFs for intensives that have already finished. Videos play in your browser only during this access window.
+                {% else %}
+                    Your <strong>30-day hub</strong> includes <strong>streaming videos</strong> below. <strong>PDF and document downloads</strong> unlock after the last day of your intensive
+                    {% if downloads_unlock_after %}({{ downloads_unlock_after|date:"M j, Y" }}){% endif %}
+                    — as long as your access hasn’t expired yet.
+                {% endif %}
             </p>
         </div>
         <div class="participant-dashboard__welcome-meta">
@@ -51,29 +57,39 @@
                 <span class="participant-dash-card__icon" aria-hidden="true">↓</span>
                 Downloads
             </h2>
-            <p class="participant-dash-card__intro">PDFs and documents — save a copy to your device.</p>
-            <ul class="participant-dash-actions">
-                {% if has_program_pdf %}
-                    <li>
-                        <a class="participant-dash-action" href="{% url 'participant_download_program' %}">
-                            <span class="participant-dash-action__label">Event program</span>
-                            <span class="participant-dash-action__hint">PDF</span>
-                        </a>
-                    </li>
-                {% endif %}
-                {% for mat in materials %}
-                    <li>
-                        <a class="participant-dash-action" href="{% url 'participant_download_material' mat.id %}">
-                            <span class="participant-dash-action__label">{{ mat }}</span>
-                            <span class="participant-dash-action__hint">Download</span>
-                        </a>
-                    </li>
-                {% empty %}
-                    {% if not has_program_pdf %}
-                        <li class="participant-dash-empty">No materials uploaded yet — check back soon.</li>
+            {% if allow_file_downloads %}
+                <p class="participant-dash-card__intro">PDFs and documents for your <strong>completed</strong> intensive — save a copy to your device.</p>
+                <ul class="participant-dash-actions">
+                    {% for preg in program_download_regs %}
+                        <li>
+                            <a class="participant-dash-action" href="{% url 'participant_download_program' preg.session.id %}">
+                                <span class="participant-dash-action__label">Event program · {{ preg.session.title }}</span>
+                                <span class="participant-dash-action__hint">PDF</span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                    {% for mat in materials %}
+                        <li>
+                            <a class="participant-dash-action" href="{% url 'participant_download_material' mat.id %}">
+                                <span class="participant-dash-action__label">{{ mat }}</span>
+                                <span class="participant-dash-action__hint">{{ mat.session.title }}</span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                    {% if not program_download_regs and not materials %}
+                        <li class="participant-dash-empty">No downloads here yet — check back soon.</li>
                     {% endif %}
-                {% endfor %}
-            </ul>
+                </ul>
+            {% else %}
+                <p class="participant-dash-card__intro participant-dash-downloads-pending">
+                    For <strong>upcoming</strong> intensives, the <strong>event program PDF</strong> and other documents stay closed until the live intensive has finished. Then you can download them here for the <strong>same session you paid for</strong>, until your 30-day hub access ends.
+                </p>
+                {% if downloads_unlock_after %}
+                    <p class="participant-dash-downloads-date">
+                        <strong>Earliest unlock:</strong> after {{ downloads_unlock_after|date:"F j, Y" }} (last day of your intensive).
+                    </p>
+                {% endif %}
+            {% endif %}
         </article>
 
         <article class="participant-dash-card participant-dash-card--videos participant-dash-card--wide" id="resources-videos">
@@ -90,6 +106,9 @@
                                 <span class="participant-dash-video__play" aria-hidden="true">▶</span>
                                 <span class="participant-dash-video__body">
                                     <span class="participant-dash-video__title">{{ v.title }}</span>
+                                    {% if hub_session_count > 1 %}
+                                        <span class="participant-dash-video__session">{{ v.session.title }}</span>
+                                    {% endif %}
                                     {% if v.description %}
                                         <span class="participant-dash-video__desc">{{ v.description|truncatewords:22 }}</span>
                                     {% endif %}
@@ -101,7 +120,7 @@
                 </ul>
             {% else %}
                 <p class="participant-dash-video-empty" role="status">
-                    No training videos yet. Your team can add them anytime in the custom admin under <strong>Portal videos</strong> (same place as Registrations and Site Settings).
+                    No training videos for your session(s) yet. Your team adds them in the admin under <strong>Training Sessions</strong> → edit your intensive → <strong>Manage videos</strong>.
                 </p>
             {% endif %}
         </article>

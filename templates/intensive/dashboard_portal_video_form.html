@@ -4,40 +4,14 @@
 
 {% block body %}
 <main class="admin-layout-page">
-    <aside class="admin-sidebar">
-        <div class="admin-sidebar-head">
-            <p class="eyebrow">Set Free In Christ</p>
-            <h2>Admin Panel</h2>
-        </div>
-        <nav class="admin-menu">
-            <a href="{% url 'dashboard' %}" class="{% if admin_page == 'registrations' %}is-active{% endif %}"><span class="menu-icon icon-registrations" aria-hidden="true"></span>Registrations</a>
-            <a href="{% url 'dashboard_transactions' %}" class="{% if admin_page == 'transactions' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Transactions</a>
-            <a href="{% url 'dashboard_donations' %}" class="{% if admin_page == 'donations' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Donations</a>
-            <a href="{% url 'dashboard_free_codes' %}" class="{% if admin_page == 'free_codes' %}is-active{% endif %}"><span class="menu-icon icon-settings" aria-hidden="true"></span>Free Codes</a>
-            <a href="{% url 'dashboard_sessions' %}" class="{% if admin_page == 'sessions' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Training Sessions</a>
-            <a href="{% url 'dashboard_schedule' %}" class="{% if admin_page == 'schedule' %}is-active{% endif %}"><span class="menu-icon icon-schedule" aria-hidden="true"></span>Training Schedule</a>
-            <a href="{% url 'dashboard_speakers' %}" class="{% if admin_page == 'speakers' %}is-active{% endif %}"><span class="menu-icon icon-speakers" aria-hidden="true"></span>Speakers</a>
-            <a href="{% url 'dashboard_portal_videos' %}" class="{% if admin_page == 'portal_videos' %}is-active{% endif %}"><span class="menu-icon icon-videos" aria-hidden="true"></span>Portal videos</a>
-            <a href="{% url 'dashboard_site_settings' %}" class="{% if admin_page == 'settings' %}is-active{% endif %}"><span class="menu-icon icon-settings" aria-hidden="true"></span>Site Settings</a>
-        </nav>
-        <div class="admin-sidebar-foot">
-            <a class="btn btn-outline btn-with-icon" href="{% url 'home' %}" target="_blank" rel="noreferrer">View Site <span class="btn-icon" aria-hidden="true">&#8599;</span></a>
-            <form method="post" action="{% url 'logout' %}" class="inline-form">
-                {% csrf_token %}
-                <button class="btn btn-outline btn-with-icon" type="submit">Logout <span class="btn-icon" aria-hidden="true">&#10132;</span></button>
-            </form>
-        </div>
-    </aside>
+    {% include "intensive/includes/admin_sidebar.html" %}
 
     <section class="admin-main">
         <button type="button" class="sidebar-toggle" data-sidebar-toggle aria-label="Close sidebar menu" title="Close menu">✕</button>
+        <p class="admin-breadcrumb"><a href="{% url 'dashboard_sessions' %}">Sessions</a> · <a href="{% url 'dashboard_session_portal_videos' session.id %}">Videos — {{ session.title }}</a></p>
         <h1>{% if edit_obj %}Edit video{% else %}Add video{% endif %}</h1>
         <p class="admin-subtitle">
-            {% if edit_obj %}
-                Update what participants see on their learning hub. Either keep a URL, keep/replace the uploaded file, or both — at least one is required.
-            {% else %}
-                Add a title, then paste an embed URL or upload a file. Lower “order” numbers appear first on the hub.
-            {% endif %}
+            For <strong>{{ session.title }}</strong> only. {% if edit_obj %}Keep or replace the URL or upload — at least one is required.{% else %}Lower order numbers appear first in the hub.{% endif %}
         </p>
         {% if messages %}
             <div class="alerts">
@@ -65,7 +39,7 @@
             {{ form.as_p }}
             <div class="admin-actions">
                 <button class="btn btn-accent" type="submit">{% if edit_obj %}Save changes{% else %}Add video{% endif %}</button>
-                <a class="btn btn-outline" href="{% url 'dashboard_portal_videos' %}">Back to list</a>
+                <a class="btn btn-outline" href="{% url 'dashboard_session_portal_videos' session.id %}">Back to videos</a>
             </div>
         </form>
     </section>

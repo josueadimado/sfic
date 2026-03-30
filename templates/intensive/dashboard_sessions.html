@@ -4,34 +4,12 @@
 
 {% block body %}
 <main class="admin-layout-page">
-    <aside class="admin-sidebar">
-        <div class="admin-sidebar-head">
-            <p class="eyebrow">Set Free In Christ</p>
-            <h2>Admin Panel</h2>
-        </div>
-        <nav class="admin-menu">
-            <a href="{% url 'dashboard' %}" class="{% if admin_page == 'registrations' %}is-active{% endif %}"><span class="menu-icon icon-registrations" aria-hidden="true"></span>Registrations</a>
-            <a href="{% url 'dashboard_transactions' %}" class="{% if admin_page == 'transactions' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Transactions</a>
-            <a href="{% url 'dashboard_donations' %}" class="{% if admin_page == 'donations' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Donations</a>
-            <a href="{% url 'dashboard_sessions' %}" class="{% if admin_page == 'sessions' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Training Sessions</a>
-            <a href="{% url 'dashboard_schedule' %}" class="{% if admin_page == 'schedule' %}is-active{% endif %}"><span class="menu-icon icon-schedule" aria-hidden="true"></span>Training Schedule</a>
-            <a href="{% url 'dashboard_speakers' %}" class="{% if admin_page == 'speakers' %}is-active{% endif %}"><span class="menu-icon icon-speakers" aria-hidden="true"></span>Speakers</a>
-            <a href="{% url 'dashboard_portal_videos' %}" class="{% if admin_page == 'portal_videos' %}is-active{% endif %}"><span class="menu-icon icon-videos" aria-hidden="true"></span>Portal videos</a>
-            <a href="{% url 'dashboard_site_settings' %}" class="{% if admin_page == 'settings' %}is-active{% endif %}"><span class="menu-icon icon-settings" aria-hidden="true"></span>Site Settings</a>
-        </nav>
-        <div class="admin-sidebar-foot">
-            <a class="btn btn-outline btn-with-icon" href="{% url 'home' %}" target="_blank" rel="noreferrer">View Site <span class="btn-icon" aria-hidden="true">&#8599;</span></a>
-            <form method="post" action="{% url 'logout' %}" class="inline-form">
-                {% csrf_token %}
-                <button class="btn btn-outline btn-with-icon" type="submit">Logout <span class="btn-icon" aria-hidden="true">&#10132;</span></button>
-            </form>
-        </div>
-    </aside>
+    {% include "intensive/includes/admin_sidebar.html" %}
 
     <section class="admin-main">
         <button type="button" class="sidebar-toggle" data-sidebar-toggle aria-label="Close sidebar menu" title="Close menu">✕</button>
         <h1>Manage Training Sessions</h1>
-        <p class="admin-subtitle">View all sessions here. Click create or edit to open the form page.</p>
+        <p class="admin-subtitle">View sessions, paid seats, and learning-hub activity. Use <strong>Hub access</strong> to see who signed in, days left on their window, and revoke access if needed.</p>
         {% if messages %}
             <div class="alerts">
                 {% for message in messages %}
@@ -44,45 +22,76 @@
             <a class="btn btn-accent" href="{% url 'dashboard_session_create' %}">Create Session</a>
         </div>
 
-        <div class="table-wrap admin-table">
-            <table>
+        <div class="table-wrap admin-table admin-sessions-table-wrap">
+            <table class="admin-sessions-table">
                 <thead>
                     <tr>
-                        <th>Title</th>
-                        <th>Date Range</th>
-                        <th>Capacity</th>
-                        <th>Paid</th>
-                        <th>Places Left</th>
-                        <th>Price</th>
-                        <th>Active</th>
-                        <th>Actions</th>
+                        <th scope="col" class="admin-sessions-th admin-sessions-th--title">Session</th>
+                        <th scope="col" class="admin-sessions-th admin-sessions-th--dates">Dates</th>
+                        <th scope="col" class="admin-sessions-th admin-sessions-th--center">Program</th>
+                        <th scope="col" class="admin-sessions-th admin-sessions-th--num">Videos</th>
+                        <th scope="col" class="admin-sessions-th admin-sessions-th--num">Capacity</th>
+                        <th scope="col" class="admin-sessions-th admin-sessions-th--num">Paid</th>
+                        <th scope="col" class="admin-sessions-th admin-sessions-th--num">Hub open</th>
+                        <th scope="col" class="admin-sessions-th admin-sessions-th--num">Signed in</th>
+                        <th scope="col" class="admin-sessions-th admin-sessions-th--days">Days left</th>
+                        <th scope="col" class="admin-sessions-th admin-sessions-th--num">Open seats</th>
+                        <th scope="col" class="admin-sessions-th admin-sessions-th--num">Price</th>
+                        <th scope="col" class="admin-sessions-th admin-sessions-th--center">Active</th>
+                        <th scope="col" class="admin-sessions-th admin-sessions-th--actions">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for item in items %}
-                        <tr>
-                            <td>{{ item.title }}</td>
-                            <td>{{ item.start_date }} - {{ item.end_date }}</td>
-                            <td>{{ item.capacity }}</td>
-                            <td>{{ item.paid_count }}</td>
-                            <td>
-                                {{ item.seats_left }}
-                                {% if item.seats_left == 0 %}
-                                    <small>(Full)</small>
+                        <tr class="admin-sessions-row">
+                            <td class="admin-sessions-td admin-sessions-td--title">
+                                <span class="admin-sessions-title">{{ item.title }}</span>
+                            </td>
+                            <td class="admin-sessions-td admin-sessions-td--dates">
+                                <span class="admin-sessions-date-block">{{ item.start_date|date:"M j, Y" }}</span>
+                                <span class="admin-sessions-date-sep" aria-hidden="true">→</span>
+                                <span class="admin-sessions-date-block">{{ item.end_date|date:"M j, Y" }}</span>
+                            </td>
+                            <td class="admin-sessions-td admin-sessions-td--center">
+                                {% if item.event_program_pdf %}
+                                    <span class="admin-sessions-yesno admin-sessions-yesno--yes">Yes</span>
+                                {% else %}
+                                    <span class="admin-sessions-yesno">—</span>
                                 {% endif %}
                             </td>
-                            <td>{{ item.display_price }}</td>
-                            <td>{% if item.is_active %}Yes{% else %}No{% endif %}</td>
-                            <td>
-                                <a class="btn btn-outline btn-small" href="{% url 'dashboard_session_edit' item.id %}">Edit</a>
-                                <form method="post" action="{% url 'dashboard_session_delete' item.id %}" class="inline-form" data-confirm-message="Delete this session? This action cannot be undone.">
-                                    {% csrf_token %}
-                                    <button class="btn btn-outline btn-small btn-danger" type="submit">Delete</button>
-                                </form>
+                            <td class="admin-sessions-td admin-sessions-td--num">{{ item.portal_video_n }}</td>
+                            <td class="admin-sessions-td admin-sessions-td--num">{{ item.capacity }}</td>
+                            <td class="admin-sessions-td admin-sessions-td--num">{{ item.paid_count }}</td>
+                            <td class="admin-sessions-td admin-sessions-td--num">{{ item.hub_open_n }}</td>
+                            <td class="admin-sessions-td admin-sessions-td--num">{{ item.hub_signed_in_n }}</td>
+                            <td class="admin-sessions-td admin-sessions-td--days"><span class="admin-sessions-days-pill">{{ item.hub_days_span }}</span></td>
+                            <td class="admin-sessions-td admin-sessions-td--num">
+                                {{ item.seats_left }}
+                                {% if item.seats_left == 0 %}
+                                    <span class="admin-sessions-badge-full">Full</span>
+                                {% endif %}
+                            </td>
+                            <td class="admin-sessions-td admin-sessions-td--num admin-sessions-td--price">{{ item.display_price }}</td>
+                            <td class="admin-sessions-td admin-sessions-td--center">
+                                {% if item.is_active %}
+                                    <span class="admin-sessions-yesno admin-sessions-yesno--yes">Yes</span>
+                                {% else %}
+                                    <span class="admin-sessions-yesno admin-sessions-yesno--no">No</span>
+                                {% endif %}
+                            </td>
+                            <td class="admin-sessions-td admin-sessions-td--actions">
+                                <div class="admin-session-actions">
+                                    <a class="btn btn-outline admin-session-actions__btn" href="{% url 'dashboard_session_hub_access' item.id %}">Hub access</a>
+                                    <a class="btn btn-outline admin-session-actions__btn" href="{% url 'dashboard_session_edit' item.id %}">Edit session</a>
+                                    <form method="post" action="{% url 'dashboard_session_delete' item.id %}" class="admin-session-actions__form" data-confirm-message="Delete this session? This action cannot be undone.">
+                                        {% csrf_token %}
+                                        <button class="btn btn-outline btn-danger admin-session-actions__btn" type="submit">Delete</button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     {% empty %}
-                        <tr><td colspan="8">No sessions yet.</td></tr>
+                        <tr><td colspan="13" class="admin-sessions-empty">No sessions yet.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

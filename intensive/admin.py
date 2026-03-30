@@ -4,6 +4,7 @@ from django.db.models import Count, Q
 from .models import (
     Donation,
     PaymentTransaction,
+    PortalVideo,
     Registration,
     RegistrationMaterial,
     Session,
@@ -21,6 +22,7 @@ class SessionAdmin(admin.ModelAdmin):
         "location",
         "start_date",
         "end_date",
+        "has_event_program",
         "capacity",
         "paid_registrations",
         "places_left",
@@ -30,6 +32,10 @@ class SessionAdmin(admin.ModelAdmin):
     )
     list_filter = ("is_active", "currency", "start_date", "location")
     search_fields = ("title", "location")
+
+    @admin.display(description="Program PDF", boolean=True)
+    def has_event_program(self, obj):
+        return bool(obj.event_program_pdf)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -93,20 +99,24 @@ class SiteSettingAdmin(admin.ModelAdmin):
         "venue_address",
         "donation_url",
         "student_discount_percent",
-        "has_event_program_pdf",
         "updated_at",
     )
-
-    @admin.display(description="Event Program")
-    def has_event_program_pdf(self, obj):
-        return bool(obj.event_program_pdf)
 
 
 @admin.register(RegistrationMaterial)
 class RegistrationMaterialAdmin(admin.ModelAdmin):
-    list_display = ("id", "file", "display_order", "created_at")
+    list_display = ("id", "session", "file", "display_order", "created_at")
+    list_filter = ("session",)
     list_editable = ("display_order",)
-    ordering = ("display_order", "id")
+    ordering = ("session", "display_order", "id")
+
+
+@admin.register(PortalVideo)
+class PortalVideoAdmin(admin.ModelAdmin):
+    list_display = ("title", "session", "display_order", "is_active", "updated_at")
+    list_filter = ("session", "is_active")
+    search_fields = ("title", "description")
+    ordering = ("session", "display_order", "id")
 
 
 @admin.register(Speaker)

@@ -1,0 +1,101 @@
+{% extends "intensive/base.html" %}
+
+{% block title %}Hub access — {{ session.title }}{% endblock %}
+
+{% block body %}
+<main class="admin-layout-page">
+    {% include "intensive/includes/admin_sidebar.html" %}
+
+    <section class="admin-main">
+        <button type="button" class="sidebar-toggle" data-sidebar-toggle aria-label="Close sidebar menu" title="Close menu">✕</button>
+
+        <p class="admin-breadcrumb"><a href="{% url 'dashboard_sessions' %}">Training Sessions</a> · <a href="{% url 'dashboard_session_edit' session.id %}">{{ session.title }}</a></p>
+        <h1>Learning hub access</h1>
+        <p class="admin-subtitle">
+            Paid registrants for <strong>{{ session.title }}</strong> ({{ session.start_date }} — {{ session.end_date }}).
+            <strong>Hub open</strong> = they can still sign in. <strong>Signed in</strong> = last hub login time. Use <strong>Revoke</strong> only if someone should lose access immediately.
+        </p>
+        {% if messages %}
+            <div class="alerts">
+                {% for message in messages %}
+                    <p class="alert">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="admin-actions admin-hub-access-actions">
+            <a class="btn btn-outline" href="{% url 'dashboard_sessions' %}">All sessions</a>
+            <a class="btn btn-outline" href="{% url 'dashboard_session_edit' session.id %}">Edit session</a>
+        </div>
+
+        <div class="table-wrap admin-table admin-hub-access-table-wrap">
+            <table class="admin-hub-access-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Hub open</th>
+                        <th>Days left</th>
+                        <th>Access until</th>
+                        <th>Last sign-in</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        {% with reg=row.reg %}
+                        <tr>
+                            <td><strong>{{ reg.full_name }}</strong></td>
+                            <td>{{ reg.email }}</td>
+                            <td>{% if row.hub_open %}<span class="admin-hub-pill admin-hub-pill--yes">Yes</span>{% else %}<span class="admin-hub-pill admin-hub-pill--no">No</span>{% endif %}</td>
+                            <td>{% if row.days_left is not None %}{{ row.days_left }} d{% else %}—{% endif %}</td>
+                            <td>{% if reg.portal_access_until %}{{ reg.portal_access_until|date:"M j, Y g:i A" }}{% else %}—{% endif %}</td>
+                            <td>{% if reg.portal_last_login_at %}{{ reg.portal_last_login_at|date:"M j, Y g:i A" }}{% else %}—{% endif %}</td>
+                            <td>
+                                {% if row.hub_open %}
+                                <form method="post" action="{% url 'dashboard_session_revoke_portal' session.id reg.id %}" class="inline-form" data-confirm-message="Revoke hub access for {{ reg.full_name }}? They will be signed out and cannot log in again until you restore access from Registrations.">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-outline btn-small btn-danger">Revoke</button>
+                                </form>
+                                {% else %}
+                                <span class="admin-hub-revoked-hint">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endwith %}
+                    {% empty %}
+                        <tr><td colspan="7">No paid registrations for this session.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <ul class="admin-hub-access-cards" role="list">
+            {% for row in rows %}
+            {% with reg=row.reg %}
+            <li class="admin-hub-access-card">
+                <div class="admin-hub-access-card__head">
+                    <strong class="admin-hub-access-card__name">{{ reg.full_name }}</strong>
+                    <p class="admin-hub-access-card__email">{{ reg.email }}</p>
+                </div>
+                <dl class="admin-hub-access-card__stats">
+                    <div><dt>Hub open</dt><dd>{% if row.hub_open %}<span class="admin-hub-pill admin-hub-pill--yes">Yes</span>{% else %}<span class="admin-hub-pill admin-hub-pill--no">No</span>{% endif %}</dd></div>
+                    <div><dt>Days left</dt><dd>{% if row.days_left is not None %}{{ row.days_left }} d{% else %}—{% endif %}</dd></div>
+                    <div><dt>Access until</dt><dd>{% if reg.portal_access_until %}{{ reg.portal_access_until|date:"M j, Y g:i A" }}{% else %}—{% endif %}</dd></div>
+                    <div><dt>Last sign-in</dt><dd>{% if reg.portal_last_login_at %}{{ reg.portal_last_login_at|date:"M j, Y g:i A" }}{% else %}Never{% endif %}</dd></div>
+                </dl>
+                {% if row.hub_open %}
+                <form method="post" action="{% url 'dashboard_session_revoke_portal' session.id reg.id %}" class="admin-hub-access-card__revoke" data-confirm-message="Revoke hub access for {{ reg.full_name }}?">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline btn-small btn-danger btn-block">Revoke access</button>
+                </form>
+                {% endif %}
+            </li>
+            {% endwith %}
+            {% empty %}
+            <li class="admin-hub-access-card admin-hub-access-card--empty">No paid registrations for this session.</li>
+            {% endfor %}
+        </ul>
+    </section>
+</main>
+{% endblock %}

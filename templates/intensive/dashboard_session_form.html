@@ -4,38 +4,16 @@
 
 {% block body %}
 <main class="admin-layout-page">
-    <aside class="admin-sidebar">
-        <div class="admin-sidebar-head">
-            <p class="eyebrow">Set Free In Christ</p>
-            <h2>Admin Panel</h2>
-        </div>
-        <nav class="admin-menu">
-            <a href="{% url 'dashboard' %}" class="{% if admin_page == 'registrations' %}is-active{% endif %}"><span class="menu-icon icon-registrations" aria-hidden="true"></span>Registrations</a>
-            <a href="{% url 'dashboard_transactions' %}" class="{% if admin_page == 'transactions' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Transactions</a>
-            <a href="{% url 'dashboard_donations' %}" class="{% if admin_page == 'donations' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Donations</a>
-            <a href="{% url 'dashboard_sessions' %}" class="{% if admin_page == 'sessions' %}is-active{% endif %}"><span class="menu-icon icon-sessions" aria-hidden="true"></span>Training Sessions</a>
-            <a href="{% url 'dashboard_schedule' %}" class="{% if admin_page == 'schedule' %}is-active{% endif %}"><span class="menu-icon icon-schedule" aria-hidden="true"></span>Training Schedule</a>
-            <a href="{% url 'dashboard_speakers' %}" class="{% if admin_page == 'speakers' %}is-active{% endif %}"><span class="menu-icon icon-speakers" aria-hidden="true"></span>Speakers</a>
-            <a href="{% url 'dashboard_portal_videos' %}" class="{% if admin_page == 'portal_videos' %}is-active{% endif %}"><span class="menu-icon icon-videos" aria-hidden="true"></span>Portal videos</a>
-            <a href="{% url 'dashboard_site_settings' %}" class="{% if admin_page == 'settings' %}is-active{% endif %}"><span class="menu-icon icon-settings" aria-hidden="true"></span>Site Settings</a>
-        </nav>
-        <div class="admin-sidebar-foot">
-            <a class="btn btn-outline btn-with-icon" href="{% url 'home' %}" target="_blank" rel="noreferrer">View Site <span class="btn-icon" aria-hidden="true">&#8599;</span></a>
-            <form method="post" action="{% url 'logout' %}" class="inline-form">
-                {% csrf_token %}
-                <button class="btn btn-outline btn-with-icon" type="submit">Logout <span class="btn-icon" aria-hidden="true">&#10132;</span></button>
-            </form>
-        </div>
-    </aside>
+    {% include "intensive/includes/admin_sidebar.html" %}
 
     <section class="admin-main">
         <button type="button" class="sidebar-toggle" data-sidebar-toggle aria-label="Close sidebar menu" title="Close menu">✕</button>
         <h1>{% if edit_obj %}Edit Session{% else %}Create Session{% endif %}</h1>
         <p class="admin-subtitle">
             {% if edit_obj %}
-                Update this training session and save changes.
+                Update this intensive’s details, <strong>event program PDF</strong>, and <strong>additional materials</strong> below (emails + learning hub use only this session’s files).
             {% else %}
-                Add a new training session that will appear on the public page.
+                Add a training session for the public page. After you create it, use <strong>Edit</strong> to upload the event program and extra handouts for this intensive.
             {% endif %}
         </p>
         {% if messages %}
@@ -46,7 +24,7 @@
             </div>
         {% endif %}
 
-        <form method="post" class="admin-form-grid" style="max-width: 780px;">
+        <form method="post" enctype="multipart/form-data" class="admin-form-grid" style="max-width: 780px;">
             {% csrf_token %}
             {{ form.as_p }}
             <div class="admin-actions">
@@ -54,6 +32,81 @@
                 <a class="btn btn-outline" href="{% url 'dashboard_sessions' %}">Back to Sessions</a>
             </div>
         </form>
+
+        {% if edit_obj %}
+        <section class="admin-materials-panel" aria-labelledby="admin-session-materials-heading" style="max-width: 780px; margin-top: 2rem;">
+            <div class="admin-materials-panel__head">
+                <h2 class="admin-materials-panel__title" id="admin-session-materials-heading">Additional materials (this session)</h2>
+                <p class="admin-materials-panel__lede">
+                    These files are <strong>attached to confirmation emails</strong> for <strong>{{ edit_obj.title }}</strong> only, and appear in the <strong>learning hub</strong> for paid participants (after that session’s last day, when downloads unlock). PDF, Word, or PowerPoint.
+                </p>
+            </div>
+
+            {% if session_materials %}
+                <ul class="admin-materials-list">
+                    {% for mat in session_materials %}
+                        <li class="admin-materials-item">
+                            <span class="admin-materials-item__icon" aria-hidden="true">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                </svg>
+                            </span>
+                            <div class="admin-materials-item__body">
+                                <a class="admin-materials-item__name" href="{{ mat.file.url }}" target="_blank" rel="noreferrer">{{ mat }}</a>
+                                <span class="admin-materials-item__hint">Opens in a new tab · order #{{ mat.display_order }}</span>
+                            </div>
+                            <form method="post" action="{% url 'dashboard_session_material_delete' edit_obj.id mat.id %}" class="admin-materials-item__actions inline-form" data-confirm-message="Remove this file? It will no longer be emailed or shown in the learning hub.">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline btn-small btn-danger">Remove</button>
+                            </form>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="admin-materials-empty" role="status">
+                    <span class="admin-materials-empty__icon" aria-hidden="true">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="12" y1="18" x2="12" y2="12"></line>
+                            <line x1="9" y1="15" x2="15" y2="15"></line>
+                        </svg>
+                    </span>
+                    <p><strong>No extra files yet.</strong> Add handouts or reading packets for this intensive only.</p>
+                </div>
+            {% endif %}
+
+            <form method="post" action="{% url 'dashboard_session_material_add' edit_obj.id %}" enctype="multipart/form-data" class="admin-materials-upload">
+                {% csrf_token %}
+                <label class="admin-materials-upload__label" for="id-add-session-material-file">Upload a file</label>
+                <div class="admin-materials-upload__row">
+                    <input id="id-add-session-material-file" class="admin-materials-upload__input" type="file" name="file" accept=".pdf,.doc,.docx,.ppt,.pptx" required>
+                    <button type="submit" class="btn btn-accent admin-materials-upload__submit">Add to this session</button>
+                </div>
+                <p class="admin-materials-upload__note">File names are shown to participants as-is.</p>
+            </form>
+        </section>
+
+        <section class="admin-session-hub-access-link" style="max-width: 780px; margin-top: 1.5rem;">
+            <h2 class="admin-materials-panel__title">Learning hub access</h2>
+            <p class="admin-materials-panel__lede">See which paid registrants opened the hub, how many days they have left, and revoke access if necessary.</p>
+            <a class="btn btn-outline" href="{% url 'dashboard_session_hub_access' edit_obj.id %}">Open hub access</a>
+        </section>
+
+        <section class="admin-session-hub-videos" aria-labelledby="admin-session-hub-videos-heading" style="max-width: 780px; margin-top: 2rem;">
+            <h2 class="admin-materials-panel__title" id="admin-session-hub-videos-heading">Learning hub videos</h2>
+            <p class="admin-materials-panel__lede">
+                Stream-only teaching for <strong>{{ edit_obj.title }}</strong>. Paid participants for this intensive see these in their hub during their access window.
+            </p>
+            <div class="admin-session-hub-videos__row">
+                <p class="admin-session-hub-videos__count">{% if portal_video_count %}{{ portal_video_count }} video{{ portal_video_count|pluralize }}{% else %}No videos yet{% endif %}</p>
+                <a class="btn btn-accent" href="{% url 'dashboard_session_portal_videos' edit_obj.id %}">Manage videos</a>
+            </div>
+        </section>
+        {% endif %}
     </section>
 </main>
 {% endblock %}

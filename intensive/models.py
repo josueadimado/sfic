@@ -32,6 +32,15 @@ class Session(models.Model):
     price = models.PositiveIntegerField(help_text="Stored in the smallest currency unit.")
     currency = models.CharField(max_length=8, default="USD")
     is_active = models.BooleanField(default=True)
+    event_program_pdf = models.FileField(
+        upload_to="registration_materials/",
+        blank=True,
+        help_text=(
+            "Event program for this intensive: public homepage link only before this session’s first day (and only "
+            "for the next scheduled intensive); attached to confirmation emails; hub download for paid registrants when "
+            "downloads unlock."
+        ),
+    )
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -48,6 +57,21 @@ class Session(models.Model):
     @property
     def seats_left(self) -> int:
         return max(self.capacity - self.paid_count, 0)
+
+    @property
+    def is_past(self) -> bool:
+        """True after the last day of the intensive (local date)."""
+        return self.end_date < timezone.localdate()
+
+    def allows_public_event_program_link(self) -> bool:
+        """
+        Public homepage may show a link to the program PDF only before this intensive starts,
+        for sessions that are not yet finished. After the first day (or after the event), use the hub only.
+        """
+        today = timezone.localdate()
+        if self.end_date < today or self.start_date <= today:
+            return False
+        return bool(self.event_program_pdf)
 
     @property
     def display_price(self) -> str:
@@ -83,11 +107,6 @@ class SiteSetting(models.Model):
         default=0,
         help_text="Student discount percent for registration (0-95).",
     )
-    event_program_pdf = models.FileField(
-        upload_to="registration_materials/",
-        blank=True,
-        help_text="Event program PDF: shown as download link on homepage and attached to confirmation emails.",
-    )
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -100,8 +119,13 @@ class SiteSetting(models.Model):
 
 
 class RegistrationMaterial(models.Model):
-    """Additional PDF/document attached to confirmation emails (not the event program)."""
+    """Extra PDFs/docs for one intensive: confirmation email + learning hub (after downloads unlock)."""
 
+    session = models.ForeignKey(
+        Session,
+        on_delete=models.CASCADE,
+        related_name="registration_materials",
+    )
     file = models.FileField(upload_to="registration_materials/")
     display_order = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(default=timezone.now)
@@ -114,8 +138,13 @@ class RegistrationMaterial(models.Model):
 
 
 class PortalVideo(models.Model):
-    """Training videos for paid registrants (stream on site only when using uploaded file)."""
+    """Training videos for one intensive, shown to paid registrants for that session in the learning hub."""
 
+    session = models.ForeignKey(
+        Session,
+        on_delete=models.CASCADE,
+        related_name="portal_videos",
+    )
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     video_file = models.FileField(
@@ -239,6 +268,11 @@ class Registration(models.Model):
         null=True,
         blank=True,
         help_text="After this time, portal login and downloads stop for this registration.",
+    )
+    portal_last_login_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Last successful learning-hub sign-in (updated when they log in with email + password).",
     )
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)

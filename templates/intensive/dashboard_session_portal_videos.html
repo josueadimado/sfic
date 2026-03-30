@@ -1,0 +1,77 @@
+{% extends "intensive/base.html" %}
+
+{% block title %}Hub videos — {{ session.title }}{% endblock %}
+
+{% block body %}
+<main class="admin-layout-page">
+    {% include "intensive/includes/admin_sidebar.html" %}
+
+    <section class="admin-main">
+        <button type="button" class="sidebar-toggle" data-sidebar-toggle aria-label="Close sidebar menu" title="Close menu">✕</button>
+
+        <p class="admin-breadcrumb"><a href="{% url 'dashboard_sessions' %}">Training Sessions</a> · <a href="{% url 'dashboard_session_edit' session.id %}">Edit {{ session.title }}</a></p>
+        <h1 class="admin-session-videos-title">Learning hub videos</h1>
+        <p class="admin-subtitle admin-session-videos-sub">
+            <strong>{{ session.title }}</strong>
+            <span class="admin-session-videos-dates">{{ session.start_date }} — {{ session.end_date }}</span>
+        </p>
+        <p class="admin-subtitle">
+            Only paid registrants for <em>this</em> intensive see these in their hub. Use a YouTube <strong>embed</strong> URL, or upload MP4.
+        </p>
+        {% if messages %}
+            <div class="alerts">
+                {% for message in messages %}
+                    <p class="alert">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="admin-actions admin-session-videos-actions">
+            <a class="btn btn-accent" href="{% url 'dashboard_session_portal_video_create' session.id %}">Add video</a>
+            <a class="btn btn-outline" href="{% url 'dashboard_session_edit' session.id %}">Back to session</a>
+        </div>
+
+        {% if items %}
+        <ul class="admin-portal-video-cards" role="list">
+            {% for item in items %}
+            <li class="admin-portal-video-card">
+                <div class="admin-portal-video-card__main">
+                    <span class="admin-portal-video-card__order" aria-hidden="true">#{{ item.display_order }}</span>
+                    <h2 class="admin-portal-video-card__title">{{ item.title }}</h2>
+                    {% if item.description %}
+                        <p class="admin-portal-video-card__desc">{{ item.description|truncatewords:28 }}</p>
+                    {% endif %}
+                    <p class="admin-portal-video-card__meta">
+                        {% if item.external_url %}
+                            <span class="admin-portal-video-card__badge admin-portal-video-card__badge--url">External URL</span>
+                        {% elif item.video_file %}
+                            <span class="admin-portal-video-card__badge admin-portal-video-card__badge--file">Uploaded</span>
+                        {% else %}
+                            <span class="admin-portal-video-card__badge">—</span>
+                        {% endif %}
+                        {% if item.is_active %}
+                            <span class="admin-portal-video-card__badge admin-portal-video-card__badge--on">Active</span>
+                        {% else %}
+                            <span class="admin-portal-video-card__badge admin-portal-video-card__badge--off">Hidden</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="admin-portal-video-card__actions">
+                    <a class="btn btn-outline btn-small" href="{% url 'dashboard_session_portal_video_edit' session.id item.id %}">Edit</a>
+                    <form method="post" action="{% url 'dashboard_session_portal_video_delete' session.id item.id %}" class="inline-form" data-confirm-message="Remove this video? Only this session’s registrants will be affected.">
+                        {% csrf_token %}
+                        <button class="btn btn-outline btn-small btn-danger" type="submit">Delete</button>
+                    </form>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="admin-portal-video-empty" role="status">
+            <p><strong>No videos yet.</strong> Add one so participants for this intensive can watch in the hub.</p>
+            <a class="btn btn-accent" href="{% url 'dashboard_session_portal_video_create' session.id %}">Add first video</a>
+        </div>
+        {% endif %}
+    </section>
+</main>
+{% endblock %}

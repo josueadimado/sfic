@@ -126,27 +126,39 @@
                     {% if countdown_session %}
                         <p class="countdown-label">COUNTDOWN TO {{ countdown_session.start_date|date:"F j, Y"|upper }}</p>
                         <div class="countdown-grid" id="countdown" data-target-date="{{ countdown_session.start_date|date:'Y-m-d' }}T08:30:00">
+                            <div class="countdown-item">
+                                <span id="cd-days">00</span>
+                                <small>Days</small>
+                            </div>
+                            <div class="countdown-item">
+                                <span id="cd-hours">00</span>
+                                <small>Hours</small>
+                            </div>
+                            <div class="countdown-item">
+                                <span id="cd-minutes">00</span>
+                                <small>Minutes</small>
+                            </div>
+                            <div class="countdown-item">
+                                <span id="cd-seconds">00</span>
+                                <small>Seconds</small>
+                            </div>
+                        </div>
                     {% else %}
-                        <p class="countdown-label">NO UPCOMING SESSION SCHEDULED</p>
-                        <div class="countdown-grid" id="countdown">
+                        <div class="countdown-past-callout">
+                            <p class="countdown-past-callout__label">No live dates open right now</p>
+                            <p class="countdown-past-callout__text">
+                                Pick an <strong>on-demand</strong> intensive below—then <strong>30 days</strong> in the <a href="{% url 'participant_portal_login' %}">hub</a> for videos and downloads for that session.
+                            </p>
+                            {% if past_sessions %}
+                                <p class="countdown-past-callout__actions">
+                                    <a class="btn btn-accent" href="#sessions">View on-demand sessions</a>
+                                    <a class="btn btn-outline" href="{% url 'participant_portal_login' %}">Sign in to the hub</a>
+                                </p>
+                            {% else %}
+                                <p class="countdown-past-callout__text countdown-past-callout__text--muted">New sessions are added here when they are published.</p>
+                            {% endif %}
+                        </div>
                     {% endif %}
-                        <div class="countdown-item">
-                            <span id="cd-days">00</span>
-                            <small>Days</small>
-                        </div>
-                        <div class="countdown-item">
-                            <span id="cd-hours">00</span>
-                            <small>Hours</small>
-                        </div>
-                        <div class="countdown-item">
-                            <span id="cd-minutes">00</span>
-                            <small>Minutes</small>
-                        </div>
-                        <div class="countdown-item">
-                            <span id="cd-seconds">00</span>
-                            <small>Seconds</small>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -264,9 +276,10 @@
                     </article>
                 {% endfor %}
             </div>
-            {% if program_pdf_url %}
+            {# Public program only via guarded URL (not raw media); same rules as public_program_session. #}
+            {% if public_program_session %}
                 <p class="schedule-program-link">
-                    <a href="{{ program_pdf_url }}" class="btn btn-outline" target="_blank" rel="noopener noreferrer"><span class="program-link-line1">Download Event</span><br><span class="program-link-line2">Program (PDF)</span></a>
+                    <a href="{% url 'public_event_program' public_program_session.id %}" class="btn btn-outline" target="_blank" rel="noopener noreferrer"><span class="program-link-line1">Download Event</span><br><span class="program-link-line2">Program (PDF)</span></a>
                 </p>
             {% endif %}
         </div>
@@ -276,40 +289,71 @@
 
     <section id="sessions" class="section white">
         <div class="container">
-            <h2>AVAILABLE TRAINING SESSIONS</h2>
-            <p class="sessions-intro">
-                Choose the date that works best for you, then reserve your seat below. Each session has limited seats
-                so every participant can receive focused support and practical guidance.
-            </p>
-            <div class="session-grid">
-                {% for session in sessions %}
-                    <article class="session-card">
-                        <div class="session-card-head">
-                            <h3>{{ session.title }}</h3>
-                            {% if session.seats_left <= 10 %}
-                                <span class="session-badge low">Few Seats Left</span>
-                            {% else %}
-                                <span class="session-badge open">Open</span>
-                            {% endif %}
-                        </div>
-                        <p class="session-location">
-                            <svg class="location-icon small" viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"></path>
-                                <circle cx="12" cy="10" r="2.5"></circle>
-                            </svg>
-                            {{ session.location }}
-                        </p>
-                        <p class="session-date">{{ session.start_date|date:"F j" }} - {{ session.end_date|date:"F j, Y" }}</p>
-                        <p class="price">{{ session.display_price }}</p>
-                        <a href="#register" class="btn btn-accent session-cta" data-select-session="{{ session.id }}">Reserve This Session</a>
-                    </article>
-                {% empty %}
-                    <p>No active sessions yet. Add one in admin.</p>
-                {% endfor %}
-            </div>
-            <p class="sessions-footnote">
-                Seats are limited for each session to maintain a focused and impactful training environment.
-            </p>
+            <h2>TRAINING SESSIONS</h2>
+
+            {% if upcoming_sessions %}
+                <h3 class="sessions-subheading">Upcoming intensives</h3>
+                <p class="sessions-subintro sessions-subintro--compact">Live dates · 30-day hub after payment · videos during access · PDFs after the event</p>
+                <div class="session-grid">
+                    {% for session in upcoming_sessions %}
+                        <article class="session-card session-card--upcoming">
+                            <div class="session-card-head">
+                                <h3>{{ session.title }}</h3>
+                                {% if session.seats_left <= 10 %}
+                                    <span class="session-badge low">Few Seats Left</span>
+                                {% else %}
+                                    <span class="session-badge open">Open</span>
+                                {% endif %}
+                            </div>
+                            <p class="session-location">
+                                <svg class="location-icon small" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"></path>
+                                    <circle cx="12" cy="10" r="2.5"></circle>
+                                </svg>
+                                {{ session.location }}
+                            </p>
+                            <p class="session-date">{{ session.start_date|date:"F j" }} - {{ session.end_date|date:"F j, Y" }}</p>
+                            <p class="session-access-note"><strong>Hub:</strong> 30 days of streaming after payment · PDFs after {{ session.end_date|date:"M j, Y" }}</p>
+                            <p class="price">{{ session.display_price }}</p>
+                            <a href="#register" class="btn btn-accent session-cta" data-select-session="{{ session.id }}">Reserve This Session</a>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% if past_sessions %}
+                <div class="sessions-past-wrap{% if upcoming_sessions %} sessions-past-wrap--after-upcoming{% endif %}">
+                <h3 class="sessions-subheading{% if upcoming_sessions %} sessions-subheading--past{% endif %}">Past intensives (on-demand)</h3>
+                <p class="sessions-past-tagline">Recordings—hub details on each card.</p>
+                <div class="session-grid">
+                    {% for session in past_sessions %}
+                        <article class="session-card session-card--past">
+                            <div class="session-card-head">
+                                <h3>{{ session.title }}</h3>
+                                <span class="session-badge session-badge--ondemand">On-demand</span>
+                            </div>
+                            <p class="session-location">
+                                <svg class="location-icon small" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"></path>
+                                    <circle cx="12" cy="10" r="2.5"></circle>
+                                </svg>
+                                {{ session.location }}
+                            </p>
+                            <p class="session-date">{{ session.start_date|date:"F j" }} - {{ session.end_date|date:"F j, Y" }}</p>
+                            <p class="session-access-note"><strong>Hub:</strong> 30 days · videos + PDFs after payment</p>
+                            <p class="price">{{ session.display_price }}</p>
+                            <a href="#register" class="btn btn-accent session-cta" data-select-session="{{ session.id }}">Get access</a>
+                        </article>
+                    {% endfor %}
+                </div>
+                </div>
+            {% endif %}
+
+            {% if not upcoming_sessions and not past_sessions %}
+                <p>No active sessions yet. Add one in admin.</p>
+            {% endif %}
+
+            <p class="sessions-footnote">Limited seats · one registration = hub access for that session only.</p>
         </div>
     </section>
 

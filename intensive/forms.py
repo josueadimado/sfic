@@ -7,6 +7,32 @@ import pycountry
 
 from .models import DonationFrequency, PortalVideo, Session, SiteSetting, Speaker, TrainingScheduleItem
 
+# Shared rules for session event program uploads (PDF / common doc types).
+_EVENT_PROGRAM_ALLOWED_EXT = {".pdf", ".doc", ".docx", ".ppt", ".pptx"}
+_EVENT_PROGRAM_ALLOWED_CT = {
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+}
+
+
+def validate_event_program_upload(file):
+    """Return file if valid; raise ValidationError otherwise."""
+    if not file:
+        return file
+    file_name = str(getattr(file, "name", ""))
+    content_type = str(getattr(file, "content_type", "")).lower()
+    file_ext = Path(file_name).suffix.lower()
+    ext_ok = file_ext in _EVENT_PROGRAM_ALLOWED_EXT
+    ct_ok = content_type in _EVENT_PROGRAM_ALLOWED_CT or content_type in ("application/x-pdf",)
+    if content_type == "application/octet-stream" and ext_ok:
+        ct_ok = True
+    if not ext_ok and not ct_ok:
+        raise forms.ValidationError("Event program must be a PDF, DOC, DOCX, PPT, or PPTX file.")
+    return file
+
 
 def _flag_emoji(alpha_2: str) -> str:
     return "".join(chr(127397 + ord(char)) for char in alpha_2.upper())
@@ -157,18 +183,41 @@ class SessionManageForm(forms.ModelForm):
                 Decimal("0.01"),
                 rounding=ROUND_HALF_UP,
             )
+        self.fields["event_program_pdf"].label = "Event program PDF"
+        self.fields["event_program_pdf"].required = False
+        self.fields["event_program_pdf"].help_text = (
+            "For this session only: public homepage download appears only before this session’s first day (when it is "
+            "the next scheduled intensive); confirmation email attachment; hub download for paid registrants after the "
+            "live dates (when downloads unlock)."
+        )
 
     def clean_price(self):
         price_value = self.cleaned_data["price"]
         cents = (price_value * Decimal("100")).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
         return int(cents)
 
+    def clean_event_program_pdf(self):
+        return validate_event_program_upload(self.cleaned_data.get("event_program_pdf"))
+
     class Meta:
         model = Session
-        fields = ["title", "location", "start_date", "end_date", "capacity", "price", "currency", "is_active"]
+        fields = [
+            "title",
+            "location",
+            "start_date",
+            "end_date",
+            "capacity",
+            "price",
+            "currency",
+            "is_active",
+            "event_program_pdf",
+        ]
         widgets = {
             "start_date": forms.DateInput(attrs={"type": "date"}),
             "end_date": forms.DateInput(attrs={"type": "date"}),
+            "event_program_pdf": forms.ClearableFileInput(
+                attrs={"accept": ".pdf,.doc,.docx,.ppt,.pptx,application/pdf"}
+            ),
         }
 
 
@@ -193,20 +242,6 @@ class TrainingScheduleItemForm(forms.ModelForm):
 
 
 class SiteSettingForm(forms.ModelForm):
-    ALLOWED_MATERIAL_EXTENSIONS = {".pdf", ".doc", ".docx", ".ppt", ".pptx"}
-    ALLOWED_MATERIAL_CONTENT_TYPES = {
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "application/vnd.ms-powerpoint",
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-    }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["event_program_pdf"].label = "Event program PDF"
-        self.fields["event_program_pdf"].help_text = "Event program PDF: shown as download link on homepage and attached to confirmation emails. Different from additional materials below."
-
     class Meta:
         model = SiteSetting
         fields = [
@@ -214,7 +249,6 @@ class SiteSettingForm(forms.ModelForm):
             "venue_address",
             "donation_url",
             "student_discount_percent",
-            "event_program_pdf",
         ]
 
     def clean_student_discount_percent(self):
@@ -222,24 +256,6 @@ class SiteSettingForm(forms.ModelForm):
         if value < 0 or value > 95:
             raise forms.ValidationError("Student discount percent must be between 0 and 95.")
         return value
-
-    def clean_event_program_pdf(self):
-        file = self.cleaned_data.get("event_program_pdf")
-        if not file:
-            return file
-        file_name = str(getattr(file, "name", ""))
-        content_type = str(getattr(file, "content_type", "")).lower()
-        file_ext = Path(file_name).suffix.lower()
-        # Allow by extension OR content-type; some systems send application/x-pdf or application/octet-stream
-        ext_ok = file_ext in self.ALLOWED_MATERIAL_EXTENSIONS
-        ct_ok = content_type in self.ALLOWED_MATERIAL_CONTENT_TYPES or content_type in (
-            "application/x-pdf",  # alternate PDF MIME type
-        )
-        if content_type == "application/octet-stream" and ext_ok:
-            ct_ok = True
-        if not ext_ok and not ct_ok:
-            raise forms.ValidationError("Event program must be a PDF, DOC, DOCX, PPT, or PPTX file.")
-        return file
 
 
 class PortalVideoForm(forms.ModelForm):

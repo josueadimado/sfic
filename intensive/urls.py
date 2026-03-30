@@ -5,6 +5,11 @@ from . import participant_views, views
 
 urlpatterns = [
     path("", views.home, name="home"),
+    path(
+        "event-program/<uuid:session_id>/",
+        views.public_event_program,
+        name="public_event_program",
+    ),
     path("donate/", views.donate, name="donate"),
     path("robots.txt", views.robots_txt, name="robots_txt"),
     path("sitemap.xml", views.sitemap_xml, name="sitemap_xml"),
@@ -17,7 +22,7 @@ urlpatterns = [
     path("portal/logout/", participant_views.participant_portal_logout, name="participant_portal_logout"),
     path("portal/", participant_views.participant_portal_home, name="participant_portal_home"),
     path(
-        "portal/downloads/program/",
+        "portal/downloads/program/<uuid:session_id>/",
         participant_views.participant_download_program,
         name="participant_download_program",
     ),
@@ -77,6 +82,16 @@ urlpatterns = [
         name="dashboard_session_edit",
     ),
     path(
+        "dashboard/sessions/<uuid:session_id>/hub-access/",
+        views.dashboard_session_hub_access,
+        name="dashboard_session_hub_access",
+    ),
+    path(
+        "dashboard/sessions/<uuid:session_id>/hub-access/<uuid:registration_id>/revoke/",
+        views.dashboard_session_revoke_portal,
+        name="dashboard_session_revoke_portal",
+    ),
+    path(
         "dashboard/sessions/<uuid:item_id>/delete/",
         views.dashboard_session_delete,
         name="dashboard_session_delete",
@@ -94,11 +109,15 @@ urlpatterns = [
         name="dashboard_schedule_delete",
     ),
     path("dashboard/settings/", views.dashboard_site_settings, name="dashboard_site_settings"),
-    path("dashboard/settings/materials/add/", views.dashboard_settings_material_add, name="dashboard_material_add"),
     path(
-        "dashboard/settings/materials/<int:material_id>/delete/",
-        views.dashboard_settings_material_delete,
-        name="dashboard_material_delete",
+        "dashboard/sessions/<uuid:session_id>/materials/add/",
+        views.dashboard_session_material_add,
+        name="dashboard_session_material_add",
+    ),
+    path(
+        "dashboard/sessions/<uuid:session_id>/materials/<int:material_id>/delete/",
+        views.dashboard_session_material_delete,
+        name="dashboard_session_material_delete",
     ),
     path("dashboard/transactions/", views.dashboard_transactions, name="dashboard_transactions"),
     path("dashboard/transactions/backfill/", views.dashboard_transactions_backfill, name="dashboard_transactions_backfill"),
@@ -114,17 +133,30 @@ urlpatterns = [
         views.dashboard_speaker_delete,
         name="dashboard_speaker_delete",
     ),
-    path("dashboard/portal-videos/", views.dashboard_portal_videos, name="dashboard_portal_videos"),
-    path("dashboard/portal-videos/new/", views.dashboard_portal_video_create, name="dashboard_portal_video_create"),
     path(
-        "dashboard/portal-videos/<int:item_id>/edit/",
-        views.dashboard_portal_video_edit,
-        name="dashboard_portal_video_edit",
+        "dashboard/portal-videos/",
+        views.dashboard_portal_videos_legacy_redirect,
+        name="dashboard_portal_videos",
     ),
     path(
-        "dashboard/portal-videos/<int:item_id>/delete/",
-        views.dashboard_portal_video_delete,
-        name="dashboard_portal_video_delete",
+        "dashboard/sessions/<uuid:session_id>/videos/",
+        views.dashboard_session_portal_videos,
+        name="dashboard_session_portal_videos",
+    ),
+    path(
+        "dashboard/sessions/<uuid:session_id>/videos/new/",
+        views.dashboard_session_portal_video_create,
+        name="dashboard_session_portal_video_create",
+    ),
+    path(
+        "dashboard/sessions/<uuid:session_id>/videos/<int:item_id>/edit/",
+        views.dashboard_session_portal_video_edit,
+        name="dashboard_session_portal_video_edit",
+    ),
+    path(
+        "dashboard/sessions/<uuid:session_id>/videos/<int:item_id>/delete/",
+        views.dashboard_session_portal_video_delete,
+        name="dashboard_session_portal_video_delete",
     ),
     path("dashboard/export.csv", views.export_csv, name="export_csv"),
 ]

@@ -259,8 +259,7 @@ def send_registration_confirmation(registration: Registration) -> bool:
 
         site_settings = SiteSetting.objects.first()
         if site_settings:
-            # Event program PDF
-            program_pdf = site_settings.event_program_pdf
+            program_pdf = session.event_program_pdf
             if program_pdf:
                 try:
                     attachment_name = program_pdf.name.split("/")[-1] or "event-program.pdf"
@@ -274,10 +273,9 @@ def send_registration_confirmation(registration: Registration) -> bool:
                         getattr(program_pdf, "name", ""),
                         registration.id,
                     )
-            # Additional registration materials
             from .models import RegistrationMaterial
 
-            for material in RegistrationMaterial.objects.order_by("display_order", "id"):
+            for material in RegistrationMaterial.objects.filter(session=session).order_by("display_order", "id"):
                 if not material.file:
                     continue
                 try:
