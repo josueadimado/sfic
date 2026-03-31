@@ -11,25 +11,27 @@ from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 
+# Bare apex for this site often does not load in the browser; outbound links (email, Stripe)
+# should use https://www.<apex>. Additional domains: set SITE_USE_WWW_FOR_HOST=comma-separated.
+_SITE_WWW_APEX_DEFAULTS = frozenset({"setfreeinchristmission.org"})
+
 
 def _normalize_site_base_url(raw: str) -> str:
     """
     Strip trailing slash from the public site URL.
 
-    If SITE_USE_WWW_FOR_HOST lists your apex domain (e.g. setfreeinchristmission.org), rewrite
-    https://apex/... → https://www.apex/... so emails and Stripe redirects use the host that
-    actually responds in the browser.
+    For listed apex hostnames (defaults + SITE_USE_WWW_FOR_HOST), rewrite
+    https://apex/... → https://www.apex/... so emails and Stripe use the host that actually responds.
     """
     url = (raw or "").strip().rstrip("/")
     if not url:
         return "http://127.0.0.1:8000"
-    apex_hosts = [
+    apex_hosts: set[str] = set(_SITE_WWW_APEX_DEFAULTS)
+    apex_hosts.update(
         h.strip().lower()
         for h in os.getenv("SITE_USE_WWW_FOR_HOST", "").split(",")
         if h.strip()
-    ]
-    if not apex_hosts:
-        return url
+    )
     if "://" not in url:
         url = "https://" + url.lstrip("/")
     parsed = urlparse(url)

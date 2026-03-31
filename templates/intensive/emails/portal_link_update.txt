@@ -1,0 +1,16 @@
+Hello {{ registration.full_name }},
+
+We are sending an updated sign-in link for the Set Free In Christ learning hub (participant portal). Please bookmark or save this message.
+
+Sign-in page (copy the full line if needed):
+{{ portal_url }}
+
+Your portal password is unchanged from the one we sent you earlier. Sign in with this email address: {{ registration.email }}
+
+If you forgot your password, open the link above and use “Email me a new password.”
+
+Your longest portal access end date (across your registrations) is: {% if access_until %}{{ access_until|date:"F j, Y, P e" }}{% else %}—{% endif %}
+
+If you did not register for this training, you can ignore this email.
+
+— {{ site_name }}

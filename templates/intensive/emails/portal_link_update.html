@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Learning hub sign-in link</title>
+</head>
+<body style="font-family: system-ui, sans-serif; line-height: 1.5; color: #1a1a1a;">
+  <p>Hello <strong>{{ registration.full_name }}</strong>,</p>
+  <p>Here is an <strong>updated sign-in link</strong> for the learning hub (participant portal). Please keep this email for your records.</p>
+  <p>
+    <a href="{{ portal_url }}" style="display:inline-block;padding:10px 18px;background:#1b4d3e;color:#fff;text-decoration:none;border-radius:8px;">Open learning hub sign-in</a>
+  </p>
+  <p style="font-size:13px;color:#444;margin:12px 0 0;line-height:1.45;">
+    <strong>Or copy this link</strong> (paste into your browser if the button does not open):<br>
+    <span style="word-break:break-all;">{{ portal_url }}</span>
+  </p>
+  <p style="font-size:13px;color:#555;margin:8px 0 0;">The address should include <strong>www.</strong> before the domain — for example <strong>https://www.setfreeinchristmission.org/portal/login/</strong>.</p>
+  <table style="border-collapse:collapse;margin:16px 0;">
+    <tr><td style="padding:4px 12px 4px 0;"><strong>Email</strong></td><td>{{ registration.email }}</td></tr>
+    <tr><td colspan="2" style="padding:8px 0 4px 0;font-size:14px;color:#333;">Your <strong>password is the same</strong> as in your earlier invitation. If you forgot it, use <strong>Email me a new password</strong> on the sign-in page.</td></tr>
+    <tr><td style="padding:4px 12px 4px 0;"><strong>Access until</strong></td><td>{% if access_until %}{{ access_until|date:"F j, Y, P e" }}{% else %}—{% endif %}</td></tr>
+  </table>
+  <p style="font-size:14px;color:#555;">— {{ site_name }}</p>
+</body>
+</html>

@@ -33,8 +33,15 @@ def _generate_portal_password(length: int = 12) -> str:
     return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
-def send_portal_credentials_email(registration: Registration, plain_password: str) -> bool:
-    """Email portal login link, email, and one-time generated password."""
+def send_portal_credentials_email(
+    registration: Registration,
+    plain_password: str | None,
+) -> bool:
+    """
+    Email portal link and access window. Include plain_password when it was just generated;
+    when None, this person shares a portal password with another paid registration on the same
+    email (we only store a hash, so we remind them to use the earlier message or Forgot password).
+    """
     portal_url = f"{settings.SITE_BASE_URL}{reverse('participant_portal_login')}"
     latest_until = (
         Registration.objects.filter(
@@ -72,10 +79,55 @@ def send_portal_credentials_email(registration: Registration, plain_password: st
     return True
 
 
+def send_portal_link_update_email(registration: Registration) -> bool:
+    """
+    Send a follow-up email with the current portal sign-in URL (e.g. after fixing SITE_BASE_URL / www).
+
+    Does not change or include the password — recipients keep the password from their original invite.
+    """
+    portal_url = f"{settings.SITE_BASE_URL}{reverse('participant_portal_login')}"
+    latest_until = (
+        Registration.objects.filter(
+            email__iexact=registration.email.strip().lower(),
+            status=RegistrationStatus.PAID,
+        )
+        .order_by("-portal_access_until")
+        .values_list("portal_access_until", flat=True)
+        .first()
+    )
+    site = SiteSetting.objects.first()
+    context = {
+        "registration": registration,
+        "portal_url": portal_url,
+        "access_until": latest_until,
+        "site_base_url": settings.SITE_BASE_URL,
+        "site_name": site.site_name if site else "Set Free In Christ",
+    }
+    subject = "Learning hub — updated sign-in link"
+    text_message = render_to_string("intensive/emails/portal_link_update.txt", context)
+    html_message = render_to_string("intensive/emails/portal_link_update.html", context)
+    try:
+        email = EmailMultiAlternatives(
+            subject=subject,
+            body=text_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[registration.email],
+        )
+        email.attach_alternative(html_message, "text/html")
+        email.send(fail_silently=False)
+    except Exception:
+        logger.exception("Failed to send portal link update for %s", registration.id)
+        return False
+    return True
+
+
 def provision_portal_access(registration: Registration, *, send_email: bool = True) -> None:
     """
-    For PAID registrations: set 30-day portal window (once), create or reuse password,
-    email plaintext password only when a new password is created for this person.
+    For PAID registrations: set 30-day portal window (once), create or reuse password.
+
+    If another paid registration for the same email already has a portal password, we copy its
+    hash (one password per email). In that case we still send email when send_email=True, but
+    without the plaintext — we tell them to use the original invite or “Forgot password”.
     """
     if registration.status != RegistrationStatus.PAID:
         return
@@ -83,6 +135,7 @@ def provision_portal_access(registration: Registration, *, send_email: bool = Tr
     email_key = registration.email.strip().lower()
     now = timezone.now()
     plain: str | None = None
+    reused_donor_password = False
 
     with transaction.atomic():
         reg = Registration.objects.select_for_update().get(pk=registration.pk)
@@ -104,6 +157,7 @@ def provision_portal_access(registration: Registration, *, send_email: bool = Tr
             donor = siblings.filter(portal_password_hash__gt="").first()
             if donor:
                 reg.portal_password_hash = donor.portal_password_hash
+                reused_donor_password = True
             else:
                 plain = _generate_portal_password()
                 reg.portal_password_hash = make_password(plain)
@@ -114,7 +168,7 @@ def provision_portal_access(registration: Registration, *, send_email: bool = Tr
                 update_fields.append("updated_at")
             reg.save(update_fields=list(set(update_fields)))
 
-    if plain and send_email:
+    if send_email and (plain is not None or reused_donor_password):
         registration.refresh_from_db()
         send_portal_credentials_email(registration, plain)
 
