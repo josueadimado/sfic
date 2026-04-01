@@ -28,7 +28,7 @@
             <p><strong>Payment Reference:</strong> {{ registration.payment_ref|default:"-" }}</p>
             <p><strong>Created:</strong> {{ registration.created_at }}</p>
             {% if registration.status == "PAID" %}
-                <p><strong>Portal access until:</strong> {% if registration.portal_access_until %}{{ registration.portal_access_until|date:"F j, Y g:i A" }}{% else %}Not set{% endif %}</p>
+                <p><strong>Portal access until:</strong> {% if registration.portal_access_until %}{{ registration.portal_access_until|date:"F j, Y g:i A" }}{% else %}Not started — 30 days begin at first portal sign-in{% endif %}</p>
                 <p><strong>Portal password:</strong> {% if registration.portal_password_hash %}Yes (stored securely){% else %}Not created yet{% endif %}</p>
             {% endif %}
         </div>
@@ -36,7 +36,7 @@
         {% if registration.status == "PAID" %}
             <h2 class="admin-side-title" style="margin-top: 1.25rem;">Participant portal email</h2>
             <p class="admin-subtitle">
-                Send the same message registrants get automatically: link to the portal, their email, password, and access end date.
+                Send the same message registrants get automatically: link to the portal, their email, and password. Access end date is set at their first sign-in (30 days from then).
                 <strong>First‑time invite</strong> only sends if they do not have a password yet.
                 <strong>Reset password</strong> creates a new password and emails it (all active registrations for this email share one password).
             </p>

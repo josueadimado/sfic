@@ -18,7 +18,7 @@
   <table style="border-collapse:collapse;margin:16px 0;">
     <tr><td style="padding:4px 12px 4px 0;"><strong>Email</strong></td><td>{{ registration.email }}</td></tr>
     <tr><td colspan="2" style="padding:8px 0 4px 0;font-size:14px;color:#333;">Your <strong>password is the same</strong> as in your earlier invitation. If you forgot it, use <strong>Email me a new password</strong> on the sign-in page.</td></tr>
-    <tr><td style="padding:4px 12px 4px 0;"><strong>Access until</strong></td><td>{% if access_until %}{{ access_until|date:"F j, Y, P e" }}{% else %}—{% endif %}</td></tr>
+    <tr><td style="padding:4px 12px 4px 0;"><strong>Access until</strong></td><td>{% if access_until %}{{ access_until|date:"F j, Y, P e" }}{% else %}30 days after your first sign-in{% endif %}</td></tr>
   </table>
   <p style="font-size:14px;color:#555;">— {{ site_name }}</p>
 </body>

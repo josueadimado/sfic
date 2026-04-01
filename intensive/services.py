@@ -13,6 +13,7 @@ from django.contrib.auth.hashers import make_password
 from django.core import signing
 from django.core.mail import EmailMultiAlternatives
 from django.db import transaction
+from django.db.models import Q
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
@@ -25,6 +26,23 @@ from .models import Donation, Registration, RegistrationStatus, Session, SiteSet
 PORTAL_ACCESS_DAYS = 30
 
 logger = logging.getLogger(__name__)
+
+
+def activate_portal_access_window_for_email(email: str) -> None:
+    """
+    On first successful portal sign-in: start the 30-day window for every PAID registration
+    with this email that has not started yet (portal_access_until is null).
+    """
+    email_key = (email or "").strip().lower()
+    if not email_key:
+        return
+    now = timezone.now()
+    until = now + timedelta(days=PORTAL_ACCESS_DAYS)
+    Registration.objects.filter(
+        email__iexact=email_key,
+        status=RegistrationStatus.PAID,
+        portal_access_until__isnull=True,
+    ).update(portal_access_until=until)
 DONATION_MANAGE_SALT = "sfic-donation-manage"
 
 
@@ -123,17 +141,15 @@ def send_portal_link_update_email(registration: Registration) -> bool:
 
 def provision_portal_access(registration: Registration, *, send_email: bool = True) -> None:
     """
-    For PAID registrations: set 30-day portal window (once), create or reuse password.
+    For PAID registrations: ensure a portal password (new or copied from same-email sibling).
 
-    If another paid registration for the same email already has a portal password, we copy its
-    hash (one password per email). In that case we still send email when send_email=True, but
-    without the plaintext — we tell them to use the original invite or “Forgot password”.
+    The 30-day hub window starts on first successful sign-in, not at payment.
+    If we copy a sibling’s hash, we may still send email when send_email=True without plaintext.
     """
     if registration.status != RegistrationStatus.PAID:
         return
 
     email_key = registration.email.strip().lower()
-    now = timezone.now()
     plain: str | None = None
     reused_donor_password = False
 
@@ -148,10 +164,6 @@ def provision_portal_access(registration: Registration, *, send_email: bool = Tr
         ).exclude(pk=reg.pk)
 
         update_fields: list[str] = []
-
-        if reg.portal_access_until is None:
-            reg.portal_access_until = now + timedelta(days=PORTAL_ACCESS_DAYS)
-            update_fields.append("portal_access_until")
 
         if not reg.portal_password_hash:
             donor = siblings.filter(portal_password_hash__gt="").first()
@@ -174,11 +186,16 @@ def provision_portal_access(registration: Registration, *, send_email: bool = Tr
 
 
 def admin_extend_portal_if_needed(registration: Registration) -> None:
-    """Give or restore a 30-day window when sending portal emails from the admin."""
+    """
+    If hub access has expired, clear the end date so the learner’s next sign-in starts a fresh
+    30-day window. Does not pre-schedule a window (that begins on first login).
+    """
     now = timezone.now()
-    if registration.portal_access_until is None or registration.portal_access_until <= now:
-        registration.portal_access_until = now + timedelta(days=PORTAL_ACCESS_DAYS)
-        registration.save(update_fields=["portal_access_until", "updated_at"])
+    u = registration.portal_access_until
+    if u is None or u > now:
+        return
+    registration.portal_access_until = None
+    registration.save(update_fields=["portal_access_until", "updated_at"])
 
 
 def admin_send_portal_invite_email(registration: Registration) -> tuple[bool, str]:
@@ -217,7 +234,7 @@ def admin_reset_portal_password_email(registration: Registration) -> tuple[bool,
 
 
 def reset_and_email_portal_password(email: str) -> bool:
-    """Set a new portal password for every active (paid, non-expired) registration with this email."""
+    """Set a new portal password for paid registrations: hub not expired yet, or window not started (until is null)."""
     email_key = (email or "").strip().lower()
     if not email_key:
         return False
@@ -226,8 +243,7 @@ def reset_and_email_portal_password(email: str) -> bool:
         Registration.objects.filter(
             email__iexact=email_key,
             status=RegistrationStatus.PAID,
-            portal_access_until__gt=now,
-        )
+        ).filter(Q(portal_access_until__isnull=True) | Q(portal_access_until__gt=now))
     )
     if not active:
         return False
@@ -236,8 +252,9 @@ def reset_and_email_portal_password(email: str) -> bool:
     Registration.objects.filter(
         email__iexact=email_key,
         status=RegistrationStatus.PAID,
-        portal_access_until__gt=now,
-    ).update(portal_password_hash=new_hash)
+    ).filter(Q(portal_access_until__isnull=True) | Q(portal_access_until__gt=now)).update(
+        portal_password_hash=new_hash
+    )
     send_portal_credentials_email(active[0], plain)
     return True
 

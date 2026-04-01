@@ -11,9 +11,9 @@
             <h1 class="participant-dashboard__title" id="dash-welcome-title">{{ welcome_name }}</h1>
             <p class="participant-dashboard__lede">
                 {% if allow_file_downloads %}
-                    Your <strong>30-day learning hub</strong> is open: stream training videos below and download PDFs for intensives that have already finished. Videos play in your browser only during this access window.
+                    Your <strong>30-day learning hub</strong> (from your first sign-in) is open: stream training videos below and download PDFs for intensives that have already finished. Videos play in your browser only during this access window.
                 {% else %}
-                    Your <strong>30-day hub</strong> includes <strong>streaming videos</strong> below. <strong>PDF and document downloads</strong> unlock after the last day of your intensive
+                    Your <strong>30-day hub</strong> (from your first sign-in) includes <strong>streaming videos</strong> below. <strong>PDF and document downloads</strong> unlock after the last day of your intensive
                     {% if downloads_unlock_after %}({{ downloads_unlock_after|date:"M j, Y" }}){% endif %}
                     — as long as your access hasn’t expired yet.
                 {% endif %}

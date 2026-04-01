@@ -292,7 +292,7 @@ class Registration(models.Model):
     portal_access_until = models.DateTimeField(
         null=True,
         blank=True,
-        help_text="After this time, portal login and downloads stop for this registration.",
+        help_text="End of the 30-day hub window. Left blank until the learner’s first successful sign-in; then set to sign-in time + 30 days.",
     )
     portal_last_login_at = models.DateTimeField(
         null=True,

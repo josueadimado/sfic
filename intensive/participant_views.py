@@ -10,7 +10,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
-from django.db.models import Max
+from django.db.models import Max, Q
 
 from .models import (
     PortalVideo,
@@ -21,7 +21,7 @@ from .models import (
     SiteSetting,
 )
 from .participant_downloads import build_participant_download_sections
-from .services import reset_and_email_portal_password
+from .services import activate_portal_access_window_for_email, reset_and_email_portal_password
 from .video_urls import iframe_src_for_external_video
 
 
@@ -106,14 +106,18 @@ def participant_portal_login(request):
         password = request.POST.get("password") or ""
         next_url = request.POST.get("next") or reverse("participant_portal_home")
 
-        candidates = Registration.objects.filter(
-            email__iexact=email,
-            status=RegistrationStatus.PAID,
-            portal_access_until__gt=timezone.now(),
+        now = timezone.now()
+        candidates = (
+            Registration.objects.filter(
+                email__iexact=email,
+                status=RegistrationStatus.PAID,
+            )
+            .exclude(portal_password_hash="")
+            .filter(Q(portal_access_until__isnull=True) | Q(portal_access_until__gt=now))
         )
         authenticated = False
         for reg in candidates:
-            if reg.portal_password_hash and check_password(password, reg.portal_password_hash):
+            if check_password(password, reg.portal_password_hash):
                 authenticated = True
                 break
 
@@ -126,6 +130,8 @@ def participant_portal_login(request):
                     "email_value": request.POST.get("email") or "",
                 },
             )
+
+        activate_portal_access_window_for_email(email)
 
         allowed_ids = list(
             Registration.objects.filter(

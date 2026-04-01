@@ -63,7 +63,6 @@ from .services import (
     build_donation_manage_url,
     forward_donation_to_donor_elf,
     DONATION_MANAGE_SALT,
-    PORTAL_ACCESS_DAYS,
     provision_portal_access,
     send_admin_donation_notification,
     send_admin_new_registration_notification,
@@ -1650,12 +1649,8 @@ def dashboard_send_portal_invites(request: HttpRequest) -> HttpResponse:
             return redirect("dashboard")
         qs = qs.filter(session_id=session_id)
 
-    now = timezone.now()
     sent = 0
     for reg in qs.iterator(chunk_size=100):
-        if reg.portal_access_until is None or reg.portal_access_until <= now:
-            reg.portal_access_until = now + timedelta(days=PORTAL_ACCESS_DAYS)
-            reg.save(update_fields=["portal_access_until", "updated_at"])
         provision_portal_access(reg, send_email=True)
         sent += 1
     if sent:
@@ -1678,13 +1673,19 @@ def _hub_days_span_label(until_list: list, now) -> str:
     if not until_list:
         return "—"
     days_vals = []
+    any_not_started = False
     for u in until_list:
-        if u and u > now:
+        if u is None:
+            any_not_started = True
+        elif u > now:
             days_vals.append(max(0, math.ceil((u - now).total_seconds() / 86400)))
     if not days_vals:
-        return "—"
+        return "1st login" if any_not_started else "—"
     lo, hi = min(days_vals), max(days_vals)
-    return f"{lo}–{hi} d" if lo != hi else f"{lo} d"
+    out = f"{lo}–{hi} d" if lo != hi else f"{lo} d"
+    if any_not_started:
+        out += "*"
+    return out
 
 
 @login_required
@@ -1697,7 +1698,10 @@ def dashboard_sessions(request: HttpRequest) -> HttpResponse:
                 "registrations",
                 filter=Q(
                     registrations__status=RegistrationStatus.PAID,
-                    registrations__portal_access_until__gt=now,
+                )
+                & (
+                    Q(registrations__portal_access_until__isnull=True)
+                    | Q(registrations__portal_access_until__gt=now)
                 ),
             ),
             hub_signed_in_n=Count(
@@ -1715,7 +1719,8 @@ def dashboard_sessions(request: HttpRequest) -> HttpResponse:
         open_until = Registration.objects.filter(
             session_id__in=sid_list,
             status=RegistrationStatus.PAID,
-            portal_access_until__gt=now,
+        ).filter(
+            Q(portal_access_until__isnull=True) | Q(portal_access_until__gt=now)
         ).values_list("session_id", "portal_access_until")
         until_by_session = defaultdict(list)
         for sess_id, until in open_until:
@@ -1736,15 +1741,20 @@ def dashboard_session_hub_access(request: HttpRequest, session_id) -> HttpRespon
     )
     rows = []
     for reg in paid:
-        hub_open = bool(reg.portal_access_until and reg.portal_access_until > now)
+        u = reg.portal_access_until
+        hub_open = u is None or u > now
         days_left = None
-        if hub_open and reg.portal_access_until:
-            days_left = max(0, math.ceil((reg.portal_access_until - now).total_seconds() / 86400))
+        days_note = ""
+        if u is None and hub_open:
+            days_note = "Starts at first sign-in"
+        elif hub_open and u:
+            days_left = max(0, math.ceil((u - now).total_seconds() / 86400))
         rows.append(
             {
                 "reg": reg,
                 "hub_open": hub_open,
                 "days_left": days_left,
+                "days_note": days_note,
             }
         )
     return render(

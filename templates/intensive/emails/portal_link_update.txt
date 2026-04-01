@@ -9,7 +9,7 @@ Your portal password is unchanged from the one we sent you earlier. Sign in with
 
 If you forgot your password, open the link above and use “Email me a new password.”
 
-Your longest portal access end date (across your registrations) is: {% if access_until %}{{ access_until|date:"F j, Y, P e" }}{% else %}—{% endif %}
+Your longest portal access end date (across your registrations) is: {% if access_until %}{{ access_until|date:"F j, Y, P e" }}{% else %}30 days after your first sign-in (not started yet){% endif %}
 
 If you did not register for this training, you can ignore this email.
 

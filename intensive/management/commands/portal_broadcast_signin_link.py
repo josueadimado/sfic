@@ -9,6 +9,7 @@ Use --reset-passwords to send the full credentials template with a NEW password 
 """
 
 from django.core.management.base import BaseCommand
+from django.db.models import Q
 from django.utils import timezone
 
 from intensive.models import Registration, RegistrationStatus
@@ -36,7 +37,7 @@ class Command(BaseCommand):
             "--reset-passwords",
             action="store_true",
             help="Generate a new shared portal password per email and send the full credentials email "
-            "(only registrations with portal_access_until in the future).",
+            "(paid registrations with hub not expired: until unset or in the future).",
         )
 
     def handle(self, *args, **options):
@@ -50,7 +51,7 @@ class Command(BaseCommand):
         ).exclude(portal_password_hash="")
 
         if not include_expired:
-            qs = qs.filter(portal_access_until__gt=now)
+            qs = qs.filter(Q(portal_access_until__isnull=True) | Q(portal_access_until__gt=now))
 
         qs = qs.order_by("email", "id")
 

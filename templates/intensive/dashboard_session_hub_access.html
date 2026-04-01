@@ -13,7 +13,7 @@
         <h1>Learning hub access</h1>
         <p class="admin-subtitle">
             Paid registrants for <strong>{{ session.title }}</strong> ({{ session.start_date }} — {{ session.end_date }}).
-            <strong>Hub open</strong> = they can still sign in. <strong>Signed in</strong> = last hub login time. Use <strong>Revoke</strong> only if someone should lose access immediately.
+            <strong>Hub open</strong> = they can sign in (including “not started” until first login). <strong>Days left</strong> counts from first sign-in. Use <strong>Revoke</strong> only if someone should lose access immediately.
         </p>
         {% if messages %}
             <div class="alerts">
@@ -48,7 +48,7 @@
                             <td><strong>{{ reg.full_name }}</strong></td>
                             <td>{{ reg.email }}</td>
                             <td>{% if row.hub_open %}<span class="admin-hub-pill admin-hub-pill--yes">Yes</span>{% else %}<span class="admin-hub-pill admin-hub-pill--no">No</span>{% endif %}</td>
-                            <td>{% if row.days_left is not None %}{{ row.days_left }} d{% else %}—{% endif %}</td>
+                            <td>{% if row.days_note %}{{ row.days_note }}{% elif row.days_left is not None %}{{ row.days_left }} d{% else %}—{% endif %}</td>
                             <td>{% if reg.portal_access_until %}{{ reg.portal_access_until|date:"M j, Y g:i A" }}{% else %}—{% endif %}</td>
                             <td>{% if reg.portal_last_login_at %}{{ reg.portal_last_login_at|date:"M j, Y g:i A" }}{% else %}—{% endif %}</td>
                             <td>
@@ -80,7 +80,7 @@
                 </div>
                 <dl class="admin-hub-access-card__stats">
                     <div><dt>Hub open</dt><dd>{% if row.hub_open %}<span class="admin-hub-pill admin-hub-pill--yes">Yes</span>{% else %}<span class="admin-hub-pill admin-hub-pill--no">No</span>{% endif %}</dd></div>
-                    <div><dt>Days left</dt><dd>{% if row.days_left is not None %}{{ row.days_left }} d{% else %}—{% endif %}</dd></div>
+                    <div><dt>Days left</dt><dd>{% if row.days_note %}{{ row.days_note }}{% elif row.days_left is not None %}{{ row.days_left }} d{% else %}—{% endif %}</dd></div>
                     <div><dt>Access until</dt><dd>{% if reg.portal_access_until %}{{ reg.portal_access_until|date:"M j, Y g:i A" }}{% else %}—{% endif %}</dd></div>
                     <div><dt>Last sign-in</dt><dd>{% if reg.portal_last_login_at %}{{ reg.portal_last_login_at|date:"M j, Y g:i A" }}{% else %}Never{% endif %}</dd></div>
                 </dl>
