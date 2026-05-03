@@ -1397,12 +1397,6 @@ section[id] {
     margin-bottom: 1rem;
 }
 
-.donation-help-note {
-    margin: -0.25rem 0 0.95rem;
-    font-size: 0.95rem;
-    color: #5a4937;
-}
-
 .register-form {
     display: grid;
     grid-template-columns: 1fr;

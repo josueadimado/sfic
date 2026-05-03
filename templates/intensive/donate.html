@@ -9,13 +9,7 @@
             <div class="donation-head">
                 <h2>DONATE</h2>
                 <p class="sessions-intro">
-                    Support this 501(c)(3) mission through one-time or monthly giving. Donations are processed securely with Stripe.
-                </p>
-                <p class="donation-help-note">
-                    If you choose anonymous donation, we will not collect your name, phone, mailing address, email, or message in this form.
-                </p>
-                <p class="donation-help-note">
-                    Otherwise, please provide accurate information for donation records and tax purposes.
+                    Support this 501(c)(3) mission through one-time or monthly giving.
                 </p>
             </div>
             {% if messages %}
@@ -99,9 +93,6 @@
                     <input id="donation_is_anonymous" type="checkbox" name="is_anonymous" value="1" {% if donation_form.is_anonymous %}checked{% endif %}>
                     <span>Make this an anonymous donation</span>
                 </label>
-                <p class="donation-help-text" id="donation-anonymous-help">
-                    Anonymous mode hides and skips personal details (name, phone, mailing address, email, message).
-                </p>
 
                 <label for="donation_message">Message (optional)</label>
                 <input
