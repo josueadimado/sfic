@@ -357,6 +357,14 @@ def _build_donation_checkout_session(donation: Donation) -> stripe.checkout.Sess
             "donation_id": str(donation.id),
             "frequency": donation.frequency,
             "is_anonymous": "1" if donation.is_anonymous else "0",
+            **(
+                {}
+                if donation.is_anonymous
+                else {
+                    "donor_first_name": (donation.donor_first_name or "")[:80],
+                    "donor_last_name": (donation.donor_last_name or "")[:80],
+                }
+            ),
         },
         "success_url": f"{settings.SITE_BASE_URL}/donation/success?ref={{CHECKOUT_SESSION_ID}}",
         "cancel_url": f"{settings.SITE_BASE_URL}/donation/cancel?donation_id={donation.id}",
@@ -448,6 +456,20 @@ def _home_context(reg_form: dict | None = None, focus_register: bool = False) ->
         "focus_register": focus_register,
         "country_choices": RegistrationForm.COUNTRY_CHOICES,
         "country_options": RegistrationForm.COUNTRY_OPTIONS,
+    }
+
+
+def _donation_form_values_from_post(post) -> dict:
+    return {
+        "amount": post.get("amount", ""),
+        "frequency": post.get("frequency", DonationFrequency.ONE_TIME),
+        "is_anonymous": post.get("is_anonymous", ""),
+        "first_name": post.get("first_name", ""),
+        "last_name": post.get("last_name", ""),
+        "phone": post.get("phone", ""),
+        "address": post.get("address", ""),
+        "email": post.get("email", ""),
+        "message": post.get("message", ""),
     }
 
 
@@ -884,27 +906,11 @@ def create_donation_checkout(request: HttpRequest) -> HttpResponse:
         for field_errors in form.errors.values():
             for error in field_errors:
                 messages.error(request, error)
-        values = {
-            "amount": request.POST.get("amount", ""),
-            "frequency": request.POST.get("frequency", DonationFrequency.ONE_TIME),
-            "is_anonymous": request.POST.get("is_anonymous", ""),
-            "full_name": request.POST.get("full_name", ""),
-            "email": request.POST.get("email", ""),
-            "message": request.POST.get("message", ""),
-        }
-        return render(request, "intensive/donate.html", _donation_context(values))
+        return render(request, "intensive/donate.html", _donation_context(_donation_form_values_from_post(request.POST)))
 
     if not settings.STRIPE_SECRET_KEY:
         messages.error(request, "Stripe is not configured yet. Please contact support.")
-        values = {
-            "amount": request.POST.get("amount", ""),
-            "frequency": request.POST.get("frequency", DonationFrequency.ONE_TIME),
-            "is_anonymous": request.POST.get("is_anonymous", ""),
-            "full_name": request.POST.get("full_name", ""),
-            "email": request.POST.get("email", ""),
-            "message": request.POST.get("message", ""),
-        }
-        return render(request, "intensive/donate.html", _donation_context(values))
+        return render(request, "intensive/donate.html", _donation_context(_donation_form_values_from_post(request.POST)))
 
     base_amount_cents = int(form.cleaned_data["amount"] * 100)
     amount_cents, processing_fee_cents = _gross_up_amount_for_processing_fee(base_amount_cents)
@@ -913,7 +919,10 @@ def create_donation_checkout(request: HttpRequest) -> HttpResponse:
         provider="STRIPE",
         frequency=form.cleaned_data["frequency"],
         is_anonymous=is_anonymous,
-        donor_name="" if is_anonymous else form.cleaned_data.get("full_name", ""),
+        donor_first_name="" if is_anonymous else form.cleaned_data.get("first_name", ""),
+        donor_last_name="" if is_anonymous else form.cleaned_data.get("last_name", ""),
+        donor_phone="" if is_anonymous else form.cleaned_data.get("phone", ""),
+        donor_address="" if is_anonymous else form.cleaned_data.get("address", ""),
         donor_email=form.cleaned_data["email"],
         donor_message=form.cleaned_data.get("message", ""),
         amount=amount_cents,
@@ -945,19 +954,11 @@ def create_donation_checkout(request: HttpRequest) -> HttpResponse:
             "stripe_error": error_message,
         }
         donation.save(update_fields=["status", "note", "raw_payload", "updated_at"])
-        values = {
-            "amount": request.POST.get("amount", ""),
-            "frequency": request.POST.get("frequency", DonationFrequency.ONE_TIME),
-            "is_anonymous": request.POST.get("is_anonymous", ""),
-            "full_name": request.POST.get("full_name", ""),
-            "email": request.POST.get("email", ""),
-            "message": request.POST.get("message", ""),
-        }
         messages.error(
             request,
             "We could not start the donation checkout. Please try again or use one-time donation for now.",
         )
-        return render(request, "intensive/donate.html", _donation_context(values))
+        return render(request, "intensive/donate.html", _donation_context(_donation_form_values_from_post(request.POST)))
 
     donation.provider_ref = checkout_session.id
     donation.stripe_checkout_id = checkout_session.id
@@ -1273,7 +1274,10 @@ def stripe_webhook(request: HttpRequest) -> HttpResponse:
                         provider_ref=provider_ref,
                         frequency=DonationFrequency.MONTHLY,
                         is_anonymous=base_donation.is_anonymous,
-                        donor_name=base_donation.donor_name,
+                        donor_first_name=base_donation.donor_first_name,
+                        donor_last_name=base_donation.donor_last_name,
+                        donor_phone=base_donation.donor_phone,
+                        donor_address=base_donation.donor_address,
                         donor_email=base_donation.donor_email,
                         donor_message=base_donation.donor_message,
                         amount=invoice.get("amount_paid", base_donation.amount) or base_donation.amount,
@@ -1299,7 +1303,10 @@ def stripe_webhook(request: HttpRequest) -> HttpResponse:
                     provider_ref=str(invoice.get("id", "")),
                     frequency=DonationFrequency.MONTHLY,
                     is_anonymous=base_donation.is_anonymous,
-                    donor_name=base_donation.donor_name,
+                    donor_first_name=base_donation.donor_first_name,
+                    donor_last_name=base_donation.donor_last_name,
+                    donor_phone=base_donation.donor_phone,
+                    donor_address=base_donation.donor_address,
                     donor_email=base_donation.donor_email,
                     donor_message=base_donation.donor_message,
                     amount=invoice.get("amount_due", base_donation.amount) or base_donation.amount,
@@ -1419,7 +1426,15 @@ def donor_elf_webhook(request: HttpRequest) -> HttpResponse:
         return HttpResponse(status=400)
 
     provider_ref = _payload_get(payload, "donation_id", "id", "transaction_id", "reference")
-    donor_name = _payload_get(payload, "name", "donor_name", "full_name")
+    donor_first_name = _payload_get(payload, "donor_first_name", "first_name")
+    donor_last_name = _payload_get(payload, "donor_last_name", "last_name")
+    combined = _payload_get(payload, "name", "donor_name", "full_name")
+    if not donor_first_name and not donor_last_name and combined:
+        parts = combined.strip().split(None, 1)
+        donor_first_name = parts[0] if parts else ""
+        donor_last_name = parts[1] if len(parts) > 1 else ""
+    donor_phone = _payload_get(payload, "donor_phone", "phone")
+    donor_address = _payload_get(payload, "donor_address", "address")
     donor_email = _payload_get(payload, "email", "donor_email")
     amount = _to_cents(payload.get("amount") or payload.get("donation_amount") or payload.get("total"))
     currency = _payload_get(payload, "currency", default="USD").upper()
@@ -1429,7 +1444,10 @@ def donor_elf_webhook(request: HttpRequest) -> HttpResponse:
 
     defaults = {
         "provider": "DONOR_ELF",
-        "donor_name": donor_name,
+        "donor_first_name": donor_first_name,
+        "donor_last_name": donor_last_name,
+        "donor_phone": donor_phone,
+        "donor_address": donor_address,
         "donor_email": donor_email,
         "amount": amount,
         "currency": currency or "USD",

@@ -4,7 +4,11 @@ Amount: {{ amount }}
 Type: {{ donation.get_frequency_display }}
 Status: {{ donation.status }}
 Anonymous: {% if donation.is_anonymous %}Yes{% else %}No{% endif %}
-Donor Name: {{ donation.donor_name|default:"-" }}
+Donor First name: {% if donation.is_anonymous %}-{% else %}{{ donation.donor_first_name|default:"-" }}{% endif %}
+Donor Last name: {% if donation.is_anonymous %}-{% else %}{{ donation.donor_last_name|default:"-" }}{% endif %}
+Donor Phone: {% if donation.is_anonymous %}-{% else %}{{ donation.donor_phone|default:"-" }}{% endif %}
+Donor mailing address:
+{% if donation.is_anonymous %}-{% else %}{{ donation.donor_address|default:"-" }}{% endif %}
 Donor Email: {{ donation.donor_email|default:"-" }}
 Reference: {{ donation.provider_ref|default:"-" }}
 

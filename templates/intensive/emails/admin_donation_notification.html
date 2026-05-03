@@ -17,8 +17,16 @@
                 <strong>Type:</strong> {{ donation.get_frequency_display }}<br>
                 <strong>Status:</strong> {{ donation.status }}<br>
                 <strong>Anonymous:</strong> {% if donation.is_anonymous %}Yes{% else %}No{% endif %}<br>
-                <strong>Donor Name:</strong> {{ donation.donor_name|default:"-" }}<br>
-                <strong>Donor Email:</strong> {{ donation.donor_email|default:"-" }}<br>
+                {% if not donation.is_anonymous %}
+                <strong>First name:</strong> {{ donation.donor_first_name|default:"-" }}<br>
+                <strong>Last name:</strong> {{ donation.donor_last_name|default:"-" }}<br>
+                <strong>Phone:</strong> {{ donation.donor_phone|default:"-" }}<br>
+                <strong>Mailing address:</strong><br>
+                {{ donation.donor_address|default:"-"|linebreaksbr }}
+                {% else %}
+                <strong>Donor details:</strong> Anonymous<br>
+                {% endif %}
+                <strong>Email:</strong> {{ donation.donor_email|default:"-" }}<br>
                 <strong>Reference:</strong> {{ donation.provider_ref|default:"-" }}
               </p>
               <p style="margin:0;">

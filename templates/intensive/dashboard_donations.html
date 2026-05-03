@@ -35,6 +35,7 @@
                         <th>Created</th>
                         <th>Status</th>
                         <th>Donor</th>
+                        <th>Phone</th>
                         <th>Type</th>
                         <th>Anonymous</th>
                         <th>Email</th>
@@ -49,6 +50,7 @@
                             <td>{{ item.created_at }}</td>
                             <td><span class="status-pill status-{{ item.status|lower }}">{{ item.status }}</span></td>
                             <td>{{ item.donor_name|default:"-" }}</td>
+                            <td>{{ item.donor_phone|default:"-" }}</td>
                             <td>{{ item.get_frequency_display }}</td>
                             <td>{% if item.is_anonymous %}Yes{% else %}No{% endif %}</td>
                             <td>{{ item.donor_email|default:"-" }}</td>
@@ -57,7 +59,7 @@
                             <td>{{ item.note|default:"-" }}</td>
                         </tr>
                     {% empty %}
-                        <tr><td colspan="9">No donations found yet.</td></tr>
+                        <tr><td colspan="10">No donations found yet.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

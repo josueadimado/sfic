@@ -133,7 +133,15 @@ class DonationForm(forms.Form):
     )
     frequency = forms.ChoiceField(choices=DonationFrequency.choices, initial=DonationFrequency.ONE_TIME)
     is_anonymous = forms.BooleanField(required=False)
-    full_name = forms.CharField(max_length=160, required=False)
+    first_name = forms.CharField(max_length=80, required=False, label="First name")
+    last_name = forms.CharField(max_length=80, required=False, label="Last name")
+    phone = forms.CharField(max_length=40, required=False, label="Phone")
+    address = forms.CharField(
+        max_length=800,
+        required=False,
+        label="Mailing address",
+        widget=forms.Textarea(attrs={"rows": 3, "placeholder": "Street, city, state/province, postal code, country"}),
+    )
     email = forms.EmailField(max_length=254, required=False)
     message = forms.CharField(max_length=255, required=False)
 
@@ -143,29 +151,47 @@ class DonationForm(forms.Form):
             raise forms.ValidationError("Minimum donation is 5.00 USD.")
         return amount
 
-    def clean_full_name(self):
-        full_name = self.cleaned_data.get("full_name", "").strip()
-        is_anonymous = self.cleaned_data.get("is_anonymous", False)
-        if not is_anonymous and len(full_name) < 2:
-            raise forms.ValidationError("Please enter your full name or choose anonymous.")
-        return full_name
+    def clean_first_name(self):
+        return (self.cleaned_data.get("first_name") or "").strip()
+
+    def clean_last_name(self):
+        return (self.cleaned_data.get("last_name") or "").strip()
+
+    def clean_phone(self):
+        return (self.cleaned_data.get("phone") or "").strip()
+
+    def clean_address(self):
+        return (self.cleaned_data.get("address") or "").strip()
 
     def clean(self):
         cleaned = super().clean()
         is_anonymous = cleaned.get("is_anonymous", False)
-        full_name = (cleaned.get("full_name") or "").strip()
+        first_name = cleaned.get("first_name", "")
+        last_name = cleaned.get("last_name", "")
+        phone = cleaned.get("phone", "")
+        address = cleaned.get("address", "")
         email = (cleaned.get("email") or "").strip()
 
         if is_anonymous:
-            cleaned["full_name"] = ""
+            cleaned["first_name"] = ""
+            cleaned["last_name"] = ""
+            cleaned["phone"] = ""
+            cleaned["address"] = ""
             cleaned["email"] = ""
             cleaned["message"] = ""
             return cleaned
 
+        if len(first_name) < 1:
+            self.add_error("first_name", "Please enter your first name or choose anonymous.")
+        if len(last_name) < 1:
+            self.add_error("last_name", "Please enter your last name or choose anonymous.")
+        if len(phone) < 7:
+            self.add_error("phone", "Please enter a valid phone number or choose anonymous.")
+        if len(address) < 12:
+            self.add_error("address", "Please enter your full mailing address (for tax records) or choose anonymous.")
+
         if not email:
             self.add_error("email", "Please enter your email or choose anonymous.")
-        if len(full_name) < 2:
-            self.add_error("full_name", "Please enter your full name or choose anonymous.")
         return cleaned
 
 class SessionManageForm(forms.ModelForm):

@@ -12,7 +12,10 @@
                     Support this 501(c)(3) mission through one-time or monthly giving. Donations are processed securely with Stripe.
                 </p>
                 <p class="donation-help-note">
-                    If you choose anonymous donation, we will not collect your name, email, or message in this form.
+                    If you choose anonymous donation, we will not collect your name, phone, mailing address, email, or message in this form.
+                </p>
+                <p class="donation-help-note">
+                    Otherwise, please provide accurate information for donation records and tax purposes.
                 </p>
             </div>
             {% if messages %}
@@ -42,15 +45,45 @@
                     <option value="MONTHLY" {% if donation_form.frequency == 'MONTHLY' %}selected{% endif %}>Monthly recurring donation</option>
                 </select>
 
-                <label for="donation_full_name">Full Name</label>
+                <label for="donation_first_name">First name</label>
                 <input
-                    id="donation_full_name"
-                    name="full_name"
+                    id="donation_first_name"
+                    name="first_name"
                     type="text"
-                    value="{{ donation_form.full_name|default:'' }}"
-                    autocomplete="name"
-                    placeholder="Enter your full name"
+                    value="{{ donation_form.first_name|default:'' }}"
+                    autocomplete="given-name"
+                    placeholder="Legal first name"
                 >
+
+                <label for="donation_last_name">Last name</label>
+                <input
+                    id="donation_last_name"
+                    name="last_name"
+                    type="text"
+                    value="{{ donation_form.last_name|default:'' }}"
+                    autocomplete="family-name"
+                    placeholder="Legal last name"
+                >
+
+                <label for="donation_phone">Phone</label>
+                <input
+                    id="donation_phone"
+                    name="phone"
+                    type="tel"
+                    value="{{ donation_form.phone|default:'' }}"
+                    autocomplete="tel"
+                    inputmode="tel"
+                    placeholder="Phone number"
+                >
+
+                <label for="donation_address">Mailing address</label>
+                <textarea
+                    id="donation_address"
+                    name="address"
+                    rows="3"
+                    autocomplete="street-address"
+                    placeholder="Street, city, state or province, postal code, country"
+                >{{ donation_form.address|default:'' }}</textarea>
 
                 <label for="donation_email">Email</label>
                 <input
@@ -67,7 +100,7 @@
                     <span>Make this an anonymous donation</span>
                 </label>
                 <p class="donation-help-text" id="donation-anonymous-help">
-                    Anonymous mode hides and skips personal details (name, email, message).
+                    Anonymous mode hides and skips personal details (name, phone, mailing address, email, message).
                 </p>
 
                 <label for="donation_message">Message (optional)</label>
@@ -90,20 +123,32 @@
 <script>
     (function () {
         const anon = document.getElementById("donation_is_anonymous");
-        const nameInput = document.getElementById("donation_full_name");
+        const firstEl = document.getElementById("donation_first_name");
+        const lastEl = document.getElementById("donation_last_name");
+        const phoneEl = document.getElementById("donation_phone");
+        const addrEl = document.getElementById("donation_address");
         const emailInput = document.getElementById("donation_email");
         const messageInput = document.getElementById("donation_message");
-        if (!anon || !nameInput || !emailInput || !messageInput) return;
+        if (!anon || !firstEl || !lastEl || !phoneEl || !addrEl || !emailInput || !messageInput) return;
 
         function syncAnonymousState() {
             const on = anon.checked;
-            nameInput.disabled = on;
+            firstEl.disabled = on;
+            lastEl.disabled = on;
+            phoneEl.disabled = on;
+            addrEl.disabled = on;
             emailInput.disabled = on;
             messageInput.disabled = on;
-            nameInput.required = !on;
+            firstEl.required = !on;
+            lastEl.required = !on;
+            phoneEl.required = !on;
+            addrEl.required = !on;
             emailInput.required = !on;
             if (on) {
-                nameInput.value = "";
+                firstEl.value = "";
+                lastEl.value = "";
+                phoneEl.value = "";
+                addrEl.value = "";
                 emailInput.value = "";
                 messageInput.value = "";
             }

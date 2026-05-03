@@ -149,7 +149,9 @@ class DonationAdmin(admin.ModelAdmin):
         "created_at",
         "provider",
         "provider_ref",
-        "donor_name",
+        "donor_first_name",
+        "donor_last_name",
+        "donor_phone",
         "frequency",
         "is_anonymous",
         "donor_email",
@@ -158,7 +160,15 @@ class DonationAdmin(admin.ModelAdmin):
         "status",
     )
     list_filter = ("provider", "status", "currency")
-    search_fields = ("provider_ref", "donor_name", "donor_email", "note")
+    search_fields = (
+        "provider_ref",
+        "donor_first_name",
+        "donor_last_name",
+        "donor_phone",
+        "donor_email",
+        "donor_address",
+        "note",
+    )
 
 
 @admin.register(StudentDiscountCode)

@@ -367,7 +367,10 @@ class Donation(models.Model):
     provider_ref = models.CharField(max_length=200, blank=True)
     frequency = models.CharField(max_length=16, choices=DonationFrequency.choices, default=DonationFrequency.ONE_TIME)
     is_anonymous = models.BooleanField(default=False)
-    donor_name = models.CharField(max_length=160, blank=True)
+    donor_first_name = models.CharField(max_length=80, blank=True)
+    donor_last_name = models.CharField(max_length=80, blank=True)
+    donor_phone = models.CharField(max_length=40, blank=True)
+    donor_address = models.TextField(blank=True, help_text="Mailing address for tax acknowledgment purposes.")
     donor_email = models.EmailField(blank=True)
     donor_message = models.CharField(max_length=255, blank=True)
     amount = models.PositiveIntegerField(default=0, help_text="Stored in the smallest currency unit.")
@@ -392,6 +395,12 @@ class Donation(models.Model):
 
     def __str__(self) -> str:
         return f"{self.provider} {self.provider_ref or self.id}"
+
+    @property
+    def donor_name(self) -> str:
+        """Combined first + last name (for emails and legacy integrations)."""
+        parts = [(self.donor_first_name or "").strip(), (self.donor_last_name or "").strip()]
+        return " ".join(p for p in parts if p).strip()
 
     @property
     def display_amount(self) -> str:
