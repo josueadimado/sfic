@@ -52,6 +52,11 @@
     </div>
     {% endif %}
     {% block body %}{% endblock %}
+    <button type="button" class="back-to-top" id="back-to-top" aria-label="Back to top" tabindex="-1">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 4l8 8-1.4 1.4L13 7.8V20h-2V7.8L5.4 13.4 4 12l8-8z"></path>
+        </svg>
+    </button>
     <div class="admin-sidebar-backdrop" id="admin-sidebar-backdrop" hidden aria-hidden="true"></div>
     <script>
         (function () {
@@ -181,6 +186,27 @@
             );
 
             targets.forEach((el) => observer.observe(el));
+        })();
+
+        (function () {
+            const btn = document.getElementById("back-to-top");
+            if (!btn) return;
+
+            const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            const threshold = 400;
+
+            function toggleBackToTop() {
+                const show = window.scrollY > threshold;
+                btn.classList.toggle("is-visible", show);
+                btn.tabIndex = show ? 0 : -1;
+            }
+
+            btn.addEventListener("click", () => {
+                window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+            });
+
+            window.addEventListener("scroll", toggleBackToTop, { passive: true });
+            toggleBackToTop();
         })();
 
         (function () {

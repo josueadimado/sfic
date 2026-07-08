@@ -5,6 +5,7 @@ from . import participant_views, views
 
 urlpatterns = [
     path("", views.home, name="home"),
+    path("events/", views.events, name="events"),
     path(
         "event-program/<uuid:session_id>/",
         views.public_event_program,
@@ -14,6 +15,7 @@ urlpatterns = [
     path("robots.txt", views.robots_txt, name="robots_txt"),
     path("sitemap.xml", views.sitemap_xml, name="sitemap_xml"),
     path("checkout/", views.create_checkout, name="create_checkout"),
+    path("registration-received/", views.registration_received, name="registration_received"),
     path("checkout/student-code/", views.request_student_discount_code, name="request_student_discount_code"),
     path("donate/checkout/", views.create_donation_checkout, name="create_donation_checkout"),
     path("checkout/resume/<uuid:registration_id>/", views.resume_checkout, name="resume_checkout"),
@@ -69,6 +71,11 @@ urlpatterns = [
         name="dashboard_registration_portal_email",
     ),
     path("dashboard/registrations/<uuid:item_id>/", views.dashboard_registration_detail, name="dashboard_registration_detail"),
+    path(
+        "dashboard/registrations/<uuid:item_id>/mark-paid/",
+        views.dashboard_registration_mark_paid,
+        name="dashboard_registration_mark_paid",
+    ),
     path(
         "dashboard/send-portal-invites/",
         views.dashboard_send_portal_invites,

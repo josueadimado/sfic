@@ -1,0 +1,25 @@
+Hello {{ registration.full_name }},
+
+Thank you for registering for {{ session.title }}.
+
+We received your registration details. Your payment is not complete yet — you chose to pay by {{ payment_method_label }}.
+
+Program details:
+- Session: {{ session.title }}
+- Location: {{ session.location }}
+- Dates: {{ session.start_date }} to {{ session.end_date }}
+- Amount due: {{ amount_due }}
+- Payment memo: {{ payment_memo }}
+
+Next steps:
+{{ payment_instructions }}
+
+Our team will confirm your payment once it is received and then send your final confirmation email with any program materials.
+
+If you have questions, contact Set Free in Christ Mission at SetFreeInChristMission.Team@gmail.com or (269) 208-3370.
+
+Visit our website:
+{{ site_base_url }}
+
+Thank you,
+Set Free in Christ Mission

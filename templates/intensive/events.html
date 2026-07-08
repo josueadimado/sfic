@@ -1,0 +1,117 @@
+{% extends "intensive/base.html" %}
+{% load static %}
+
+{% block title %}Events | Set Free In Christ Mission{% endblock %}
+{% block meta_description %}Upcoming Didasko programs and archived past events from Set Free In Christ Mission.{% endblock %}
+{% block og_title %}Events | Set Free In Christ Mission{% endblock %}
+{% block og_description %}View upcoming mission programs and past event archives from Set Free In Christ Mission.{% endblock %}
+{% block twitter_title %}Events | Set Free In Christ Mission{% endblock %}
+{% block twitter_description %}View upcoming mission programs and past event archives from Set Free In Christ Mission.{% endblock %}
+
+{% block body %}
+<div class="contact-strip">
+    <div class="container contact-strip-inner">
+        <span class="contact-strip-org">Set Free in Christ Institute &amp; Set Free in Christ Mission</span>
+        <span class="contact-strip-reach">
+            <a href="tel:+12692083370">(269) 208-3370</a>
+            <span class="contact-strip-sep">/</span>
+            <a href="tel:+12692083372">(269) 208-3372</a>
+            <span class="contact-strip-sep">|</span>
+            <a href="mailto:SetFreeInChristMission.Team@gmail.com">SetFreeInChristMission.Team@gmail.com</a>
+        </span>
+    </div>
+</div>
+<header class="topbar">
+    <div class="container topbar-inner">
+        <div class="topbar-main">
+            <div class="brand">
+                <a href="{% url 'home' %}">
+                    <img src="{% static 'images/new logo set free.svg' %}" alt="Set Free In Christ logo" class="brand-logo">
+                </a>
+            </div>
+            <div class="topbar-social" aria-label="Social media links">
+                <a class="social-instagram" href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="3.5" y="3.5" width="17" height="17" rx="5"></rect>
+                        <circle cx="12" cy="12" r="4"></circle>
+                        <circle cx="17.4" cy="6.6" r="1"></circle>
+                    </svg>
+                </a>
+                <a class="social-facebook" href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M13.2 20v-7h2.4l.4-2.8h-2.8V8.5c0-.8.3-1.4 1.5-1.4h1.4V4.6c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4.1v1.6H7.5V13H10v7h3.2Z"></path>
+                    </svg>
+                </a>
+                <a class="social-youtube" href="https://www.youtube.com/@SetFreeInChrist-x4m" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <rect class="yt-box" x="3.5" y="6" width="17" height="12" rx="3.2"></rect>
+                        <path class="yt-play" d="M10 9.4v5.2l4.7-2.6L10 9.4Z"></path>
+                    </svg>
+                </a>
+                <a class="topbar-donate-btn" href="{% url 'donate' %}">Donate</a>
+            </div>
+            <button type="button" class="topbar-menu-toggle" data-mobile-menu-toggle aria-label="Open menu">☰</button>
+        </div>
+        <nav class="nav-links topbar-menu" aria-label="Main navigation">
+            <button type="button" class="topbar-menu-close" data-mobile-menu-close aria-label="Close menu">✕</button>
+            <a href="{% url 'home' %}#about">About</a>
+            <a href="{% url 'home' %}#schedule">Schedule</a>
+            <a href="{% url 'home' %}#safari">Safari</a>
+            <a href="{% url 'home' %}#speakers">Speakers</a>
+            <a href="{% url 'home' %}#pay">How to Pay</a>
+            <a href="{% url 'events' %}" class="is-active" aria-current="page">Events</a>
+        </nav>
+    </div>
+    <div class="mobile-menu-backdrop" data-mobile-menu-backdrop aria-hidden="true"></div>
+</header>
+
+<main>
+    {% include "intensive/includes/sessions_section.html" %}
+</main>
+
+<footer class="footer">
+    <div class="container footer-legal">
+        <p class="footer-brand">Set Free in Christ Mission — Learn · Equip · Disciple · Send</p>
+        <div class="footer-meta">
+            <p class="footer-copy">Copyright &copy; {% now "Y" %} Set Free In Christ. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="{% url 'participant_portal_login' %}">Participant portal</a>
+                <a href="{% url 'home' %}">Home</a>
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms &amp; Conditions</a>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script>
+    (function () {
+        const body = document.body;
+        const menu = document.querySelector(".topbar-menu");
+        const openBtn = document.querySelector("[data-mobile-menu-toggle]");
+        const closeBtn = document.querySelector("[data-mobile-menu-close]");
+        const backdrop = document.querySelector("[data-mobile-menu-backdrop]");
+        if (!menu || !openBtn || !closeBtn || !backdrop) return;
+
+        function closeMenu() {
+            body.classList.remove("mobile-menu-open");
+        }
+
+        openBtn.addEventListener("click", () => {
+            body.classList.add("mobile-menu-open");
+        });
+        closeBtn.addEventListener("click", closeMenu);
+        backdrop.addEventListener("click", closeMenu);
+
+        menu.querySelectorAll("a").forEach((link) => {
+            link.addEventListener("click", closeMenu);
+        });
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                closeMenu();
+            }
+        });
+    })();
+</script>
+{% endblock %}

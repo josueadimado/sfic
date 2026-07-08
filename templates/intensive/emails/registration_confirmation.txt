@@ -1,18 +1,18 @@
 Hello {{ registration.full_name }},
 
-Your registration for the 3-Day Spiritual Warfare Intensive ({{ session.title }}) is confirmed.
+Your registration for {{ session.title }} is confirmed and your payment was successful.
 
 Registration details:
-- Session: {{ session.title }}
-- LOCATION: {{ session.location }}
+- Program: {{ session.title }}
+- Location: {{ session.location }}
 - City/Country: {{ registration.city }}, {{ registration.country }}
 - Dates: {{ session.start_date }} to {{ session.end_date }}
-- Amount Paid: {{ amount_paid }}
+- Amount paid: {{ amount_paid }}
 - Status: {{ registration.status }}
 
 You can revisit the site here:
 {{ site_base_url }}
 
-We look forward to welcoming you for this Scripture-based training and ministry experience.
+We look forward to welcoming you for {{ session.title }}.
 
 Thank you for registering with Set Free In Christ.

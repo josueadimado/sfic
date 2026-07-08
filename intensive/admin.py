@@ -67,12 +67,13 @@ class RegistrationAdmin(admin.ModelAdmin):
         "is_student",
         "student_id",
         "session",
+        "requested_payment_method",
         "status",
         "amount_paid",
         "currency",
         "created_at",
     )
-    list_filter = ("status", "payment_provider", "currency", "session")
+    list_filter = ("status", "payment_provider", "requested_payment_method", "currency", "session")
     search_fields = ("full_name", "email", "phone", "city", "country", "payment_ref", "student_id")
 
 

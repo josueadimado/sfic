@@ -1,0 +1,84 @@
+<section id="sessions" class="section white events-page-section">
+    <div class="container">
+        <h1 class="experience-heading">Events</h1>
+        <p class="experience-intro events-page-intro">
+            Browse upcoming mission programs and past events with on-demand access to recordings and materials.
+        </p>
+
+        {% if upcoming_sessions %}
+            <h2 class="sessions-subheading">Upcoming programs</h2>
+            <p class="sessions-subintro sessions-subintro--compact">Live dates · secure online registration · full trip details on each card</p>
+            <div class="session-grid">
+                {% for session in upcoming_sessions %}
+                    <article class="session-card session-card--upcoming">
+                        <div class="session-card-head">
+                            <h3>{{ session.title }}</h3>
+                            {% if session.seats_left <= 10 %}
+                                <span class="session-badge low">Few Seats Left</span>
+                            {% else %}
+                                <span class="session-badge open">Open</span>
+                            {% endif %}
+                        </div>
+                        <p class="session-location">
+                            <svg class="location-icon small" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"></path>
+                                <circle cx="12" cy="10" r="2.5"></circle>
+                            </svg>
+                            {{ session.location }}
+                        </p>
+                        <p class="session-date">{{ session.start_date|date:"F j" }} - {{ session.end_date|date:"F j, Y" }}</p>
+                        <p class="session-access-note"><strong>Includes:</strong> Training, safari, lodging, meals &amp; ground transport</p>
+                        <p class="price">{{ session.display_price }}</p>
+                        <a href="{{ register_url }}" class="btn btn-accent session-cta">Reserve This Session</a>
+                    </article>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if past_sessions %}
+            <div class="sessions-past-wrap{% if upcoming_sessions %} sessions-past-wrap--after-upcoming{% endif %}">
+            <h2 class="sessions-subheading{% if upcoming_sessions %} sessions-subheading--past{% endif %}">Past programs (archive)</h2>
+            <p class="sessions-past-tagline">
+                Previous intensives and training events — on-demand recordings and materials available for registered participants.
+            </p>
+            <div class="archive-callout">
+                <p>
+                    <strong>3-Day Spiritual Warfare Intensive (March 2026)</strong> — Our previous U.S.-based program
+                    is now archived. Register on the main site to access presentation slides, video recordings, and all materials
+                    from the three-day seminar.
+                </p>
+            </div>
+            <div class="session-grid">
+                {% for session in past_sessions %}
+                    <article class="session-card session-card--past">
+                        <div class="session-card-head">
+                            <h3>{{ session.title }}</h3>
+                            <span class="session-badge session-badge--ondemand">On-demand</span>
+                        </div>
+                        <p class="session-location">
+                            <svg class="location-icon small" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"></path>
+                                <circle cx="12" cy="10" r="2.5"></circle>
+                            </svg>
+                            {{ session.location }}
+                        </p>
+                        <p class="session-date">{{ session.start_date|date:"F j" }} - {{ session.end_date|date:"F j, Y" }}</p>
+                        <p class="session-access-note"><strong>Hub:</strong> 30 days · videos + PDFs after payment</p>
+                        <p class="price">{{ session.display_price }}</p>
+                        <a href="{{ register_url }}" class="btn btn-accent session-cta">Get access</a>
+                    </article>
+                {% endfor %}
+            </div>
+            </div>
+        {% endif %}
+
+        {% if not upcoming_sessions and not past_sessions %}
+            <p class="experience-intro">No active events yet. Check back soon.</p>
+        {% endif %}
+
+        <p class="sessions-footnote">Limited seats · one registration = hub access for that session only.</p>
+        <p class="events-page-register-link">
+            <a href="{{ register_url }}" class="btn btn-accent">Register on main site</a>
+        </p>
+    </div>
+</section>

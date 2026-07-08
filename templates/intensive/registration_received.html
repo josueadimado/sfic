@@ -1,0 +1,40 @@
+{% extends "intensive/base.html" %}
+{% load static %}
+
+{% block title %}Registration Received{% endblock %}
+
+{% block body %}
+<main class="simple-page">
+    <div class="container centered result-card">
+        <div class="result-brand">
+            <img src="{% static 'images/new logo set free.svg' %}" alt="Set Free In Christ" class="result-logo">
+            <p class="result-brand-name">Set Free In Christ</p>
+        </div>
+        <h1 class="result-title">Registration Received</h1>
+        {% if registration %}
+            <p class="result-intro">
+                Thank you, {{ registration.full_name }}. We saved your registration for
+                <strong>{{ registration.session.title }}</strong>.
+            </p>
+            <div class="result-meta">
+                <p><strong>Program:</strong> {{ registration.session.title }}</p>
+                <p><strong>Location:</strong> {{ registration.session.location }}</p>
+                <p><strong>Dates:</strong> {{ registration.session.start_date|date:"F j" }}–{{ registration.session.end_date|date:"F j, Y" }}</p>
+                <p><strong>Payment method:</strong> {{ registration.get_requested_payment_method_display }}</p>
+                <p><strong>Amount due:</strong> {{ registration.display_amount_paid }}</p>
+                <p><strong>Status:</strong> <span class="result-status">{{ registration.status }}</span></p>
+            </div>
+            <p class="result-note">
+                Your payment is <strong>not complete yet</strong>. We emailed instructions to
+                <strong>{{ registration.email }}</strong>. Our team will send a final confirmation once your payment is received.
+            </p>
+        {% else %}
+            <p class="result-intro">We could not find that registration. If you need help, contact the ministry team.</p>
+        {% endif %}
+        <div class="result-actions">
+            <a class="btn btn-accent" href="{% url 'home' %}">Back to Home</a>
+            <a class="btn btn-outline" href="{% url 'home' %}#pay">View Payment Options</a>
+        </div>
+    </div>
+</main>
+{% endblock %}

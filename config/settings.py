@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 
 # Bare apex for this site often does not load in the browser; outbound links (email, Stripe)
 # should use https://www.<apex>. Additional domains: set SITE_USE_WWW_FOR_HOST=comma-separated.
-_SITE_WWW_APEX_DEFAULTS = frozenset({"setfreeinchristmission.org"})
+_SITE_WWW_APEX_DEFAULTS = frozenset({"setfreeinchrist.org"})
 
 
 def _normalize_site_base_url(raw: str) -> str:

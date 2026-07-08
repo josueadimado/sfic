@@ -5,7 +5,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from django import forms
 import pycountry
 
-from .models import DonationFrequency, PortalVideo, Session, SiteSetting, Speaker, TrainingScheduleItem
+from .models import DonationFrequency, PaymentMethod, PortalVideo, Session, SiteSetting, Speaker, TrainingScheduleItem
 
 # Shared rules for session event program uploads (PDF / common doc types).
 _EVENT_PROGRAM_ALLOWED_EXT = {".pdf", ".doc", ".docx", ".ppt", ".pptx"}
@@ -66,6 +66,10 @@ class RegistrationForm(forms.Form):
     student_id = forms.CharField(max_length=6, required=False)
     student_discount_code = forms.CharField(max_length=32, required=False)
     discount_code = forms.CharField(max_length=32, required=False, label="Free registration code")
+    payment_method = forms.ChoiceField(
+        choices=PaymentMethod.choices,
+        initial=PaymentMethod.ONLINE_CARD,
+    )
     session_id = forms.UUIDField()
 
     def clean_session_id(self):

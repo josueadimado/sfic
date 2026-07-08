@@ -1,12 +1,12 @@
 {% extends "intensive/base.html" %}
 {% load static %}
 
-{% block title %}3 Day Freedom Intensive | Set Free In Christ{% endblock %}
-{% block meta_description %}Register for the 3 Day Freedom Intensive by Set Free In Christ. View schedule, speakers, sessions, and complete secure online payment.{% endblock %}
-{% block og_title %}3 Day Freedom Intensive | Set Free In Christ{% endblock %}
-{% block og_description %}Register for the 3 Day Freedom Intensive by Set Free In Christ. View schedule, speakers, and available sessions.{% endblock %}
-{% block twitter_title %}3 Day Freedom Intensive | Set Free In Christ{% endblock %}
-{% block twitter_description %}Register for the 3 Day Freedom Intensive by Set Free In Christ. View schedule, speakers, and available sessions.{% endblock %}
+{% block title %}Didasko 2026 | Set Free In Christ Mission{% endblock %}
+{% block meta_description %}Register for Didasko 2026 — field training, cross-cultural mission, and an optional safari in Northern Ghana. September 1–10, 2026 in Lomé, Togo.{% endblock %}
+{% block og_title %}Didasko 2026 | Set Free In Christ Mission{% endblock %}
+{% block og_description %}Join Set Free in Christ Mission for field training, cross-cultural experience, and mission opportunity in Lomé, Togo, with an optional three-day safari in Northern Ghana.{% endblock %}
+{% block twitter_title %}Didasko 2026 | Set Free In Christ Mission{% endblock %}
+{% block twitter_description %}Join Set Free in Christ Mission for field training, cross-cultural experience, and mission opportunity in Lomé, Togo, with an optional three-day safari in Northern Ghana.{% endblock %}
 {% block head %}
     <link
         rel="stylesheet"
@@ -26,7 +26,7 @@
         {
           "@type": "Event",
           "name": "{{ speakers_session.title|escapejs }}",
-          "description": "3 Day Freedom Intensive by Set Free In Christ.",
+          "description": "Didasko 2026 — field training, cross-cultural mission, and safari adventure with Set Free In Christ Mission.",
           "startDate": "{{ speakers_session.start_date|date:'c' }}",
           "endDate": "{{ speakers_session.end_date|date:'c' }}",
           "eventStatus": "https://schema.org/EventScheduled",
@@ -49,6 +49,18 @@
 {% endblock %}
 
 {% block body %}
+<div class="contact-strip">
+    <div class="container contact-strip-inner">
+        <span class="contact-strip-org">Set Free in Christ Institute &amp; Set Free in Christ Mission</span>
+        <span class="contact-strip-reach">
+            <a href="tel:+12692083370">(269) 208-3370</a>
+            <span class="contact-strip-sep">/</span>
+            <a href="tel:+12692083372">(269) 208-3372</a>
+            <span class="contact-strip-sep">|</span>
+            <a href="mailto:SetFreeInChristMission.Team@gmail.com">SetFreeInChristMission.Team@gmail.com</a>
+        </span>
+    </div>
+</div>
 <header class="topbar">
     <div class="container topbar-inner">
         <div class="topbar-main">
@@ -82,44 +94,52 @@
             <button type="button" class="topbar-menu-close" data-mobile-menu-close aria-label="Close menu">✕</button>
             <a href="#about">About</a>
             <a href="#schedule">Schedule</a>
+            <a href="#safari">Safari</a>
             <a href="#speakers">Speakers</a>
+            <a href="#pay">How to Pay</a>
+            <a href="{% url 'events' %}">Events</a>
         </nav>
     </div>
     <div class="mobile-menu-backdrop" data-mobile-menu-backdrop aria-hidden="true"></div>
 </header>
 
 <main>
-    <section class="hero">
-        <div class="container hero-content hero-grid">
+    <section class="hero hero--didasko">
+        <div class="container hero-content hero-grid hero-grid--didasko">
             <div class="hero-left">
-                <p class="eyebrow">3-DAY SPIRITUAL WARFARE INTENSIVE</p>
-                <h1 class="hero-title">
-                    SPIRITUAL WARFARE
-                    <span>FREEDOM IN CHRIST</span>
-                </h1>
+                <p class="hero-partner-badge">Eastern Sahel Union Mission &amp; Togo Conference</p>
+                <h1 class="hero-title hero-title--didasko">Didasko 2026</h1>
+                <p class="hero-tagline">Learn · Equip · Disciple · Send</p>
             </div>
             <div class="hero-right">
                 <p class="hero-copy lead">
-                    This three-day intensive training leads believers through a clear biblical understanding of spiritual warfare,
-                    demonic influence, true freedom in Christ, and God’s protection.
+                    Join Set Free in Christ Mission for field training, cross-cultural experience, and mission
+                    opportunity in Lomé, Togo, with an optional three-day safari and sightseeing experience in
+                    Northern Ghana.
                 </p>
-                <p class="hero-copy">
-                    Join this immersive biblical journey and gain practical ministry tools for real freedom and responsible service.
-                </p>
-                <div class="hero-meta">
-                    <p class="hero-meta-item">
-                        <svg class="location-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"></path>
-                            <circle cx="12" cy="10" r="2.5"></circle>
-                        </svg>
-                        LOCATION: {{ venue_address }}
-                    </p>
+                <div class="trip-highlights" aria-label="Trip overview">
+                    <div class="trip-highlight-card">
+                        <p class="trip-highlight-value">Lomé, Togo</p>
+                        <p class="trip-highlight-label">West Africa</p>
+                    </div>
+                    <div class="trip-highlight-card">
+                        <p class="trip-highlight-value">Sept. 1–10, 2026</p>
+                        <p class="trip-highlight-label">Travel, training, and safari</p>
+                    </div>
+                    <div class="trip-highlight-card">
+                        <p class="trip-highlight-value">$3,500</p>
+                        <p class="trip-highlight-label">Participant contribution</p>
+                    </div>
+                </div>
+                <div class="hero-actions">
+                    <a href="#pay" class="btn btn-accent">How to Pay</a>
+                    <a href="#schedule" class="btn btn-hero-outline">View Trip Details</a>
                 </div>
             </div>
         </div>
     </section>
 
-    <section id="about" class="strip about-section">
+    <section id="countdown-strip" class="countdown-strip">
         <div class="container about-grid about-grid-centered">
             <div class="about-right">
                 <div class="countdown-wrap" aria-live="polite">
@@ -147,18 +167,63 @@
                         <div class="countdown-past-callout">
                             <p class="countdown-past-callout__label">No live dates open right now</p>
                             <p class="countdown-past-callout__text">
-                                <strong>Please register here.</strong> View on-demand sessions <strong>March 25–27, Phase 1</strong> below. You will receive all presentation slides and materials with video recordings for all three days.
+                                <strong>Please register here.</strong> Browse past programs on our
+                                <strong>Events</strong> page, including the
+                                <strong>3-Day Spiritual Warfare Intensive (March 2026)</strong> with on-demand recordings and materials.
                             </p>
                             {% if past_sessions %}
                                 <p class="countdown-past-callout__actions">
-                                    <a class="btn btn-accent" href="#sessions">View on-demand sessions</a>
+                                    <a class="btn btn-accent" href="{% url 'events' %}">View events &amp; archive</a>
                                 </p>
                             {% else %}
-                                <p class="countdown-past-callout__text countdown-past-callout__text--muted">New sessions are added here when they are published.</p>
+                                <p class="countdown-past-callout__text countdown-past-callout__text--muted">New sessions are added on the Events page when they are published.</p>
                             {% endif %}
                         </div>
                     {% endif %}
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="about" class="section about-didasko-section">
+        <div class="container">
+            <div class="about-didasko-panel">
+                <div class="about-didasko-main">
+                    <p class="about-didasko-eyebrow">Training &amp; Mission</p>
+                    <h2 class="experience-heading">About Didasko Africa 2026</h2>
+                    <p class="experience-intro">
+                        <strong>Didasko</strong> comes from the Greek word meaning "to learn, to teach," reflecting Christ's
+                        command to teach and disciple. This trip combines deliverance ministry training, spiritual equipping,
+                        prayer, worship, fellowship, outreach, and mission exposure in West Africa.
+                    </p>
+                    <ul class="about-didasko-list">
+                        <li>Field training and cross-cultural mission experience</li>
+                        <li>Deliverance ministry training and spiritual formation</li>
+                        <li>Prayer, worship, fellowship, and ministry activities</li>
+                        <li>Outreach and mission opportunities</li>
+                        <li>Safari and sightseeing experience in Northern Ghana</li>
+                    </ul>
+                </div>
+                <aside class="about-didasko-aside">
+                    <h3 class="about-didasko-subheading">Host Organizations</h3>
+                    <p class="experience-intro about-didasko-aside-intro">
+                        Didasko 2026 is hosted in partnership with these ministries and conferences across West Africa.
+                    </p>
+                    <div class="host-org-grid">
+                        <article class="host-org-card">
+                            <h4 class="host-org-name">Eastern Sahel Union Mission</h4>
+                        </article>
+                        <article class="host-org-card">
+                            <h4 class="host-org-name">Togo Conference</h4>
+                        </article>
+                        <article class="host-org-card">
+                            <h4 class="host-org-name">Set Free in Christ Institute</h4>
+                        </article>
+                        <article class="host-org-card">
+                            <h4 class="host-org-name">Set Free in Christ Mission</h4>
+                        </article>
+                    </div>
+                </aside>
             </div>
         </div>
     </section>
@@ -168,38 +233,37 @@
             <div>
                 <h2 class="experience-heading">WHAT YOU WILL EXPERIENCE</h2>
                 <p class="experience-intro">
-                    During the 3-Day Spiritual Warfare Intensive, participants will enter a focused journey of
-                    biblical learning, spiritual renewal, and practical ministry training. This experience is
-                    designed to equip believers with a deeper understanding of spiritual conflict and the freedom
-                    Christ provides.
+                    Didasko 2026 is a ten-day mission journey that combines biblical training, cross-cultural ministry,
+                    and an unforgettable safari adventure. Participants will be equipped for service while experiencing
+                    the beauty of West Africa and God's creation.
                 </p>
                 <div class="experience-list">
                     <article class="experience-item">
-                        <h3>BIBLICAL TEACHING</h3>
+                        <h3>DIDASCO TRAINING &amp; DELIVERANCE</h3>
                         <p>
-                            Receive clear, Scripture-centered teaching on spiritual warfare, spiritual freedom, and
-                            the authority believers share with Christ.
+                            Five days of deliverance ministry training, spiritual equipping, prayer, worship,
+                            fellowship, and outreach opportunities in Lomé, Togo.
                         </p>
                     </article>
                     <article class="experience-item">
-                        <h3>PRACTICAL MINISTRY TRAINING</h3>
+                        <h3>CROSS-CULTURAL MISSION</h3>
                         <p>
-                            Learn biblical principles and practical tools that can be applied in personal life,
-                            discipleship, and responsible ministry to others.
+                            Engage in field training and ministry alongside the Eastern Sahel Union Mission and
+                            Togo Conference in a vibrant West African context.
                         </p>
                     </article>
                     <article class="experience-item">
-                        <h3>FREEDOM AND HEALING</h3>
+                        <h3>SAFARI &amp; SIGHTSEEING</h3>
                         <p>
-                            Many participants begin experiencing spiritual breakthrough, healing, and freedom from
-                            long-standing spiritual struggles and bondage.
+                            Three days exploring Mole National Park in Northern Ghana — game drives, wildlife viewing,
+                            scenic landscapes, and cultural encounters with local communities.
                         </p>
                     </article>
                     <article class="experience-item">
-                        <h3>A COMMUNITY OF GROWTH</h3>
+                        <h3>TRANSFORM LIVES</h3>
                         <p>
-                            Connect with believers who are pursuing spiritual maturity, freedom in Christ, and
-                            deeper transformation together.
+                            Train. Equip. Serve. Experience. Return home with practical ministry tools, deeper faith,
+                            and lasting memories from this mission adventure.
                         </p>
                     </article>
                 </div>
@@ -213,67 +277,137 @@
         </div>
     </section>
 
-    <section id="included" class="section white">
+    <section id="included" class="section included-section">
         <div class="container">
-            <div class="facilities-wrap">
-                <h2 class="included-heading">WHAT'S INCLUDED</h2>
-                <div>
-                    <p class="included-intro">
-                        During the 3-Day Spiritual Warfare Intensive, participants will engage in Scripture-based
-                        teaching and guided learning designed to build a clear understanding of spiritual warfare and
-                        the freedom found in Christ.
-                    </p>
-                    <p class="included-intro">
-                        Participants will explore:
-                    </p>
-                    <ul class="included-list">
-                        <li>The biblical foundations of spiritual warfare and the great controversy between Christ and the powers of darkness</li>
-                        <li>The authority believers receive through Christ and how to live in that authority</li>
-                        <li>How spiritual bondage develops and the common gateways that allow spiritual oppression</li>
-                        <li>Biblical pathways to freedom, healing, and lasting spiritual restoration</li>
-                    </ul>
-                    <p class="included-intro">
-                        Over the course of three focused days, this intensive training equips believers with biblical
-                        knowledge, spiritual discernment, and practical ministry principles to walk confidently in
-                        Christ's freedom and to support others seeking restoration.
-                    </p>
+            <div class="included-panel">
+                <div class="included-panel-head">
+                    <div class="included-panel-intro">
+                        <p class="included-eyebrow">Participant Contribution</p>
+                        <h2 class="experience-heading">What's Included</h2>
+                        <p class="experience-intro included-lead">
+                            Your $3,500 contribution covers the full ten-day Didasko 2026 mission experience — train,
+                            equip, serve, and experience West Africa with us.
+                        </p>
+                    </div>
+                    <div class="included-price-card">
+                        <p class="included-price">$3,500</p>
+                        <p class="included-price-label">Per person</p>
+                        <p class="included-price-note">September 1–10, 2026</p>
+                    </div>
                 </div>
+
+                <div class="included-grid">
+                    <article class="included-card">
+                        <h3 class="included-card-title">Training &amp; Mission</h3>
+                        <ul class="included-card-list">
+                            <li>Didasco Training &amp; Deliverance Conference, Lomé, Togo (Sep 2–6)</li>
+                            <li>Conference materials and ministry activities</li>
+                        </ul>
+                    </article>
+                    <article class="included-card">
+                        <h3 class="included-card-title">Safari Adventure</h3>
+                        <ul class="included-card-list">
+                            <li>Three-day safari in Mole National Park, Northern Ghana (Sep 7–9)</li>
+                            <li>Game drives, wildlife viewing, and cultural encounters</li>
+                        </ul>
+                    </article>
+                    <article class="included-card">
+                        <h3 class="included-card-title">Travel &amp; Lodging</h3>
+                        <ul class="included-card-list">
+                            <li>Lodging accommodations throughout the trip</li>
+                            <li>Ground transportation and airport transfers</li>
+                            <li>Meals during the program</li>
+                        </ul>
+                    </article>
+                    <article class="included-card">
+                        <h3 class="included-card-title">Program Support</h3>
+                        <ul class="included-card-list">
+                            <li>Administrative support from Set Free in Christ Mission</li>
+                            <li>Travel preparation guidance from our team</li>
+                        </ul>
+                    </article>
+                </div>
+
+                <aside class="included-notice" role="note">
+                    <div class="included-notice-main">
+                        <p class="included-notice-label">Important — Not Included</p>
+                        <p class="included-notice-exclusion">
+                            International airfare to and from West Africa is <strong>not covered</strong> by the $3,500
+                            participant contribution.
+                        </p>
+                    </div>
+                    <div class="included-notice-contact">
+                        <p class="included-notice-contact-title">Travel &amp; payment questions?</p>
+                        <p class="included-notice-contact-text">
+                            Our team can help with flight guidance and payment options.
+                        </p>
+                        <div class="included-notice-actions">
+                            <a href="tel:+12692083370" class="included-notice-action">Call (269) 208-3370</a>
+                            <a href="mailto:SetFreeInChristMission.Team@gmail.com" class="included-notice-action included-notice-action--email">Email us</a>
+                        </div>
+                    </div>
+                </aside>
             </div>
         </div>
     </section>
 
-    <section id="schedule" class="section dark schedule-section">
+    <section id="schedule" class="section schedule-section">
         <div class="container">
-            <h2>TRAINING SCHEDULE</h2>
-            <p class="schedule-intro">
-                The Freedom Intensive is a 21-hour Didasko education and training seminar delivered over three days.
-            </p>
-            <div class="schedule-grid">
-                {% for item in schedule_items %}
-                    <article>
-                        <h3>{{ item.day_name }}</h3>
-                        <p>{{ item.start_time|time:"g:i A" }} - {{ item.end_time|time:"g:i A" }} (CST)</p>
-                        <p class="lunch-line">
-                            Lunch Break: {{ item.lunch_start|time:"g:i A" }} - {{ item.lunch_end|time:"g:i A" }} (CST)
-                        </p>
+            <h2 class="experience-heading schedule-heading">Trip Itinerary</h2>
+            <div class="itinerary-route itinerary-route--horizontal" aria-label="Didasko 2026 trip route">
+                <div class="itinerary-route-track" aria-hidden="true"></div>
+
+                <div class="itinerary-col itinerary-col--top">
+                    <article class="itinerary-card">
+                        <p class="itinerary-day">Day 1 · Tue, Sep 1</p>
+                        <h3 class="itinerary-title">Depart for Africa</h3>
+                        <p class="itinerary-desc">Travel day — depart for West Africa.</p>
                     </article>
-                {% empty %}
-                    <article>
-                        <h3>Wednesday</h3>
-                        <p>8:30 AM - 5:30 PM (CST)</p>
-                        <p class="lunch-line">Lunch Break: 12:30 PM - 1:30 PM (CST)</p>
+                    <div class="itinerary-node-wrap">
+                        <span class="itinerary-connector" aria-hidden="true"></span>
+                        <div class="itinerary-node" aria-hidden="true"><span>1</span></div>
+                    </div>
+                    <div class="itinerary-slot-spacer" aria-hidden="true"></div>
+                </div>
+
+                <div class="itinerary-col itinerary-col--bottom">
+                    <div class="itinerary-slot-spacer" aria-hidden="true"></div>
+                    <div class="itinerary-node-wrap">
+                        <div class="itinerary-node itinerary-node--featured" aria-hidden="true"><span>2–6</span></div>
+                        <span class="itinerary-connector" aria-hidden="true"></span>
+                    </div>
+                    <article class="itinerary-card">
+                        <p class="itinerary-day">Days 2–6 · Sep 2–6</p>
+                        <h3 class="itinerary-title">Didasko Training</h3>
+                        <p class="itinerary-desc">Lomé, Togo — training, equipping, outreach, and ministry.</p>
                     </article>
-                    <article>
-                        <h3>Thursday</h3>
-                        <p>8:30 AM - 5:30 PM (CST)</p>
-                        <p class="lunch-line">Lunch Break: 12:30 PM - 1:30 PM (CST)</p>
+                </div>
+
+                <div class="itinerary-col itinerary-col--top">
+                    <article class="itinerary-card">
+                        <p class="itinerary-day">Days 7–9 · Sep 7–9</p>
+                        <h3 class="itinerary-title">Safari Adventure</h3>
+                        <p class="itinerary-desc">Mole National Park — game drives, wildlife, and culture.</p>
                     </article>
-                    <article>
-                        <h3>Friday</h3>
-                        <p>8:00 AM - 5:00 PM (CST)</p>
-                        <p class="lunch-line">Lunch Break: 12:00 PM - 12:30 PM (CST)</p>
+                    <div class="itinerary-node-wrap">
+                        <span class="itinerary-connector" aria-hidden="true"></span>
+                        <div class="itinerary-node itinerary-node--safari" aria-hidden="true"><span>7–9</span></div>
+                    </div>
+                    <div class="itinerary-slot-spacer" aria-hidden="true"></div>
+                </div>
+
+                <div class="itinerary-col itinerary-col--bottom">
+                    <div class="itinerary-slot-spacer" aria-hidden="true"></div>
+                    <div class="itinerary-node-wrap">
+                        <div class="itinerary-node" aria-hidden="true"><span>10</span></div>
+                        <span class="itinerary-connector" aria-hidden="true"></span>
+                    </div>
+                    <article class="itinerary-card">
+                        <p class="itinerary-day">Day 10 · Thu, Sep 10</p>
+                        <h3 class="itinerary-title">Return Home</h3>
+                        <p class="itinerary-desc">Travel day — return home.</p>
                     </article>
-                {% endfor %}
+                </div>
             </div>
             {# Public program only via guarded URL (not raw media); same rules as public_program_session. #}
             {% if public_program_session %}
@@ -284,84 +418,115 @@
         </div>
     </section>
 
-    {# Hidden for now until real media content is ready. #}
-
-    <section id="sessions" class="section white">
-        <div class="container">
-            <h2>TRAINING SESSIONS</h2>
-
-            {% if upcoming_sessions %}
-                <h3 class="sessions-subheading">Upcoming intensives</h3>
-                <p class="sessions-subintro sessions-subintro--compact">Live dates · 30-day hub after payment · videos during access · PDFs after the event</p>
-                <div class="session-grid">
-                    {% for session in upcoming_sessions %}
-                        <article class="session-card session-card--upcoming">
-                            <div class="session-card-head">
-                                <h3>{{ session.title }}</h3>
-                                {% if session.seats_left <= 10 %}
-                                    <span class="session-badge low">Few Seats Left</span>
-                                {% else %}
-                                    <span class="session-badge open">Open</span>
-                                {% endif %}
-                            </div>
-                            <p class="session-location">
-                                <svg class="location-icon small" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"></path>
-                                    <circle cx="12" cy="10" r="2.5"></circle>
-                                </svg>
-                                {{ session.location }}
-                            </p>
-                            <p class="session-date">{{ session.start_date|date:"F j" }} - {{ session.end_date|date:"F j, Y" }}</p>
-                            <p class="session-access-note"><strong>Hub:</strong> 30 days of streaming after payment · PDFs after {{ session.end_date|date:"M j, Y" }}</p>
-                            <p class="price">{{ session.display_price }}</p>
-                            <a href="#register" class="btn btn-accent session-cta" data-select-session="{{ session.id }}">Reserve This Session</a>
-                        </article>
-                    {% endfor %}
+    <section id="safari" class="section white safari-section">
+        <div class="container grid-two safari-grid">
+            <div>
+                <h2 class="experience-heading">Africa Safari Adventure</h2>
+                <p class="safari-tagline">Explore. Discover. Experience.</p>
+                <p class="experience-intro">
+                    The final three days of Didasko 2026 take you to <strong>Mole National Park</strong> in Northern
+                    Ghana, Ghana's largest wildlife sanctuary, to witness the beauty of God's creation up close.
+                </p>
+                <div class="experience-list">
+                    <article class="experience-item">
+                        <h3>Game Drives</h3>
+                        <p>Guided drives through Mole National Park with experienced local guides.</p>
+                    </article>
+                    <article class="experience-item">
+                        <h3>Wildlife Viewing</h3>
+                        <p>Elephants, antelope, buffalo, warthogs, baboons, and a rich variety of bird species.</p>
+                    </article>
+                    <article class="experience-item">
+                        <h3>Scenic Landscapes</h3>
+                        <p>Experience the sweeping savanna and natural beauty of West Africa's premier wildlife reserve.</p>
+                    </article>
+                    <article class="experience-item">
+                        <h3>Cultural Encounters</h3>
+                        <p>Visit local communities and experience Ghanaian culture and hospitality firsthand.</p>
+                    </article>
                 </div>
-            {% endif %}
-
-            {% if past_sessions %}
-                <div class="sessions-past-wrap{% if upcoming_sessions %} sessions-past-wrap--after-upcoming{% endif %}">
-                <h3 class="sessions-subheading{% if upcoming_sessions %} sessions-subheading--past{% endif %}">Past intensives (on-demand)</h3>
-                <p class="sessions-past-tagline">Recordings—hub details on each card.</p>
-                <div class="session-grid">
-                    {% for session in past_sessions %}
-                        <article class="session-card session-card--past">
-                            <div class="session-card-head">
-                                <h3>{{ session.title }}</h3>
-                                <span class="session-badge session-badge--ondemand">On-demand</span>
-                            </div>
-                            <p class="session-location">
-                                <svg class="location-icon small" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"></path>
-                                    <circle cx="12" cy="10" r="2.5"></circle>
-                                </svg>
-                                {{ session.location }}
-                            </p>
-                            <p class="session-date">{{ session.start_date|date:"F j" }} - {{ session.end_date|date:"F j, Y" }}</p>
-                            <p class="session-access-note"><strong>Hub:</strong> 30 days · videos + PDFs after payment</p>
-                            <p class="price">{{ session.display_price }}</p>
-                            <a href="#register" class="btn btn-accent session-cta" data-select-session="{{ session.id }}">Get access</a>
-                        </article>
-                    {% endfor %}
+                <aside class="safari-notice" role="note">
+                    <div class="safari-notice__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M7 18.5a4.5 4.5 0 0 1-.9-8.92A5.5 5.5 0 0 1 18.5 9.5a4 4 0 0 1 .5 7.98" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <path d="M8 19v2M12 19v2M16 19v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+                        </svg>
+                    </div>
+                    <div class="safari-notice__content">
+                        <p class="safari-notice__label">Important travel notice</p>
+                        <p class="safari-notice__text">
+                            September falls during the rainy season in Northern Ghana. Wildlife may be more dispersed
+                            and not congregate at traditional watering holes, which can affect viewing opportunities.
+                        </p>
+                        <p class="safari-notice__footer">
+                            We encourage flexible expectations and trust in God's timing.
+                        </p>
+                    </div>
+                </aside>
+            </div>
+            <div class="safari-media">
+                <div class="safari-gallery" aria-label="Safari photos from Mole National Park">
+                    <figure class="safari-photo safari-photo--large">
+                        <img
+                            src="{% static 'images/safari-mole-gate.png' %}"
+                            alt="Welcome to Mole National Park entrance gate"
+                            loading="lazy"
+                            decoding="async"
+                        >
+                    </figure>
+                    <figure class="safari-photo safari-photo--large">
+                        <img
+                            src="{% static 'images/safari-mole-elephants.png' %}"
+                            alt="Elephants crossing the road during a safari at Mole National Park"
+                            loading="lazy"
+                            decoding="async"
+                        >
+                    </figure>
+                    <figure class="safari-photo">
+                        <img
+                            src="{% static 'images/safari-giraffes.png' %}"
+                            alt="Giraffes walking among trees in the wilderness"
+                            loading="lazy"
+                            decoding="async"
+                        >
+                    </figure>
+                    <figure class="safari-photo">
+                        <img
+                            src="{% static 'images/safari-zebra.png' %}"
+                            alt="Zebra standing in an African grassland"
+                            loading="lazy"
+                            decoding="async"
+                        >
+                    </figure>
+                    <figure class="safari-photo">
+                        <img
+                            src="{% static 'images/safari-elephants.png' %}"
+                            alt="Elephants at a watering hole in the African savanna"
+                            loading="lazy"
+                            decoding="async"
+                        >
+                    </figure>
+                    <figure class="safari-photo">
+                        <img
+                            src="{% static 'images/safari-wildlife.png' %}"
+                            alt="Wildlife in its natural habitat during a safari adventure"
+                            loading="lazy"
+                            decoding="async"
+                        >
+                    </figure>
                 </div>
-                </div>
-            {% endif %}
-
-            {% if not upcoming_sessions and not past_sessions %}
-                <p>No active sessions yet. Add one in admin.</p>
-            {% endif %}
-
-            <p class="sessions-footnote">Limited seats · one registration = hub access for that session only.</p>
+            </div>
         </div>
     </section>
 
+    {# Hidden for now until real media content is ready. #}
+
     <section id="speakers" class="section white speakers-section">
         <div class="container">
-            <h2>MEET THE SPEAKERS</h2>
+            <h2 class="experience-heading">Meet the Speakers</h2>
             <p class="speakers-intro">
-                Our speakers and facilitators bring biblical depth, practical wisdom, and ministry experience to guide
-                every participant through this intensive journey.
+                Our speakers and facilitators bring biblical depth, cross-cultural ministry experience, and practical
+                wisdom to guide every participant through this mission journey.
             </p>
             {% if speakers_session %}
                 <p class="speakers-note">Featured speakers for {{ speakers_session.title }}</p>
@@ -402,13 +567,121 @@
                     </article>
                 {% endfor %}
             </div>
-            <a class="btn btn-accent" href="#register">JOIN THE NEXT SESSION</a>
+            <a class="btn btn-accent" href="#register">REGISTER FOR DIDASKO 2026</a>
+        </div>
+    </section>
+
+    <section id="pay" class="section cream-section pay-section">
+        <div class="container">
+            <div class="pay-panel">
+                <div class="pay-panel-header">
+                    <span class="pill-badge">Payment Information</span>
+                    <h2 class="experience-heading">How to Pay the $3,500 Contribution</h2>
+                    <p class="experience-intro pay-intro">
+                        Submit your Didasko contribution through Set Free in Christ Mission. Use the steps below
+                        to register and pay securely online.
+                    </p>
+                </div>
+
+                <aside class="pay-memo-notice" role="note">
+                    <span class="pay-memo-notice__label">Payment memo</span>
+                    <p class="pay-memo-notice__text">
+                        Include your <strong>full name</strong> and write
+                        <strong>"Didasko 2026 Togo"</strong> on every payment so it is applied correctly.
+                    </p>
+                </aside>
+
+                <div class="pay-body">
+                    <div class="pay-steps">
+                        <div class="pay-steps-card">
+                            <h3 class="pay-block-title">Recommended steps</h3>
+                            <ol class="pay-steps-list">
+                                <li class="pay-step">
+                                    <span class="pay-step-num" aria-hidden="true">1</span>
+                                    <div class="pay-step-copy">
+                                        <p class="pay-step-title">Complete registration</p>
+                                        <p class="pay-step-desc">Fill out the participant form below with your contact details.</p>
+                                    </div>
+                                </li>
+                                <li class="pay-step">
+                                    <span class="pay-step-num" aria-hidden="true">2</span>
+                                    <div class="pay-step-copy">
+                                        <p class="pay-step-title">Pay online by card</p>
+                                        <p class="pay-step-desc">Use secure checkout when you register — available now.</p>
+                                    </div>
+                                </li>
+                                <li class="pay-step">
+                                    <span class="pay-step-num" aria-hidden="true">3</span>
+                                    <div class="pay-step-copy">
+                                        <p class="pay-step-title">Or choose another method</p>
+                                        <p class="pay-step-desc">Bank, check, and giving options will be added when details are published.</p>
+                                    </div>
+                                </li>
+                                <li class="pay-step">
+                                    <span class="pay-step-num" aria-hidden="true">4</span>
+                                    <div class="pay-step-copy">
+                                        <p class="pay-step-title">Receive confirmation</p>
+                                        <p class="pay-step-desc">We send payment confirmation and travel preparation instructions.</p>
+                                    </div>
+                                </li>
+                            </ol>
+                            <a href="#register" class="btn btn-accent pay-primary-cta">Register &amp; Pay Online</a>
+                        </div>
+                    </div>
+
+                    <div class="pay-methods">
+                        <h3 class="pay-block-title">Payment methods</h3>
+                        <p class="pay-methods-lead">
+                            Choose a method in the registration form. Card payment completes online; other methods register you now and our team confirms payment when received.
+                        </p>
+                        <div class="pay-methods-list">
+                            <article class="pay-method pay-method--available">
+                                <div class="pay-method-main">
+                                    <span class="pay-method-status pay-method-status--live">Available now</span>
+                                    <p class="pay-method-title">Credit / Debit Card</p>
+                                    <p class="pay-method-desc">Secure online checkout when you complete registration.</p>
+                                </div>
+                                <a href="#register" class="btn btn-accent pay-method-btn" data-select-payment="online_card">Pay Now</a>
+                            </article>
+                            <article class="pay-method pay-method--available">
+                                <div class="pay-method-main">
+                                    <span class="pay-method-status pay-method-status--live">Register now</span>
+                                    <p class="pay-method-title">Bank / Zelle / ACH</p>
+                                    <p class="pay-method-desc">Register now; ministry account details will be shared when published.</p>
+                                </div>
+                                <a href="#register" class="btn btn-outline pay-method-btn" data-select-payment="bank_zelle_ach">Register</a>
+                            </article>
+                            <article class="pay-method pay-method--available">
+                                <div class="pay-method-main">
+                                    <span class="pay-method-status pay-method-status--live">Register now</span>
+                                    <p class="pay-method-title">Check by Mail</p>
+                                    <p class="pay-method-desc">Register now; mail a check payable to Set Free in Christ Mission.</p>
+                                </div>
+                                <a href="#register" class="btn btn-outline pay-method-btn" data-select-payment="check_mail">Register</a>
+                            </article>
+                            <article class="pay-method pay-method--available">
+                                <div class="pay-method-main">
+                                    <span class="pay-method-status pay-method-status--live">Register now</span>
+                                    <p class="pay-method-title">Online Giving</p>
+                                    <p class="pay-method-desc">Register now; complete payment through the giving portal when available.</p>
+                                </div>
+                                <a href="#register" class="btn btn-outline pay-method-btn" data-select-payment="online_giving">Register</a>
+                            </article>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
     <section id="register" class="section register">
         <div class="container">
-            <h2>REGISTER Now</h2>
+            <h2 class="experience-heading">Register for Didasko 2026</h2>
+            <p class="register-intro">
+                Reserve your place on the mission trip. Choose your program and payment method below.
+                Online card payment completes registration immediately; other methods save your registration
+                while our team confirms payment when it is received.
+            </p>
             {% if messages %}
                 <div class="alerts">
                     {% for message in messages %}
@@ -416,25 +689,23 @@
                     {% endfor %}
                 </div>
             {% endif %}
-            <div class="student-code-loader" id="student-code-loader" aria-live="polite">
-                <span class="loader-dot" aria-hidden="true"></span>
-                <span>Sending your student code...</span>
-            </div>
-            <p class="student-code-feedback" id="student-code-feedback" aria-live="polite"></p>
             <form method="post" action="{% url 'create_checkout' %}" class="register-form">
                 {% csrf_token %}
-                <label for="full_name">Full Name</label>
+
+                <p class="register-form-section-title">Participant details</p>
+
+                <label for="full_name">Full legal name (as on passport)</label>
                 <input
                     id="full_name"
                     name="full_name"
                     type="text"
                     value="{{ reg_form.full_name|default:'' }}"
                     autocomplete="name"
-                    placeholder="Enter your full name"
+                    placeholder="First and last name"
                     required
                 >
 
-                <label for="email">Email</label>
+                <label for="email">Email address</label>
                 <input
                     id="email"
                     name="email"
@@ -445,7 +716,7 @@
                     required
                 >
 
-                <label for="phone">Phone</label>
+                <label for="phone">Mobile phone (with country code)</label>
                 <input
                     id="phone"
                     name="phone"
@@ -456,116 +727,163 @@
                     required
                 >
 
-                <label for="city">City</label>
-                <input
-                    id="city"
-                    name="city"
-                    type="text"
-                    value="{{ reg_form.city|default:'' }}"
-                    autocomplete="address-level2"
-                    placeholder="e.g. Dallas"
-                    required
-                >
-
-                <label for="country">Country</label>
-                <select
-                    id="country"
-                    name="country"
-                    required
-                >
-                    <option value="" data-flag="" {% if not reg_form.country %}selected{% endif %}>Select country...</option>
-                    {% for value, label, code in country_options %}
-                        <option value="{{ value }}" data-flag="{{ code }}" {% if reg_form.country == value %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
+                <div class="register-form-row">
+                    <div class="register-form-col">
+                        <label for="city">City of residence</label>
+                        <input
+                            id="city"
+                            name="city"
+                            type="text"
+                            value="{{ reg_form.city|default:'' }}"
+                            autocomplete="address-level2"
+                            placeholder="e.g. Dallas"
+                            required
+                        >
+                    </div>
+                    <div class="register-form-col">
+                        <label for="country">Country of residence</label>
+                        <select
+                            id="country"
+                            name="country"
+                            required
+                        >
+                            <option value="" data-flag="" {% if not reg_form.country %}selected{% endif %}>Select country...</option>
+                            {% for value, label, code in country_options %}
+                                <option value="{{ value }}" data-flag="{{ code }}" {% if reg_form.country == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
                 <p class="country-preview" id="country-preview">
                     <span id="country-name-preview">No country selected yet</span>
                 </p>
 
-                <label for="church">Church/Organization (optional)</label>
+                <label for="church">Church / mission organization (optional)</label>
                 <input
                     id="church"
                     name="church"
                     type="text"
                     value="{{ reg_form.church|default:'' }}"
                     autocomplete="organization"
-                    placeholder="e.g. Set Free Church"
+                    placeholder="e.g. Set Free in Christ Mission"
                 >
 
-                <label for="discount_code">Registration code or discount code (Optional)</label>
+                <p class="register-form-section-title">Program &amp; payment</p>
+
+                <label for="session_id">Select program</label>
+                <select id="session_id" name="session_id" required>
+                    <option value="">Select program...</option>
+                    {% for session in sessions %}
+                        <option
+                            value="{{ session.id }}"
+                            data-price="{{ session.price }}"
+                            data-currency="{{ session.currency|upper }}"
+                            {% if reg_form.session_id %}
+                                {% if reg_form.session_id == session.id|stringformat:"s" %}selected{% endif %}
+                            {% elif default_register_session and default_register_session.id == session.id %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ session.title }} · {{ session.start_date|date:"M j" }}–{{ session.end_date|date:"M j, Y" }} · {{ session.display_price }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <p class="payment-preview is-empty" id="payment-preview">Select a program to see your payment amount.</p>
+
+                <fieldset class="register-payment-methods">
+                    <legend class="register-form-section-title register-form-section-title--legend">How will you pay?</legend>
+                    {% for value, label in payment_method_choices %}
+                        <label class="register-payment-option">
+                            <input
+                                type="radio"
+                                name="payment_method"
+                                value="{{ value }}"
+                                {% if reg_form.payment_method %}
+                                    {% if reg_form.payment_method == value %}checked{% endif %}
+                                {% elif value == "online_card" %}checked{% endif %}
+                            >
+                            <span class="register-payment-option-copy">
+                                <span class="register-payment-option-title">{{ label }}</span>
+                                {% if value == "online_card" %}
+                                    <span class="register-payment-option-desc">Pay securely now by card — registration completes when payment succeeds.</span>
+                                {% elif value == "bank_zelle_ach" %}
+                                    <span class="register-payment-option-desc">Register now; pay by bank transfer or Zelle. Our team will confirm when received.</span>
+                                {% elif value == "check_mail" %}
+                                    <span class="register-payment-option-desc">Register now; mail a check to the ministry. Our team will confirm when received.</span>
+                                {% else %}
+                                    <span class="register-payment-option-desc">Register now; complete payment through the ministry giving portal when available.</span>
+                                {% endif %}
+                            </span>
+                        </label>
+                    {% endfor %}
+                </fieldset>
+
+                <label for="discount_code">Complimentary registration code (optional)</label>
                 <input
                     id="discount_code"
                     name="discount_code"
                     type="text"
                     value="{{ reg_form.discount_code|default:'' }}"
                     maxlength="32"
-                    placeholder="Enter a discount code"
+                    placeholder="Enter code if provided by the ministry team"
                     autocomplete="off"
                 >
-                <p class="donation-help-text">Enter a discount code</p>
-
-                <label class="donation-anon-row" for="is_student">
-                    <input id="is_student" type="checkbox" name="is_student" value="1" {% if reg_form.is_student %}checked{% endif %}>
-                    <span>I am an Andrews University student</span>
-                </label>
-                <div id="student-fields">
-                    <label for="student_id">Andrews Student ID (6 digits)</label>
-                    <input
-                        id="student_id"
-                        name="student_id"
-                        type="text"
-                        value="{{ reg_form.student_id|default:'' }}"
-                        inputmode="numeric"
-                        maxlength="6"
-                        pattern="[0-9]{6}"
-                        placeholder="e.g. 123456"
-                    >
-                    <label for="student_discount_code">Student discount code</label>
-                    <input
-                        id="student_discount_code"
-                        name="student_discount_code"
-                        type="text"
-                        value="{{ reg_form.student_discount_code|default:'' }}"
-                        maxlength="32"
-                        placeholder="Enter one-time code from email"
-                    >
-                    <p class="donation-help-text">
-                        Enter your 6-digit student ID first and submit registration. We will email your one-time code.
-                        {% if student_discount_percent %}
-                            Current student discount: {{ student_discount_percent }}%.
-                        {% endif %}
-                    </p>
-                    <button
-                        type="submit"
-                        id="verify-student-code-btn"
-                        class="btn btn-outline"
-                        formaction="{% url 'request_student_discount_code' %}"
-                        formnovalidate
-                    >
-                        VERIFY ID &amp; SEND CODE
-                    </button>
-                </div>
-
-                <label for="session_id">Choose Session</label>
-                <select id="session_id" name="session_id" required>
-                    <option value="">Select session...</option>
-                    {% for session in sessions %}
-                        <option
-                            value="{{ session.id }}"
-                            data-price="{{ session.price }}"
-                            data-currency="{{ session.currency|upper }}"
-                            {% if reg_form.session_id == session.id|stringformat:"s" %}selected{% endif %}
-                        >
-                            {{ session.title }} | {{ session.start_date }} - {{ session.end_date }}
-                        </option>
-                    {% endfor %}
-                </select>
-                <p class="payment-preview is-empty" id="payment-preview">Select a session to see your payment amount.</p>
+                <p class="donation-help-text">Only enter a code if Set Free in Christ Mission gave you one.</p>
 
                 <div class="register-actions">
-                    <button type="submit" class="btn btn-accent">PAY &amp; RESERVE SEAT</button>
+                    <button type="submit" class="btn btn-accent" id="register-submit-btn">PAY CONTRIBUTION &amp; REGISTER</button>
                 </div>
             </form>
+        </div>
+    </section>
+
+    <section id="questions" class="section questions-section">
+        <div class="container">
+            <aside class="contact-cta-banner" aria-label="Contact Set Free in Christ Mission">
+                <div class="contact-cta-banner__visual">
+                    <figure class="contact-cta-banner__figure">
+                        <img
+                            src="{% static 'images/usa-togo-journey.png' %}"
+                            alt="Illustration of a flight path from the United States to Togo for Didasko 2026"
+                            loading="lazy"
+                            decoding="async"
+                        >
+                        <figcaption class="contact-cta-banner__caption">
+                            From the U.S. to West Africa — Didasko 2026 in Lomé, Togo
+                        </figcaption>
+                    </figure>
+                </div>
+                <div class="contact-cta-banner__content">
+                    <span class="contact-cta-banner__badge">Get in touch</span>
+                    <h2 class="contact-cta-banner__title">Questions? We're here to help</h2>
+                    <ul class="contact-cta-banner__details">
+                        <li>
+                            <span class="contact-cta-banner__label">Tel</span>
+                            <span class="contact-cta-banner__value">
+                                <a href="tel:+12692083370">(269) 208-3370</a>
+                                <span class="contact-cta-banner__sep">/</span>
+                                <a href="tel:+12692083372">(269) 208-3372</a>
+                            </span>
+                        </li>
+                        <li>
+                            <span class="contact-cta-banner__label">Email</span>
+                            <span class="contact-cta-banner__value">
+                                <a href="mailto:SetFreeInChristMission.Team@gmail.com">SetFreeInChristMission.Team@gmail.com</a>
+                            </span>
+                        </li>
+                        <li>
+                            <span class="contact-cta-banner__label">Website</span>
+                            <span class="contact-cta-banner__value">
+                                <a href="https://www.setfreeinchrist.org" target="_blank" rel="noopener noreferrer">www.setfreeinchrist.org</a>
+                            </span>
+                        </li>
+                    </ul>
+                    <div class="contact-cta-banner__actions">
+                        <a class="btn btn-accent" href="tel:+12692083370">Call us</a>
+                        <a class="btn btn-outline-light" href="mailto:SetFreeInChristMission.Team@gmail.com">Email us</a>
+                    </div>
+                </div>
+            </aside>
         </div>
     </section>
 
@@ -573,12 +891,14 @@
 
 <footer class="footer">
     <div class="container footer-legal">
-        <p>Copyright &copy; {% now "Y" %} Set Free In Christ. All rights reserved.</p>
-        <div class="footer-links">
-            <a href="{% url 'participant_portal_login' %}">Participant portal</a>
-            <a href="#">Privacy Policy</a>
-            <a href="#">Terms &amp; Conditions</a>
-            <a href="#">Legal Notice</a>
+        <p class="footer-brand">Set Free in Christ Mission — Learn · Equip · Disciple · Send</p>
+        <div class="footer-meta">
+            <p class="footer-copy">Copyright &copy; {% now "Y" %} Set Free In Christ. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="{% url 'participant_portal_login' %}">Participant portal</a>
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms &amp; Conditions</a>
+            </div>
         </div>
     </div>
 </footer>
@@ -587,9 +907,9 @@
     <button type="button" class="floating-access-close" id="floating-access-close" aria-label="Close notice">×</button>
     <p>
         <strong>
-            Can’t attend every live session? If you register but are unable to attend the entire live seminar sessions,
-            you will receive a one-time access code to the full 3-day seminar recording and all materials, including
-            slide presentations, available for up to one month.
+            Questions about payment or travel? Call (269) 208-3370 or email
+            SetFreeInChristMission.Team@gmail.com. Your $3,500 contribution covers lodging, meals, ground transport,
+            training, safari, and ministry activities — international airfare is separate.
         </strong>
     </p>
 </aside>
@@ -678,48 +998,45 @@
     (function () {
         const registerSelect = document.getElementById("session_id");
         const paymentPreview = document.getElementById("payment-preview");
-        const studentCheck = document.getElementById("is_student");
-        const studentCodeInput = document.getElementById("student_discount_code");
         const discountCodeInput = document.getElementById("discount_code");
-        const discountPercent = Number("{{ student_discount_percent|default:0 }}");
+        const submitBtn = document.getElementById("register-submit-btn");
+        const paymentMethodInputs = document.querySelectorAll('input[name="payment_method"]');
         if (!registerSelect) return;
+
+        function selectedPaymentMethod() {
+            const checked = document.querySelector('input[name="payment_method"]:checked');
+            return checked ? checked.value : "online_card";
+        }
 
         function updatePaymentPreview() {
             if (!paymentPreview) return;
             const selected = registerSelect.options[registerSelect.selectedIndex];
             const priceRaw = selected ? selected.getAttribute("data-price") : "";
             const currency = selected ? selected.getAttribute("data-currency") : "";
+            const method = selectedPaymentMethod();
+            const isOnline = method === "online_card";
+
+            if (submitBtn) {
+                submitBtn.textContent = isOnline
+                    ? "PAY CONTRIBUTION & REGISTER"
+                    : "SUBMIT REGISTRATION";
+            }
+
             if (!priceRaw || !currency) {
                 paymentPreview.classList.add("is-empty");
-                paymentPreview.textContent = "Select a session to see your payment amount.";
+                paymentPreview.textContent = "Select a program to see your payment amount.";
                 return;
             }
             const baseAmount = Number(priceRaw) / 100;
-            let totalAmount = baseAmount;
-            let discountAmount = 0;
             const discountCodeEntered = discountCodeInput && discountCodeInput.value.trim().length > 0;
-            const studentCodeEntered = studentCodeInput && studentCodeInput.value.trim().length > 0;
-            const studentSelected = studentCheck && studentCheck.checked;
-
-            if (discountCodeEntered) {
-                totalAmount = 0;
-            } else if (studentSelected && studentCodeEntered && discountPercent > 0) {
-                discountAmount = (baseAmount * discountPercent) / 100;
-                if (discountAmount >= baseAmount) {
-                    discountAmount = Math.max(baseAmount - 0.01, 0);
-                }
-                totalAmount = Math.max(baseAmount - discountAmount, 0);
-            }
-
             const baseFormatted = `${baseAmount.toFixed(2)} ${currency}`;
-            const totalFormatted = `${totalAmount.toFixed(2)} ${currency}`;
             paymentPreview.classList.remove("is-empty");
             if (discountCodeEntered) {
-                paymentPreview.textContent = `Amount to Pay: 0.00 ${currency} (100% discount code applied)`;
-            } else if (studentSelected && studentCodeEntered && discountPercent > 0) {
-                paymentPreview.textContent = `Amount to Pay: ${totalFormatted} (Student discount ${discountPercent}% applied from ${baseFormatted})`;
+                paymentPreview.textContent = "Complimentary code entered — payment will be waived if the code is valid.";
+            } else if (isOnline) {
+                paymentPreview.textContent = `Amount to pay now: ${baseFormatted}`;
             } else {
-                paymentPreview.textContent = `Amount to Pay: ${baseFormatted}`;
+                paymentPreview.textContent = `Amount due: ${baseFormatted} — our team will confirm payment when received.`;
             }
         }
 
@@ -733,10 +1050,23 @@
             });
         });
 
+        document.querySelectorAll("[data-select-payment]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const method = button.getAttribute("data-select-payment");
+                if (!method) return;
+                const target = document.querySelector(`input[name="payment_method"][value="${method}"]`);
+                if (target) {
+                    target.checked = true;
+                    updatePaymentPreview();
+                }
+            });
+        });
+
         registerSelect.addEventListener("change", updatePaymentPreview);
-        if (studentCheck) studentCheck.addEventListener("change", updatePaymentPreview);
-        if (studentCodeInput) studentCodeInput.addEventListener("input", updatePaymentPreview);
         if (discountCodeInput) discountCodeInput.addEventListener("input", updatePaymentPreview);
+        paymentMethodInputs.forEach((input) => {
+            input.addEventListener("change", updatePaymentPreview);
+        });
         updatePaymentPreview();
     })();
 
@@ -840,64 +1170,6 @@
 
         countrySelect.addEventListener("change", updateCountryPreview);
         updateCountryPreview();
-    })();
-
-    (function () {
-        const studentCheck = document.getElementById("is_student");
-        const studentFields = document.getElementById("student-fields");
-        const studentId = document.getElementById("student_id");
-        if (!studentCheck || !studentFields || !studentId) return;
-
-        function syncStudentFields() {
-            const on = studentCheck.checked;
-            studentFields.style.display = on ? "block" : "none";
-            studentId.required = on;
-        }
-
-        studentCheck.addEventListener("change", syncStudentFields);
-        syncStudentFields();
-    })();
-
-    (function () {
-        const form = document.querySelector("form.register-form");
-        const verifyBtn = document.getElementById("verify-student-code-btn");
-        const loader = document.getElementById("student-code-loader");
-        const feedback = document.getElementById("student-code-feedback");
-        if (!form || !verifyBtn || !loader || !feedback) return;
-
-        verifyBtn.addEventListener("click", async function (event) {
-            event.preventDefault();
-            feedback.textContent = "";
-            feedback.classList.remove("is-error", "is-success");
-            loader.classList.add("is-visible");
-            verifyBtn.disabled = true;
-
-            const formData = new FormData(form);
-            formData.set("is_student", document.getElementById("is_student")?.checked ? "1" : "");
-
-            try {
-                const response = await fetch(verifyBtn.getAttribute("formaction"), {
-                    method: "POST",
-                    body: formData,
-                    headers: { "X-Requested-With": "XMLHttpRequest" },
-                    credentials: "same-origin",
-                });
-                const data = await response.json();
-                if (response.ok && data.ok) {
-                    feedback.textContent = data.message || "Student code sent.";
-                    feedback.classList.add("is-success");
-                } else {
-                    feedback.textContent = data.message || "Could not send code. Please try again.";
-                    feedback.classList.add("is-error");
-                }
-            } catch (err) {
-                feedback.textContent = "Network error while sending code. Please try again.";
-                feedback.classList.add("is-error");
-            } finally {
-                loader.classList.remove("is-visible");
-                verifyBtn.disabled = false;
-            }
-        });
     })();
 
     (function () {

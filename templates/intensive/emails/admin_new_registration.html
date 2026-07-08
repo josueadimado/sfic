@@ -20,14 +20,22 @@
                     <strong>Phone:</strong> {{ registration.phone }}<br>
                     <strong>City/Country:</strong> {{ registration.city }}, {{ registration.country }}<br>
                     <strong>Church/Organization:</strong> {{ registration.church|default:"-" }}<br>
-                    <strong>Session:</strong> {{ session.title }}<br>
-                    <strong>LOCATION:</strong> {{ session.location }}<br>
+                    <strong>Payment method:</strong> {{ payment_method_label }}<br>
+                    <strong>Program:</strong> {{ session.title }}<br>
+                    <strong>Location:</strong> {{ session.location }}<br>
                     <strong>Dates:</strong> {{ session.start_date }} to {{ session.end_date }}<br>
-                    <strong>Amount Due:</strong> {{ amount_due }}<br>
-                    <strong>Current Status:</strong> {{ registration.status }}
+                    <strong>Amount due:</strong> {{ amount_due }}<br>
+                    <strong>Payment memo:</strong> {{ payment_memo }}<br>
+                    <strong>Current status:</strong> {{ registration.status }}
                   </td>
                 </tr>
               </table>
+              {% if needs_manual_followup %}
+              <p style="margin:14px 0 0;font-size:14px;line-height:1.55;background:#fff8e8;border:1px solid #e8d7a8;border-radius:10px;padding:12px 14px;">
+                <strong>Action needed:</strong> This person registered with an offline payment method. Confirm payment when received, then use
+                <strong>Mark payment received</strong> in the dashboard.
+              </p>
+              {% endif %}
               <p style="margin:16px 0 0;font-size:14px;">
                 <a href="{{ dashboard_url }}" style="color:#443425;font-weight:700;">Open registration in dashboard</a>
               </p>

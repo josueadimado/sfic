@@ -5,12 +5,17 @@ Email: {{ registration.email }}
 Phone: {{ registration.phone }}
 City/Country: {{ registration.city }}, {{ registration.country }}
 Church/Organization: {{ registration.church|default:"-" }}
+Payment method: {{ payment_method_label }}
 
-Session: {{ session.title }}
-LOCATION: {{ session.location }}
+Program: {{ session.title }}
+Location: {{ session.location }}
 Dates: {{ session.start_date }} to {{ session.end_date }}
-Amount Due: {{ amount_due }}
-Current Status: {{ registration.status }}
+Amount due: {{ amount_due }}
+Payment memo: {{ payment_memo }}
+Current status: {{ registration.status }}
+{% if needs_manual_followup %}
+Action needed: confirm offline payment in the dashboard when received.
+{% endif %}
 
 View in dashboard:
 {{ dashboard_url }}

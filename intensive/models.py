@@ -13,6 +13,14 @@ class RegistrationStatus(models.TextChoices):
 class PaymentProvider(models.TextChoices):
     STRIPE = "STRIPE", "Stripe"
     FREE_CODE = "FREE_CODE", "Free Registration Code"
+    MANUAL = "MANUAL", "Manual / offline payment"
+
+
+class PaymentMethod(models.TextChoices):
+    ONLINE_CARD = "online_card", "Credit / Debit Card (online)"
+    BANK_ZELLE_ACH = "bank_zelle_ach", "Bank / Zelle / ACH"
+    CHECK_MAIL = "check_mail", "Check by Mail"
+    ONLINE_GIVING = "online_giving", "Online Giving"
 
 
 class TransactionType(models.TextChoices):
@@ -278,6 +286,12 @@ class Registration(models.Model):
     )
     payment_provider = models.CharField(
         max_length=16, choices=PaymentProvider.choices, default=PaymentProvider.STRIPE
+    )
+    requested_payment_method = models.CharField(
+        max_length=32,
+        choices=PaymentMethod.choices,
+        default=PaymentMethod.ONLINE_CARD,
+        help_text="How the participant chose to pay at registration.",
     )
     payment_ref = models.CharField(max_length=200, blank=True)
     amount_paid = models.PositiveIntegerField(default=0)

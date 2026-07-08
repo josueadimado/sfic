@@ -21,7 +21,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 
-from .models import Donation, Registration, RegistrationStatus, Session, SiteSetting
+from .models import Donation, PaymentMethod, Registration, RegistrationStatus, Session, SiteSetting
 
 PORTAL_ACCESS_DAYS = 30
 
@@ -266,7 +266,7 @@ def _build_confirmation_pdf(registration: Registration, session: Session, amount
     left = 20 * mm
     top = page_height - 22 * mm
 
-    pdf.setTitle("Freedom Intensive Confirmation")
+    pdf.setTitle(f"{session.title} Confirmation")
     pdf.setFont("Helvetica-Bold", 18)
     pdf.drawString(left, top, "Reservation Confirmation")
 
@@ -304,14 +304,70 @@ def _build_confirmation_pdf(registration: Registration, session: Session, amount
     return data
 
 
+def _session_payment_memo(session: Session) -> str:
+    title = (session.title or "").lower()
+    if "didasko" in title:
+        return "Didasko 2026 Togo"
+    return session.title
+
+
+def _payment_method_instructions(method: str) -> str:
+    instructions = {
+        PaymentMethod.BANK_ZELLE_ACH: (
+            "Send your contribution using the official Set Free in Christ Mission bank or Zelle details "
+            "(published on the website when available). Include your full name and the payment memo on the transfer."
+        ),
+        PaymentMethod.CHECK_MAIL: (
+            "Mail a check payable to Set Free in Christ Mission. Write your full name and the payment memo on the memo line."
+        ),
+        PaymentMethod.ONLINE_GIVING: (
+            "Complete your gift through the ministry online giving portal when the Didasko payment link is published."
+        ),
+    }
+    return instructions.get(method, "")
+
+
+def send_registration_received(registration: Registration) -> bool:
+    """Participant chose an offline payment method — registration saved, payment pending admin confirmation."""
+    session: Session = registration.session
+    amount_due = f"{registration.amount_paid / 100:.2f} {registration.currency.upper()}"
+    method_label = registration.get_requested_payment_method_display()
+    context = {
+        "registration": registration,
+        "session": session,
+        "amount_due": amount_due,
+        "payment_method_label": method_label,
+        "payment_instructions": _payment_method_instructions(registration.requested_payment_method),
+        "payment_memo": _session_payment_memo(session),
+        "site_base_url": settings.SITE_BASE_URL,
+    }
+    subject = f"Registration received — {session.title} (payment pending)"
+    text_message = render_to_string("intensive/emails/registration_received.txt", context)
+    html_message = render_to_string("intensive/emails/registration_received.html", context)
+    try:
+        email = EmailMultiAlternatives(
+            subject=subject,
+            body=text_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[registration.email],
+        )
+        email.attach_alternative(html_message, "text/html")
+        email.send(fail_silently=False)
+    except Exception:
+        logger.exception("Failed to send registration received email for %s", registration.id)
+        return False
+    return True
+
+
 def send_registration_confirmation(registration: Registration) -> bool:
     session: Session = registration.session
-    subject = "Your 3-Day Spiritual Warfare Intensive registration is confirmed"
-    amount_paid = f"{registration.amount_paid / 100:.2f} {registration.currency}"
+    subject = f"Payment confirmed — {session.title}"
+    amount_paid = f"{registration.amount_paid / 100:.2f} {registration.currency.upper()}"
     context = {
         "registration": registration,
         "session": session,
         "amount_paid": amount_paid,
+        "payment_memo": _session_payment_memo(session),
         "site_base_url": settings.SITE_BASE_URL,
     }
     text_message = render_to_string("intensive/emails/registration_confirmation.txt", context)
@@ -378,7 +434,7 @@ def send_payment_retry_email(registration: Registration) -> bool:
         "resume_url": resume_url,
         "amount_due": amount_due,
     }
-    subject = "Complete your Freedom Intensive payment"
+    subject = f"Complete your payment — {session.title}"
     text_message = render_to_string("intensive/emails/payment_retry.txt", context)
     html_message = render_to_string("intensive/emails/payment_retry.html", context)
     try:
@@ -404,13 +460,18 @@ def send_admin_new_registration_notification(registration: Registration) -> bool
     session: Session = registration.session
     amount_due = f"{registration.amount_paid / 100:.2f} {registration.currency.upper()}"
     dashboard_url = f"{settings.SITE_BASE_URL}/dashboard/registrations/{registration.id}/"
+    method_label = registration.get_requested_payment_method_display()
+    needs_manual_followup = registration.requested_payment_method != PaymentMethod.ONLINE_CARD
     context = {
         "registration": registration,
         "session": session,
         "amount_due": amount_due,
         "dashboard_url": dashboard_url,
+        "payment_method_label": method_label,
+        "needs_manual_followup": needs_manual_followup,
+        "payment_memo": _session_payment_memo(session),
     }
-    subject = f"New registration: {registration.full_name}"
+    subject = f"New registration: {registration.full_name} ({session.title})"
     text_message = render_to_string("intensive/emails/admin_new_registration.txt", context)
     html_message = render_to_string("intensive/emails/admin_new_registration.html", context)
     try:
