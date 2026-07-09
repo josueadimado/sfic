@@ -1020,7 +1020,10 @@
             }
             const baseAmount = Number(priceRaw) / 100;
             const discountCodeEntered = discountCodeInput && discountCodeInput.value.trim().length > 0;
-            const baseFormatted = `${baseAmount.toFixed(2)} ${currency}`;
+            const baseFormatted = new Intl.NumberFormat("en-US", {
+                style: "currency",
+                currency: currency || "USD",
+            }).format(baseAmount);
             paymentPreview.classList.remove("is-empty");
             if (discountCodeEntered) {
                 paymentPreview.textContent = "Complimentary code entered — payment will be waived if the code is valid.";

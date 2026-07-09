@@ -203,7 +203,7 @@ class SessionManageForm(forms.ModelForm):
         min_value=0,
         max_digits=10,
         decimal_places=2,
-        help_text="Enter amount in USD (for example 120.00).",
+        help_text="Enter amount in USD dollars (for example 3500.00 for $3,500 — not 350000).",
     )
 
     def __init__(self, *args, **kwargs):
@@ -223,6 +223,11 @@ class SessionManageForm(forms.ModelForm):
 
     def clean_price(self):
         price_value = self.cleaned_data["price"]
+        if price_value > Decimal("20000"):
+            raise forms.ValidationError(
+                "That price looks too high. Enter the amount in dollars — for example, "
+                "type 3500.00 for a $3,500 contribution (not 350000)."
+            )
         cents = (price_value * Decimal("100")).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
         return int(cents)
 

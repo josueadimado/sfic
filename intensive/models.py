@@ -83,7 +83,8 @@ class Session(models.Model):
 
     @property
     def display_price(self) -> str:
-        return f"{self.price / 100:.2f} {self.currency.upper()}"
+        dollars = self.price / 100
+        return f"${dollars:,.2f}"
 
 
 class TrainingScheduleItem(models.Model):
