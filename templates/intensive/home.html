@@ -97,6 +97,7 @@
             <a href="#safari">Safari</a>
             <a href="#speakers">Speakers</a>
             <a href="#pay">How to Pay</a>
+            <a href="#flyers">Flyers</a>
             <a href="{% url 'events' %}">Events</a>
         </nav>
     </div>
@@ -332,7 +333,7 @@
                     <div class="included-notice-main">
                         <p class="included-notice-label">Important notice</p>
                         <p class="included-notice-exclusion">
-                            Of the <strong>$3,500</strong> donation, <strong>$1,200</strong> is the allowance set aside
+                            Of the <strong>$3,500</strong> contribution, <strong>$1,200</strong> is the allowance set aside
                             for use on your round-trip ticket from your origination city in the United States to
                             Lomé, Togo, West Africa. We have secured a travel agency to assist with the booking of
                             your round-trip ticket.
@@ -836,6 +837,39 @@
                     <button type="submit" class="btn btn-accent" id="register-submit-btn">PAY CONTRIBUTION &amp; REGISTER</button>
                 </div>
             </form>
+        </div>
+    </section>
+
+    <section id="flyers" class="section cream-section flyers-section">
+        <div class="container">
+            <h2 class="experience-heading">Event Flyers</h2>
+            <p class="experience-intro flyers-intro">
+                Download or share the official Didasko 2026 flyers. Tap an image to view the full size.
+            </p>
+            <div class="flyers-grid">
+                <figure class="flyer-card">
+                    <a class="flyer-card__link" href="{% static 'images/didasko-2026-flyer.png' %}" target="_blank" rel="noopener noreferrer">
+                        <img
+                            src="{% static 'images/didasko-2026-flyer.png' %}"
+                            alt="Didasko 2026 event flyer — Learn, Equip, Disciple, Send in Lomé, Togo, September 1–10, 2026"
+                            loading="lazy"
+                            decoding="async"
+                        >
+                    </a>
+                    <figcaption class="flyer-card__caption">Didasko 2026 — Lomé, Togo</figcaption>
+                </figure>
+                <figure class="flyer-card">
+                    <a class="flyer-card__link" href="{% static 'images/didasko-2026-safari-flyer.png' %}" target="_blank" rel="noopener noreferrer">
+                        <img
+                            src="{% static 'images/didasko-2026-safari-flyer.png' %}"
+                            alt="Africa Safari Adventure flyer — Mole National Park, Northern Ghana, September 1–10, 2026"
+                            loading="lazy"
+                            decoding="async"
+                        >
+                    </a>
+                    <figcaption class="flyer-card__caption">Africa Safari Adventure — Northern Ghana</figcaption>
+                </figure>
+            </div>
         </div>
     </section>
 
