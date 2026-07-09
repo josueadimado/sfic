@@ -903,17 +903,6 @@
     </div>
 </footer>
 
-<aside class="floating-access-note" id="floating-access-note" aria-live="polite" aria-label="Registration access notice">
-    <button type="button" class="floating-access-close" id="floating-access-close" aria-label="Close notice">×</button>
-    <p>
-        <strong>
-            Questions about payment or travel? Call (269) 208-3370 or email
-            SetFreeInChristMission.Team@gmail.com. Your $3,500 contribution covers lodging, meals, ground transport,
-            training, safari, and ministry activities — international airfare is separate.
-        </strong>
-    </p>
-</aside>
-
 <a class="floating-call-btn" href="tel:+12692083370" aria-label="Call +1 269-208-3370">
     <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M5 4h3l1.4 3.2-1.8 1.6a15.4 15.4 0 0 0 6.6 6.6L15.8 13 19 14.4v3a2 2 0 0 1-2 2A16 16 0 0 1 5 7a2 2 0 0 1 2-2Z"></path>
@@ -1170,58 +1159,6 @@
 
         countrySelect.addEventListener("change", updateCountryPreview);
         updateCountryPreview();
-    })();
-
-    (function () {
-        const note = document.getElementById("floating-access-note");
-        const closeBtn = document.getElementById("floating-access-close");
-        const registerSection = document.getElementById("register");
-        if (!note || !closeBtn) return;
-
-        const storageKey = "floatingAccessNoteDismissed";
-        try {
-            // Old versions used localStorage and could hide this forever on some devices.
-            window.localStorage.removeItem(storageKey);
-        } catch (err) {
-            // Ignore storage-access errors in restrictive browsers.
-        }
-        try {
-            if (window.sessionStorage.getItem(storageKey) === "1") return;
-        } catch (err) {
-            // Ignore storage-access errors and continue.
-        }
-
-        let isClosed = false;
-
-        function shouldShow() {
-            const isPhone = window.matchMedia("(max-width: 640px)").matches;
-            if (isPhone && registerSection) {
-                const registerTop = registerSection.getBoundingClientRect().top;
-                if (registerTop <= window.innerHeight * 0.85) {
-                    return false;
-                }
-            }
-            return window.scrollY > 0;
-        }
-
-        function updateVisibility() {
-            if (isClosed) return;
-            note.classList.toggle("is-visible", shouldShow());
-        }
-
-        closeBtn.addEventListener("click", function () {
-            isClosed = true;
-            note.classList.remove("is-visible");
-            try {
-                window.sessionStorage.setItem(storageKey, "1");
-            } catch (err) {
-                // Ignore storage-access errors.
-            }
-        });
-
-        window.addEventListener("scroll", updateVisibility, { passive: true });
-        window.addEventListener("resize", updateVisibility);
-        updateVisibility();
     })();
 </script>
 {% endblock %}

@@ -660,60 +660,6 @@ section[id] {
     transform: translateY(-2px);
 }
 
-.floating-access-note ~ .back-to-top {
-    bottom: 7rem;
-}
-
-.floating-access-note {
-    position: fixed;
-    right: 1rem;
-    bottom: 1rem;
-    width: min(430px, calc(100% - 5.25rem));
-    padding: 0.95rem 1rem 0.9rem;
-    border-radius: 14px;
-    border: 1px solid rgba(230, 196, 106, 0.45);
-    background: rgba(47, 36, 26, 0.96);
-    color: #ffffff;
-    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.35);
-    z-index: 149;
-    opacity: 0;
-    transform: translateY(12px);
-    pointer-events: none;
-    transition: opacity 0.22s ease, transform 0.22s ease;
-}
-
-.floating-access-note.is-visible {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
-}
-
-.floating-access-note p {
-    margin: 0;
-    font-size: 0.87rem;
-    line-height: 1.45;
-    padding-right: 1.15rem;
-}
-
-.floating-access-close {
-    position: absolute;
-    top: 0.35rem;
-    right: 0.45rem;
-    width: 28px;
-    height: 28px;
-    border: none;
-    border-radius: 999px;
-    background: transparent;
-    color: #ffffff;
-    font-size: 1.2rem;
-    line-height: 1;
-    cursor: pointer;
-}
-
-.floating-access-close:hover {
-    background: rgba(255, 255, 255, 0.12);
-}
-
 .location-icon {
     width: 0.95rem;
     height: 0.95rem;
@@ -6482,28 +6428,6 @@ body.admin-mobile-sidebar-open {
     .back-to-top svg {
         width: 20px;
         height: 20px;
-    }
-
-    .floating-access-note ~ .back-to-top {
-        bottom: 0.8rem;
-    }
-
-    .floating-access-note {
-        right: 0.7rem;
-        top: 50%;
-        bottom: auto;
-        width: min(360px, calc(100% - 1.55rem));
-        padding: 0.9rem 0.9rem 0.85rem;
-        transform: translateY(calc(-50% + 12px));
-    }
-
-    .floating-access-note p {
-        font-size: 0.83rem;
-        line-height: 1.4;
-    }
-
-    .floating-access-note.is-visible {
-        transform: translateY(-50%);
     }
 
     .countdown-label {
