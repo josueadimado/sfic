@@ -1,0 +1,17 @@
+<footer class="footer">
+    <div class="container footer-inner">
+        <div class="footer-brand-block">
+            <p class="footer-brand-name">Set Free in Christ Mission</p>
+            <p class="footer-brand-tagline">Learn · Equip · Disciple · Send</p>
+        </div>
+        <nav class="footer-nav" aria-label="Footer">
+            <a href="{% url 'participant_portal_login' %}">Participant portal</a>
+            {% if show_footer_home_link %}
+                <a href="{% url 'home' %}">Home</a>
+            {% endif %}
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms &amp; Conditions</a>
+        </nav>
+        <p class="footer-copy">Copyright &copy; {% now "Y" %} Set Free In Christ. All rights reserved.</p>
+    </div>
+</footer>

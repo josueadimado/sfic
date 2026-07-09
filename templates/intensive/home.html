@@ -922,19 +922,7 @@
 
 </main>
 
-<footer class="footer">
-    <div class="container footer-legal">
-        <p class="footer-brand">Set Free in Christ Mission — Learn · Equip · Disciple · Send</p>
-        <div class="footer-meta">
-            <p class="footer-copy">Copyright &copy; {% now "Y" %} Set Free In Christ. All rights reserved.</p>
-            <div class="footer-links">
-                <a href="{% url 'participant_portal_login' %}">Participant portal</a>
-                <a href="#">Privacy Policy</a>
-                <a href="#">Terms &amp; Conditions</a>
-            </div>
-        </div>
-    </div>
-</footer>
+{% include "intensive/includes/site_footer.html" %}
 
 <a class="floating-call-btn" href="tel:+12692083370" aria-label="Call +1 269-208-3370">
     <svg viewBox="0 0 24 24" aria-hidden="true">

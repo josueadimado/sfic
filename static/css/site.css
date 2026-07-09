@@ -2218,9 +2218,77 @@ section[id] {
     opacity: 1;
 }
 
-.footer-brand {
-    font-weight: 700;
+.footer {
+    background: var(--brand-green);
+    color: #fff;
+    padding: 2.25rem 0 calc(2rem + env(safe-area-inset-bottom, 0px));
+    border-top: 3px solid var(--brand-lime);
+}
+
+.footer-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1.15rem;
+}
+
+.footer-brand-block {
+    max-width: 34rem;
+}
+
+.footer-brand-name {
     margin: 0;
+    font-family: "Oswald", "Arial Narrow", sans-serif;
+    font-size: clamp(1.05rem, 2.4vw, 1.25rem);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    line-height: 1.25;
+}
+
+.footer-brand-tagline {
+    margin: 0.45rem 0 0;
+    font-size: 0.9rem;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.88);
+}
+
+.footer-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem 1.35rem;
+    width: 100%;
+    max-width: 40rem;
+    padding-top: 0.15rem;
+}
+
+.footer-nav a {
+    color: #f2d489;
+    text-decoration: none;
+    font-size: 0.84rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.footer-nav a:hover {
+    color: #ffffff;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.footer-copy {
+    margin: 0;
+    width: 100%;
+    max-width: 36rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.82);
 }
 
 .schedule-section {
@@ -2911,59 +2979,6 @@ section[id] {
     color: #7b2525;
     padding: 0.65rem;
     margin: 0 0 0.5rem;
-}
-
-.footer {
-    background: var(--brand-green);
-    color: #fff;
-    padding: 1.1rem 0;
-    border-top: 3px solid var(--brand-lime);
-}
-
-.footer-legal {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem 1.5rem;
-    flex-wrap: wrap;
-}
-
-.footer-meta {
-    display: flex;
-    align-items: center;
-    gap: 1rem 1.35rem;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-}
-
-.footer-copy {
-    margin: 0;
-    font-size: 0.82rem;
-    opacity: 0.92;
-}
-
-.footer-legal p {
-    margin: 0;
-}
-
-.footer-links {
-    display: inline-flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-}
-
-.footer-links a {
-    color: #ffffff;
-    text-decoration: none;
-    opacity: 0.92;
-    font-size: 0.78rem;
-    letter-spacing: 0.02em;
-}
-
-.footer-links a:hover {
-    opacity: 1;
-    text-decoration: underline;
-    text-underline-offset: 2px;
 }
 
 .simple-page {
@@ -6323,11 +6338,6 @@ body.admin-mobile-sidebar-open {
         max-width: none;
     }
 
-    .footer-legal {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
     .login-layout {
         grid-template-columns: 1fr;
     }
@@ -6568,30 +6578,51 @@ body.admin-mobile-sidebar-open {
         padding: 2.5rem 0 3rem;
     }
 
-    .footer-brand {
-        font-size: 0.95rem;
-        line-height: 1.4;
+    .footer {
+        padding-bottom: calc(6.25rem + env(safe-area-inset-bottom, 0px));
+    }
+
+    .footer-brand-name {
+        font-size: 1rem;
+    }
+
+    .footer-brand-tagline {
+        font-size: 0.82rem;
+        line-height: 1.45;
+    }
+
+    .footer-nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.55rem 1.1rem;
     }
 
     .footer-copy {
-        font-size: 0.78rem;
+        font-size: 0.74rem;
+        padding-top: 0.85rem;
     }
 
-    .footer-links {
+    .contact-strip-inner {
         flex-direction: column;
-        align-items: flex-start;
-        gap: 0.45rem;
+        align-items: center;
+        text-align: center;
+        gap: 0.35rem;
+        padding: 0.65rem 0;
     }
 
-    .footer-legal {
-        flex-direction: column;
-        align-items: flex-start;
+    .contact-strip-org {
+        font-size: 0.82rem;
+        line-height: 1.35;
     }
 
-    .footer-meta {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.65rem;
+    .contact-strip-reach {
+        justify-content: center;
+        font-size: 0.8rem;
+    }
+
+    .flyers-section {
+        padding: 2.5rem 0;
     }
 
     .included-card-title,
